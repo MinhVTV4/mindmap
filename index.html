@@ -526,11 +526,19 @@
                 contentHTML += `<p><strong>AI trả lời:</strong></p><div style="background-color: #f9f9f9; padding: 10px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; font-size: 0.9em;">${formattedAiAnswer}</div>`;
                 aiResponseModalBody.innerHTML = contentHTML;
                 showElement(aiResponseModalOverlay);
+                if (currentKonvaStage) { // Disable stage interaction
+                    currentKonvaStage.listening(false);
+                    currentKonvaStage.draggable(false);
+                }
             }
         }
         function closeAiResponseModal() {
             if (aiResponseModalOverlay) {
                 hideElement(aiResponseModalOverlay);
+                 if (currentKonvaStage) { // Re-enable stage interaction
+                    currentKonvaStage.listening(true);
+                    currentKonvaStage.draggable(true);
+                }
             }
         }
         if (aiResponseModalCloseButton) {
@@ -550,11 +558,19 @@
                 const formattedContent = fullContent.replace(/\n/g, '<br>');
                 nodeContentModalBody.innerHTML = `<div contenteditable="false" style="white-space: pre-wrap;">${formattedContent}</div>`;
                 showElement(nodeContentModalOverlay);
+                if (currentKonvaStage) { // Disable stage interaction
+                    currentKonvaStage.listening(false);
+                    currentKonvaStage.draggable(false);
+                }
             }
         }
         function closeNodeContentModal() {
             if (nodeContentModalOverlay) {
                 hideElement(nodeContentModalOverlay);
+                 if (currentKonvaStage) { // Re-enable stage interaction
+                    currentKonvaStage.listening(true);
+                    currentKonvaStage.draggable(true);
+                }
             }
         }
         if (nodeContentModalCloseButton) {
@@ -1082,8 +1098,6 @@
                         });
                     } else {
                         console.warn(`textToRender.clip is not a function for node ${nodeData.id}. textToRender:`, textToRender, "Attempting to set clip as an attribute.");
-                        // Fallback: try setting as an attribute if .clip() method is not found
-                        // This is less likely to work for visual clipping but might be a property in some contexts
                         try {
                             textToRender.setAttr('clip', { x: 0, y: 0, width: textRenderWidth, height: textDisplayHeight });
                         } catch (clipAttrError) {
@@ -1175,9 +1189,9 @@
             }
             const shapeWidth = parentShapeInitial.width();
             let handleX = shapeWidth / 2;
-            let handleY = parentCurrentShapeHeight; // Use the passed height
+            let handleY = parentCurrentShapeHeight;
             if (parentShapeInitial.getClassName() === 'Ellipse') {
-                handleX = parentShapeInitial.x(); // Ellipse x is center
+                handleX = parentShapeInitial.x();
                 handleY = parentShapeInitial.y() + parentShapeInitial.radiusY();
             }
 
@@ -1189,17 +1203,16 @@
 
             handle.on('dragstart', function(e) {
                 e.evt.cancelBubble = true;
-                // Use parentNodeGroup from the closure
-                if (!currentKonvaLayer || !parentNodeGroup) {
+                if (!currentKonvaLayer || !parentNodeGroup) { // Sử dụng parentNodeGroup từ closure
                     console.error("dragstart: currentKonvaLayer or parentNodeGroup is missing");
                     return;
                 }
-                const currentParentShape = parentNodeGroup.findOne('.nodeShape');
+                const currentParentShape = parentNodeGroup.findOne('.nodeShape'); // Sử dụng parentNodeGroup
                 if (!currentParentShape) {
                     console.error("dragstart: currentParentShape is undefined. parentNodeGroup ID:", parentNodeGroup.id());
                     return;
                 }
-                const parentStyle = allNodesDataForCurrentMap.find(n => n.id === parentNodeGroup.id())?.style || {};
+                const parentStyle = allNodesDataForCurrentMap.find(n => n.id === parentNodeGroup.id())?.style || {}; // Sử dụng parentNodeGroup
                 const lineColor = parentStyle.lineColor || '#007bff';
                 const lineWidth = parentStyle.lineWidth || 2;
                 let startX = currentParentShape.width() / 2;
@@ -1226,23 +1239,22 @@
                 e.evt.cancelBubble = true;
                 if (tempCreationLine) { tempCreationLine.destroy(); tempCreationLine = null; }
 
-                // Use parentNodeGroup from the closure
-                if (!parentNodeGroup) {
+                if (!parentNodeGroup) { // Sử dụng parentNodeGroup từ closure
                      console.error("dragend: parentNodeGroup is missing");
                      return;
                 }
-                const currentParentShapeForReset = parentNodeGroup.findOne('.nodeShape');
+                const currentParentShapeForReset = parentNodeGroup.findOne('.nodeShape'); // Sử dụng parentNodeGroup
                 if (!currentParentShapeForReset) {
                     console.error("dragend: currentParentShapeForReset is undefined. parentNodeGroup ID:", parentNodeGroup.id());
                     const groupWidth = parentNodeGroup.width() || DEFAULT_NODE_STYLE.width;
-                    const groupHeight = parentNodeGroup.height() || parentCurrentShapeHeight; // Use initial height as fallback
+                    const groupHeight = parentNodeGroup.height() || parentCurrentShapeHeight;
                     this.position({ x: groupWidth / 2, y: groupHeight });
                     currentKonvaLayer.batchDraw();
                     return;
                 }
 
                 const handleFinalRelativeX = this.x(); const handleFinalRelativeY = this.y();
-                const parentAbsPos = parentNodeGroup.getAbsolutePosition();
+                const parentAbsPos = parentNodeGroup.getAbsolutePosition(); // Sử dụng parentNodeGroup
                 const newNodeAbsX = parentAbsPos.x + handleFinalRelativeX;
                 const newNodeAbsY = parentAbsPos.y + handleFinalRelativeY;
 
@@ -1254,7 +1266,7 @@
                 }
                 this.position({ x: resetHandleX, y: resetHandleY });
 
-                if (currentMindMapId && db && parentNodeGroup) { // Check parentNodeGroup instead of selectedKonvaNode
+                if (currentMindMapId && db && parentNodeGroup) { // Sử dụng parentNodeGroup
                     const defaultChildWidth = 120; const defaultChildMinHeight = 40; const defaultChildPadding = 10;
                     const newNodeData = {
                         mapId: currentMindMapId, parentId: parentNodeGroup.id(), text: "Nút mới (kéo)",
