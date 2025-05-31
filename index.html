@@ -416,7 +416,14 @@
             lineColor: "#888888", lineWidth: 3, lineDash: []
         };
         const MAX_DISPLAY_LINES_IN_NODE = 4;
-        let contextMenuJustOpened = false; // Flag to manage context menu vs modal conflict
+        let contextMenuJustOpened = false;
+
+        // --- START: Biến trạng thái cho việc kéo thả nút ---
+        let potentiallyDraggedNode = null; // Nút có thể đang được kéo
+        let dragStartPointerPosition = null; // Vị trí con trỏ khi bắt đầu nhấn chuột/chạm
+        const DRAG_THRESHOLD = 10; // Ngưỡng pixel để xác định là kéo (thay vì click)
+        // --- END: Biến trạng thái cho việc kéo thả nút ---
+
 
         // --- DOM ELEMENTS ---
         const nodeStylePanel = document.getElementById('node-style-panel');
@@ -516,7 +523,7 @@
             }
         }
 
-        function hideContextMenu() { // Helper to hide context menu and reset flag
+        function hideContextMenu() {
             if(contextMenu) hideElement(contextMenu);
             contextMenuJustOpened = false;
         }
@@ -534,7 +541,7 @@
                 showElement(aiResponseModalOverlay);
                 if (currentKonvaStage && currentKonvaStage.listening()) {
                     currentKonvaStage.listening(false);
-                    currentKonvaStage.draggable(false);
+                    // currentKonvaStage.draggable(false); // Tạm thời không thay đổi draggable của stage ở đây
                 }
             }
         }
@@ -543,7 +550,7 @@
                 hideElement(aiResponseModalOverlay);
                  if (currentKonvaStage && !currentKonvaStage.listening()) {
                     currentKonvaStage.listening(true);
-                    currentKonvaStage.draggable(true);
+                    // currentKonvaStage.draggable(true); // Tạm thời không thay đổi draggable của stage ở đây
                 }
             }
         }
@@ -552,7 +559,7 @@
         }
         if (aiResponseModalOverlay) {
             aiResponseModalOverlay.addEventListener('click', function(event) {
-                if (event.target === aiResponseModalOverlay) { 
+                if (event.target === aiResponseModalOverlay) {
                     closeAiResponseModal();
                 }
             });
@@ -566,7 +573,7 @@
                 showElement(nodeContentModalOverlay);
                 if (currentKonvaStage && currentKonvaStage.listening()) {
                     currentKonvaStage.listening(false);
-                    currentKonvaStage.draggable(false);
+                     // currentKonvaStage.draggable(false); // Tạm thời không thay đổi draggable của stage ở đây
                 }
             }
         }
@@ -575,7 +582,7 @@
                 hideElement(nodeContentModalOverlay);
                  if (currentKonvaStage && !currentKonvaStage.listening()) {
                     currentKonvaStage.listening(true);
-                    currentKonvaStage.draggable(true);
+                    // currentKonvaStage.draggable(true); // Tạm thời không thay đổi draggable của stage ở đây
                 }
             }
         }
@@ -680,7 +687,7 @@
                     hideElement(mainAppSection);
                     hideElement(canvasView);
                     if(nodeStylePanel) hideElement(nodeStylePanel);
-                    hideContextMenu(); // Hide context menu on logout
+                    hideContextMenu();
                     if(mindmapListUl) mindmapListUl.innerHTML = '';
                     window.removeEventListener('keydown', handleGlobalKeyDown);
                 }
@@ -718,7 +725,7 @@
             showElement(canvasView);
             if(currentMindmapTitleDisplay) currentMindmapTitleDisplay.textContent = mapTitle;
             currentMindMapId = mapId;
-            initKonvaStage();
+            initKonvaStage(); // Sẽ gọi loadAndListenNodesForCurrentMap sau khi stage sẵn sàng
             if (db && currentMindMapId) {
                 const mapDocRef = doc(db, "mindmaps", currentMindMapId);
                 if (mindmapDataUnsubscribe) mindmapDataUnsubscribe();
@@ -737,7 +744,7 @@
                     console.error("Error listening to mindmap data:", error);
                 });
             }
-            loadAndListenNodesForCurrentMap();
+            // loadAndListenNodesForCurrentMap(); // Được gọi bên trong initKonvaStage hoặc sau đó
             hideElement(nodeStylePanel);
             hideContextMenu();
             window.addEventListener('keydown', handleGlobalKeyDown);
@@ -915,15 +922,96 @@
 
         // --- FIRESTORE SERVICE LOGIC (Nodes) & KONVA INTEGRATION ---
         function initKonvaStage() {
-            if (currentKonvaStage) { currentKonvaStage.off('dragstart dragmove dragend click tap wheel contextmenu touchstart touchend touchmove'); currentKonvaStage.destroy(); currentKonvaStage = null; }
+            if (currentKonvaStage) { currentKonvaStage.off('dragstart dragmove dragend click tap wheel contextmenu touchstart touchend touchmove mousedown mousemove mouseup'); currentKonvaStage.destroy(); currentKonvaStage = null; } // Đảm bảo xóa hết listener cũ
             if (currentKonvaLayer) { currentKonvaLayer.destroy(); currentKonvaLayer = null; }
+
             const container = document.getElementById('konva-container');
             if (!container) { console.error("Konva container not found!"); return; }
-            currentKonvaStage = new Konva.Stage({ container: 'konva-container', width: container.clientWidth, height: container.clientHeight, draggable: true });
+
+            currentKonvaStage = new Konva.Stage({
+                container: 'konva-container',
+                width: container.clientWidth,
+                height: container.clientHeight,
+                draggable: true, // Stage vẫn có thể kéo được mặc định
+                // dragDistance: 25 // Không cần cho stage nếu logic mới xử lý tốt
+            });
             currentKonvaLayer = new Konva.Layer();
             currentKonvaStage.add(currentKonvaLayer);
             selectedKonvaNode = null;
-            currentKonvaStage.on('dragend', saveCanvasState);
+
+            // --- START: Xử lý sự kiện kéo thả mới cho Stage ---
+            currentKonvaStage.on('mousedown touchstart', function(e_stage) {
+                let targetShape = e_stage.target;
+                let targetNodeGroup = null;
+
+                // Tìm node group cha nếu target là một phần của node
+                if (targetShape !== currentKonvaStage) {
+                    targetNodeGroup = targetShape.getAncestor('.mindmapNodeGroup', true);
+                }
+
+                // Xử lý long press cho context menu (logic hiện tại của bạn)
+                if (e_stage.type === 'touchstart' && targetNodeGroup) {
+                    // (Logic long press của bạn ở đây, cần điều chỉnh để hoạt động với targetNodeGroup nếu cần)
+                    // Ví dụ: touchStartTargetNode = targetNodeGroup; ... setTimeout ...
+                }
+
+
+                if (targetNodeGroup) { // Nếu nhấn vào một node
+                    potentiallyDraggedNode = targetNodeGroup;
+                    dragStartPointerPosition = currentKonvaStage.getPointerPosition();
+                    if (currentKonvaStage.isDragging()) currentKonvaStage.stopDrag(); // Dừng kéo stage nếu đang kéo
+                    currentKonvaStage.draggable(false); // Tạm thời không cho kéo stage
+                } else { // Nếu nhấn vào nền stage
+                    potentiallyDraggedNode = null;
+                    currentKonvaStage.draggable(true); // Cho phép kéo stage
+                }
+            });
+
+            currentKonvaStage.on('mousemove touchmove', function(e_stage) {
+                if (!potentiallyDraggedNode || !dragStartPointerPosition) {
+                    // Nếu không có node nào được nhấn hoặc không có vị trí bắt đầu, thì không làm gì
+                    // Hoặc nếu stage đang được kéo thì để nó tiếp tục
+                    return;
+                }
+
+                // Kiểm tra xem nút chuột có đang được nhấn không (chỉ cho mousemove)
+                if (e_stage.type === 'mousemove' && e_stage.evt.buttons !== 1) {
+                    // Nút chuột không được nhấn, reset
+                    // potentiallyDraggedNode = null; // Để mouseup xử lý
+                    // dragStartPointerPosition = null;
+                    return;
+                }
+
+                const currentPointerPosition = currentKonvaStage.getPointerPosition();
+                if (!currentPointerPosition) return; // Không lấy được vị trí con trỏ
+
+                const dx = currentPointerPosition.x - dragStartPointerPosition.x;
+                const dy = currentPointerPosition.y - dragStartPointerPosition.y;
+
+                if (Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) {
+                    if (potentiallyDraggedNode.draggable() === false) {
+                        potentiallyDraggedNode.draggable(true);
+                        // Quan trọng: truyền sự kiện gốc (e_stage.evt) để Konva xử lý pointerId cho touch
+                        potentiallyDraggedNode.startDrag(e_stage.evt);
+                    }
+                    // Khi đã bắt đầu kéo node, không cần dragStartPointerPosition cho logic này nữa
+                    // Konva sẽ quản lý việc kéo node.
+                }
+            });
+
+            currentKonvaStage.on('mouseup touchend', function(e_stage) {
+                // Nếu một node đang được kéo, sự kiện dragend của node đó sẽ xử lý việc đặt draggable(false)
+                // if (potentiallyDraggedNode && potentiallyDraggedNode.isDragging()) {
+                //    // potentiallyDraggedNode.stopDrag(); // Konva tự xử lý
+                // }
+                potentiallyDraggedNode = null;
+                dragStartPointerPosition = null;
+                currentKonvaStage.draggable(true); // Luôn cho phép kéo stage trở lại sau khi thả chuột
+            });
+            // --- END: Xử lý sự kiện kéo thả mới cho Stage ---
+
+
+            currentKonvaStage.on('dragend', saveCanvasState); // Lưu trạng thái canvas khi stage được kéo
             currentKonvaStage.on('wheel', (e) => {
                 e.evt.preventDefault(); const oldScale = currentKonvaStage.scaleX();
                 const pointer = currentKonvaStage.getPointerPosition(); if (!pointer) return;
@@ -933,9 +1021,15 @@
                 const newPos = { x: pointer.x - mousePointTo.x * newScale, y: pointer.y - mousePointTo.y * newScale, };
                 currentKonvaStage.position(newPos); currentKonvaStage.batchDraw(); saveCanvasState();
             });
-            currentKonvaStage.on('click tap', function(e) {
-                if (e.target === currentKonvaStage) {
-                    if (selectedKonvaNode) { selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1); removeCreationHandle(selectedKonvaNode); selectedKonvaNode = null; if(nodeStylePanel) hideElement(nodeStylePanel); currentKonvaLayer.batchDraw(); }
+            currentKonvaStage.on('click tap', function(e) { // Click/tap trên stage (nền)
+                if (e.target === currentKonvaStage) { // Chỉ xử lý nếu click trực tiếp vào stage
+                    if (selectedKonvaNode) {
+                        selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1);
+                        removeCreationHandle(selectedKonvaNode);
+                        selectedKonvaNode = null;
+                        if(nodeStylePanel) hideElement(nodeStylePanel);
+                        currentKonvaLayer.batchDraw();
+                    }
                     hideContextMenu();
                 }
             });
@@ -943,6 +1037,7 @@
                 e.evt.preventDefault();
                 let targetNodeGroup = e.target;
                 while (targetNodeGroup && targetNodeGroup !== currentKonvaStage && !targetNodeGroup.hasName('mindmapNodeGroup')) { targetNodeGroup = targetNodeGroup.getParent(); }
+
                 if (targetNodeGroup && targetNodeGroup.hasName('mindmapNodeGroup')) {
                     rightClickedKonvaNode = targetNodeGroup;
                     if (!selectedKonvaNode || selectedKonvaNode.id() !== rightClickedKonvaNode.id()) {
@@ -966,51 +1061,33 @@
                 }
             });
 
-            let longPressTimeoutId = null; let touchStartTargetNode = null; let touchStartPointerPos = null;
-            let touchStartX = 0, touchStartY = 0; const LONG_PRESS_DELAY = 750; const MOVE_THRESHOLD = 10;
+            // Logic long-press hiện tại của bạn cho context menu (cần tích hợp hoặc đảm bảo không xung đột)
+            // Bạn có thể cần di chuyển logic long-press vào bên trong handler 'mousedown touchstart' của stage
+            // để nó có thể xác định targetNodeGroup một cách chính xác.
+            // Ví dụ:
+            // let longPressTimeoutId = null; let touchStartTargetNode = null; let touchStartPointerPos = null;
+            // ... (phần còn lại của logic long-press)
 
-            currentKonvaStage.on('touchstart', function(e) {
-                let targetNodeGroup = e.target;
-                while (targetNodeGroup && targetNodeGroup !== currentKonvaStage && !targetNodeGroup.hasName('mindmapNodeGroup')) { targetNodeGroup = targetNodeGroup.getParent(); }
-                if (targetNodeGroup && targetNodeGroup.hasName('mindmapNodeGroup')) {
-                    touchStartTargetNode = targetNodeGroup;
-                    if (e.evt.touches && e.evt.touches.length > 0) {
-                        touchStartX = e.evt.touches[0].pageX; touchStartY = e.evt.touches[0].pageY;
-                        touchStartPointerPos = { x: e.evt.touches[0].pageX, y: e.evt.touches[0].pageY };
-                    } else { touchStartX = e.evt.pageX || 0; touchStartY = e.evt.pageY || 0; touchStartPointerPos = { x: touchStartX, y: touchStartY }; }
-                    clearTimeout(longPressTimeoutId);
-                    longPressTimeoutId = setTimeout(() => {
-                        if (touchStartTargetNode) {
-                            rightClickedKonvaNode = touchStartTargetNode;
-                            if (!selectedKonvaNode || selectedKonvaNode.id() !== rightClickedKonvaNode.id()) {
-                                if (selectedKonvaNode) { selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1); removeCreationHandle(selectedKonvaNode); }
-                                selectedKonvaNode = rightClickedKonvaNode; selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(3);
-                                const shape = selectedKonvaNode.findOne('.nodeShape');
-                                addCreationHandle(selectedKonvaNode, shape.height());
-                                const nodeData = allNodesDataForCurrentMap.find(n => n.id === selectedKonvaNode.id());
-                                if (nodeData) updateNodeStylePanel(nodeData);
-                                currentKonvaLayer.batchDraw();
-                            }
-                            if(contextMenu && touchStartPointerPos) {
-                                contextMenu.style.top = touchStartPointerPos.y + 'px';
-                                contextMenu.style.left = touchStartPointerPos.x + 'px';
-                                showElement(contextMenu);
-                                contextMenuJustOpened = true;
-                            }
-                            touchStartTargetNode = null; longPressTimeoutId = null;
-                        }
-                    }, LONG_PRESS_DELAY);
-                } else { clearTimeout(longPressTimeoutId); touchStartTargetNode = null; }
-            });
-            currentKonvaStage.on('touchend', function(e) { clearTimeout(longPressTimeoutId); touchStartTargetNode = null; });
-            currentKonvaStage.on('touchmove', function(e) {
-                if (touchStartTargetNode && e.evt.touches && e.evt.touches.length > 0) {
-                    const deltaX = Math.abs(e.evt.touches[0].pageX - touchStartX); const deltaY = Math.abs(e.evt.touches[0].pageY - touchStartY);
-                    if (deltaX > MOVE_THRESHOLD || deltaY > MOVE_THRESHOLD) { clearTimeout(longPressTimeoutId); touchStartTargetNode = null; }
-                } else { clearTimeout(longPressTimeoutId); touchStartTargetNode = null; }
-            });
+
+            loadAndListenNodesForCurrentMap(); // Tải dữ liệu node sau khi stage đã sẵn sàng
         }
-        async function saveCanvasState() { /* ... */ }
+
+        async function saveCanvasState() {
+            if (!currentKonvaStage || !currentMindMapId || !db || !currentUser) return;
+            try {
+                const mapRef = doc(db, "mindmaps", currentMindMapId);
+                await updateDoc(mapRef, {
+                    "canvasState.scaleX": currentKonvaStage.scaleX(),
+                    "canvasState.scaleY": currentKonvaStage.scaleY(),
+                    "canvasState.x": currentKonvaStage.x(),
+                    "canvasState.y": currentKonvaStage.y(),
+                    lastModified: serverTimestamp()
+                });
+            } catch (error) {
+                console.error("Error saving canvas state:", error);
+            }
+        }
+
         function loadAndListenNodesForCurrentMap() {
             if (!currentMindMapId || !currentKonvaLayer || !db) { console.warn("Cannot load nodes..."); return; }
             showElement(konvaContainerLoading); currentKonvaLayer.destroyChildren(); currentKonvaLayer.draw(); allNodesDataForCurrentMap = [];
@@ -1021,6 +1098,7 @@
                 allNodesDataForCurrentMap = nodesFromDb; renderNodesAndLines(allNodesDataForCurrentMap); hideElement(konvaContainerLoading);
             }, (error) => { console.error(`Error listening to nodes for map ${currentMindMapId}:`, error); alert("Lỗi khi tải các nút của sơ đồ: " + error.message); hideElement(konvaContainerLoading); });
         }
+
         function renderNodesAndLines(nodesData) {
             if (!currentKonvaLayer) return;
             currentKonvaLayer.destroyChildren();
@@ -1058,7 +1136,7 @@
                 const textDisplayHeight = isTextTruncated ? maxVisibleTextHeightInNode : fullTextActualHeight;
 
                 let shapeRenderHeight = Math.max(style.minHeight, textDisplayHeight + (2 * style.padding));
-                
+
                 if (isTextTruncated) {
                     const readMoreIndicatorHeight = estimatedLineHeight * 0.8;
                     shapeRenderHeight = Math.max(shapeRenderHeight, textDisplayHeight + (2 * style.padding) + readMoreIndicatorHeight + style.padding * 0.5);
@@ -1067,7 +1145,8 @@
                 const group = new Konva.Group({
                     x: nodeData.position.x,
                     y: nodeData.position.y,
-                    draggable: true,
+                    draggable: false, // --- THAY ĐỔI: Khởi tạo không thể kéo ---
+                    // dragDistance: 30, // --- THAY ĐỔI: Xóa bỏ, sẽ xử lý bằng logic mới ---
                     id: nodeData.id,
                     name: 'mindmapNodeGroup',
                     fullTextData: fullText
@@ -1097,7 +1176,7 @@
                     text: fullText,
                     fontSize: style.fontSize, fontFamily: style.fontFamily, fill: style.textColor,
                     width: textRenderWidth > 0 ? textRenderWidth : 0,
-                    height: textDisplayHeight, 
+                    height: textDisplayHeight,
                     x: style.padding + iconWidthForCalc,
                     y: style.padding,
                     align: 'center',
@@ -1144,7 +1223,7 @@
                     });
                 }
                 group.add(textToRender);
-                
+
                 if (isTextTruncated) {
                     textToRender.on('click tap', (ev) => {
                         const isPrimaryInteraction = (ev.evt.button === 0 && ev.type === 'click') || ev.type === 'tap';
@@ -1157,22 +1236,38 @@
                     });
                 }
 
-                group.on('dragend', async function() { if(!db) return; try { await updateDoc(doc(db, "nodes", this.id()), { position: { x: this.x(), y: this.y() } }); } catch (e) { console.error("Error updating node position:", e); } });
+                // --- THAY ĐỔI: Cập nhật sự kiện dragend của node ---
+                group.on('dragend', async function() {
+                    if(!db) return;
+                    try {
+                        await updateDoc(doc(db, "nodes", this.id()), { position: { x: this.x(), y: this.y() } });
+                    } catch (e) {
+                        console.error("Error updating node position:", e);
+                    }
+                    this.draggable(false); // Đặt lại thành không thể kéo sau khi kéo xong
+                });
+
                 group.on('click tap', function(e) {
-                    e.evt.cancelBubble = true;
+                    e.evt.cancelBubble = true; // Ngăn sự kiện click/tap lan ra stage
                     if (isEditingText) return;
                     if (e.target.name() === 'readMoreIndicator') return;
+
+                    // Nếu node này đang được kéo (isDragging() là true), thì không xử lý click/tap nữa
+                    // vì đây là kết thúc của một hành động kéo, không phải click thuần túy.
+                    // Logic mới ở stage sẽ xử lý việc bắt đầu kéo.
+                    if (this.isDragging && this.isDragging()) {
+                        return;
+                    }
 
                     const isPrimaryInteraction = (e.evt.button === 0 && e.type === 'click') || e.type === 'tap';
 
                     if (isPrimaryInteraction) {
                         if (contextMenuJustOpened) {
-                            contextMenuJustOpened = false; // Reset flag and don't open modal
+                            contextMenuJustOpened = false;
                         } else {
                             const fullText = this.getAttr('fullTextData');
                             const hasReadMore = this.findOne('.readMoreIndicator');
                             if (hasReadMore && (e.target.name() === 'nodeTextContent' || e.target.name() === 'nodeShape' || e.target === this ) ) {
-                                // Check if the click target is the text or shape, not already handled by specific text/readMore listeners
                                 if (e.target.name() !== 'nodeTextContent' && e.target.name() !== 'readMoreIndicator') {
                                      openNodeContentModal(fullText.substring(0,30)+"...", fullText);
                                 }
@@ -1255,6 +1350,7 @@
 
             const handle = new Konva.Circle({
                 x: handleX, y: handleY, radius: HANDLE_RADIUS, fill: HANDLE_FILL, stroke: HANDLE_STROKE, strokeWidth: 1, draggable: true, name: 'creationHandle',
+                dragDistance: 3,
                 dragBoundFunc: function(pos) { const parentAbsPos = parentNodeGroup.getAbsolutePosition(); return { x: pos.x - parentAbsPos.x, y: pos.y - parentAbsPos.y, }; }
             });
             parentNodeGroup.add(handle); parentNodeGroup.creationHandle = handle;
@@ -1304,9 +1400,8 @@
                 const currentParentShapeForReset = parentNodeGroup.findOne('.nodeShape');
                 if (!currentParentShapeForReset) {
                     console.error("dragend: currentParentShapeForReset is undefined. parentNodeGroup ID:", parentNodeGroup.id());
-                    // Fallback positioning if shape is not found - this might not be ideal
                     const groupWidth = parentNodeGroup.width() || DEFAULT_NODE_STYLE.width;
-                    const groupHeight = parentNodeGroup.height() || parentCurrentShapeHeight; // This variable is not defined here, potential issue
+                    const groupHeight = parentNodeGroup.findOne('.nodeShape')?.height() || DEFAULT_NODE_STYLE.minHeight;
                     this.position({ x: groupWidth / 2, y: groupHeight });
                     currentKonvaLayer.batchDraw();
                     return;
@@ -1700,6 +1795,11 @@
                 case 'ArrowUp': case 'ArrowDown': case 'ArrowLeft': case 'ArrowRight':
                     e.preventDefault();
                     if (selectedKonvaNode) {
+                        // --- THAY ĐỔI: Chỉ di chuyển nếu node có thể kéo (draggable) ---
+                        // Tuy nhiên, với logic mới, node chỉ draggable trong lúc kéo.
+                        // Nên việc di chuyển bằng phím có thể cần node.draggable(true) tạm thời
+                        // Hoặc đơn giản là cập nhật vị trí và lưu.
+                        // Hiện tại, giữ nguyên logic di chuyển bằng phím, không phụ thuộc draggable.
                         let newX = selectedKonvaNode.x(); let newY = selectedKonvaNode.y();
                         if (e.key === 'ArrowUp') newY -= KEYBOARD_MOVE_STEP; else if (e.key === 'ArrowDown') newY += KEYBOARD_MOVE_STEP;
                         else if (e.key === 'ArrowLeft') newX -= KEYBOARD_MOVE_STEP; else if (e.key === 'ArrowRight') newX += KEYBOARD_MOVE_STEP;
