@@ -253,21 +253,35 @@
         } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
 
         // --- FIREBASE CONFIGURATION ---
-        // !!! THAY THẾ BẰNG CẤU HÌNH FIREBASE CỦA BẠN !!!
-        // !!! TUYỆT ĐỐI KHÔNG CHIA SẺ CÔNG KHAI CONFIG NÀY !!!
+        // SDK Firebase của bạn đã được cập nhật vào đây:
         const firebaseConfig = {
-            apiKey: "AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXX", // Thay thế!
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com", // Thay thế!
-            projectId: "YOUR_PROJECT_ID", // Thay thế!
-            storageBucket: "YOUR_PROJECT_ID.appspot.com", // Thay thế!
-            messagingSenderId: "YOUR_SENDER_ID", // Thay thế!
-            appId: "YOUR_APP_ID" // Thay thế!
+            apiKey: "AIzaSyDLVuv2RGAJWUjhan-5oNCkGBwQZAN60aY",
+            authDomain: "vocab-91599.firebaseapp.com",
+            projectId: "vocab-91599",
+            storageBucket: "vocab-91599.appspot.com", // Sửa lại từ firebasestorage.app thành appspot.com
+            messagingSenderId: "918212044361",
+            appId: "1:918212044361:web:50b7a065fe0b22b1924198"
         };
 
         // --- INITIALIZE FIREBASE ---
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        let app;
+        let auth;
+        let db;
+
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            console.log("Firebase initialized successfully!");
+        } catch (error) {
+            console.error("Firebase initialization error:", error);
+            // Hiển thị lỗi cho người dùng nếu cần, ví dụ:
+            // document.body.innerHTML = "<h1>Lỗi khởi tạo Firebase. Vui lòng kiểm tra console.</h1><p>" + error.message + "</p>";
+            // Hoặc bạn có thể hiển thị lỗi này trong một phần tử cụ thể trên trang.
+            // Quan trọng là phải thông báo cho người dùng biết có vấn đề.
+            alert("Lỗi nghiêm trọng: Không thể khởi tạo Firebase. Ứng dụng có thể không hoạt động. Chi tiết: " + error.message);
+        }
+
 
         // --- GLOBAL APP STATE ---
         let currentUser = null;
@@ -320,177 +334,214 @@
 
 
         // --- UTILITY FUNCTIONS ---
-        function showElement(el) { el.classList.remove('hidden'); }
-        function hideElement(el) { el.classList.add('hidden'); }
+        function showElement(el) { if(el) el.classList.remove('hidden'); }
+        function hideElement(el) { if(el) el.classList.add('hidden'); }
         function displayAuthError(el, message) {
-            el.textContent = message;
-            showElement(el);
+            if(el) {
+                el.textContent = message;
+                showElement(el);
+            }
         }
         function clearAuthError(el) {
-            el.textContent = '';
-            hideElement(el);
+            if(el) {
+                el.textContent = '';
+                hideElement(el);
+            }
         }
 
         // --- AUTHENTICATION LOGIC ---
-        showRegisterLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            hideElement(loginForm);
-            showElement(registerForm);
-            clearAuthError(loginErrorMsg);
-        });
+        if (showRegisterLink) {
+            showRegisterLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                hideElement(loginForm);
+                showElement(registerForm);
+                clearAuthError(loginErrorMsg);
+            });
+        }
 
-        showLoginLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            hideElement(registerForm);
-            showElement(loginForm);
-            clearAuthError(registerErrorMsg);
-        });
+        if (showLoginLink) {
+            showLoginLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                hideElement(registerForm);
+                showElement(loginForm);
+                clearAuthError(registerErrorMsg);
+            });
+        }
 
-        registerButton.addEventListener('click', async () => {
-            const email = registerEmailInput.value;
-            const password = registerPasswordInput.value;
-            clearAuthError(registerErrorMsg);
-            try {
-                await createUserWithEmailAndPassword(auth, email, password);
-                // onAuthStateChanged sẽ xử lý việc chuyển UI
-            } catch (error) {
-                console.error("Register error:", error);
-                displayAuthError(registerErrorMsg, error.message);
-            }
-        });
+        if (registerButton) {
+            registerButton.addEventListener('click', async () => {
+                if (!auth) {
+                     displayAuthError(registerErrorMsg, "Lỗi: Dịch vụ xác thực chưa sẵn sàng.");
+                     return;
+                }
+                const email = registerEmailInput.value;
+                const password = registerPasswordInput.value;
+                clearAuthError(registerErrorMsg);
+                // Kiểm tra API key đã được thay thế chưa (một cách đơn giản)
+                if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY_HERE") { // Giữ nguyên kiểm tra này
+                    displayAuthError(registerErrorMsg, "Lỗi cấu hình Firebase: API Key không hợp lệ. Vui lòng kiểm tra lại firebaseConfig.");
+                    return;
+                }
+                try {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                } catch (error) {
+                    console.error("Register error:", error);
+                    displayAuthError(registerErrorMsg, "Lỗi đăng ký: " + error.code + " - " + error.message);
+                }
+            });
+        }
 
-        loginButton.addEventListener('click', async () => {
-            const email = loginEmailInput.value;
-            const password = loginPasswordInput.value;
-            clearAuthError(loginErrorMsg);
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                // onAuthStateChanged sẽ xử lý việc chuyển UI
-            } catch (error) {
-                console.error("Login error:", error);
-                displayAuthError(loginErrorMsg, error.message);
-            }
-        });
+        if (loginButton) {
+            loginButton.addEventListener('click', async () => {
+                if (!auth) {
+                     displayAuthError(loginErrorMsg, "Lỗi: Dịch vụ xác thực chưa sẵn sàng.");
+                     return;
+                }
+                const email = loginEmailInput.value;
+                const password = loginPasswordInput.value;
+                clearAuthError(loginErrorMsg);
+                if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY_HERE") { // Giữ nguyên kiểm tra này
+                    displayAuthError(loginErrorMsg, "Lỗi cấu hình Firebase: API Key không hợp lệ. Vui lòng kiểm tra lại firebaseConfig.");
+                    return;
+                }
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } catch (error) {
+                    console.error("Login error:", error);
+                    displayAuthError(loginErrorMsg, "Lỗi đăng nhập: " + error.code + " - " + error.message);
+                }
+            });
+        }
 
-        logoutButton.addEventListener('click', async () => {
-            try {
-                await signOut(auth);
-                // onAuthStateChanged sẽ xử lý việc chuyển UI
-                currentMindMapId = null; // Reset state
-                if (mindmapNodesUnsubscribe) mindmapNodesUnsubscribe(); // Hủy lắng nghe
-            } catch (error) {
-                console.error("Logout error:", error);
-            }
-        });
+        if (logoutButton) {
+            logoutButton.addEventListener('click', async () => {
+                if (!auth) return;
+                try {
+                    await signOut(auth);
+                    currentMindMapId = null;
+                    if (mindmapNodesUnsubscribe) mindmapNodesUnsubscribe();
+                } catch (error) {
+                    console.error("Logout error:", error);
+                }
+            });
+        }
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                userEmailDisplay.textContent = `Chào, ${user.email}`;
-                hideElement(authSection);
-                showElement(mainAppSection);
-                showMindmapManagementView(); // Hiển thị danh sách map
-                loadUserMindMaps();
-            } else {
-                currentUser = null;
-                userEmailDisplay.textContent = '';
-                showElement(authSection);
-                hideElement(mainAppSection);
-                hideElement(canvasView); // Đảm bảo canvas ẩn khi logout
-                mindmapListUl.innerHTML = ''; // Xóa danh sách map cũ
-            }
-        });
+        if (auth) { // Chỉ chạy onAuthStateChanged nếu auth đã được khởi tạo thành công
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    currentUser = user;
+                    if(userEmailDisplay) userEmailDisplay.textContent = `Chào, ${user.email}`;
+                    hideElement(authSection);
+                    showElement(mainAppSection);
+                    showMindmapManagementView();
+                    loadUserMindMaps();
+                } else {
+                    currentUser = null;
+                    if(userEmailDisplay) userEmailDisplay.textContent = '';
+                    showElement(authSection);
+                    hideElement(mainAppSection);
+                    hideElement(canvasView);
+                    if(mindmapListUl) mindmapListUl.innerHTML = '';
+                }
+            });
+        }
+
 
         // --- UI VIEW MANAGEMENT ---
         function showMindmapManagementView() {
-            mainAppTitle.textContent = "Bảng điều khiển";
+            if(mainAppTitle) mainAppTitle.textContent = "Bảng điều khiển";
             showElement(mindmapManagementView);
             hideElement(canvasView);
-            currentMindMapId = null; // Reset khi quay lại danh sách
+            currentMindMapId = null; 
             selectedKonvaNode = null;
             if (mindmapNodesUnsubscribe) {
-                mindmapNodesUnsubscribe(); // Hủy lắng nghe onSnapshot của map cũ
+                mindmapNodesUnsubscribe(); 
                 mindmapNodesUnsubscribe = null;
             }
             if (currentKonvaStage) {
-                currentKonvaStage.destroyChildren(); // Xóa layer cũ
+                currentKonvaStage.destroyChildren(); 
                 currentKonvaLayer = null;
+                // Không destroy stage ở đây, chỉ destroy children để có thể dùng lại
             }
         }
 
         function showCanvasView(mapId, mapTitle) {
-            mainAppTitle.textContent = "Sơ đồ tư duy";
+            if(mainAppTitle) mainAppTitle.textContent = "Sơ đồ tư duy";
             hideElement(mindmapManagementView);
             showElement(canvasView);
-            currentMindmapTitleDisplay.textContent = mapTitle;
+            if(currentMindmapTitleDisplay) currentMindmapTitleDisplay.textContent = mapTitle;
             currentMindMapId = mapId;
-            initKonvaStage();
+            initKonvaStage(); // Sẽ tạo stage mới nếu chưa có, hoặc dùng lại nếu có (cần xem lại logic initKonvaStage)
             loadAndListenNodesForCurrentMap();
         }
 
-        backToMapsListButton.addEventListener('click', showMindmapManagementView);
+        if (backToMapsListButton) {
+            backToMapsListButton.addEventListener('click', showMindmapManagementView);
+        }
 
 
         // --- FIRESTORE SERVICE LOGIC (Mind Maps) ---
-        createMindmapButton.addEventListener('click', async () => {
-            const title = newMindmapTitleInput.value.trim();
-            if (!title) {
-                alert("Vui lòng nhập tiêu đề cho sơ đồ.");
-                return;
-            }
-            if (!currentUser) {
-                alert("Vui lòng đăng nhập để tạo sơ đồ.");
-                return;
-            }
+        if (createMindmapButton) {
+            createMindmapButton.addEventListener('click', async () => {
+                if (!db) { alert("Lỗi: Dịch vụ cơ sở dữ liệu chưa sẵn sàng."); return; }
+                const title = newMindmapTitleInput.value.trim();
+                if (!title) {
+                    alert("Vui lòng nhập tiêu đề cho sơ đồ.");
+                    return;
+                }
+                if (!currentUser) {
+                    alert("Vui lòng đăng nhập để tạo sơ đồ.");
+                    return;
+                }
 
-            try {
-                // 1. Tạo mind map mới
-                const mindMapData = {
-                    userId: currentUser.uid,
-                    title: title,
-                    createdAt: serverTimestamp(),
-                    lastModified: serverTimestamp(),
-                };
-                const mindMapDocRef = await addDoc(collection(db, "mindmaps"), mindMapData);
-                console.log("Mind map created with ID: ", mindMapDocRef.id);
+                try {
+                    const mindMapData = {
+                        userId: currentUser.uid,
+                        title: title,
+                        createdAt: serverTimestamp(),
+                        lastModified: serverTimestamp(),
+                    };
+                    const mindMapDocRef = await addDoc(collection(db, "mindmaps"), mindMapData);
+                    console.log("Mind map created with ID: ", mindMapDocRef.id);
 
-                // 2. Tạo nút gốc cho mind map này
-                const rootNodeData = {
-                    mapId: mindMapDocRef.id,
-                    parentId: null,
-                    text: "Ý tưởng trung tâm",
-                    position: { x: konvaContainer.clientWidth / 2 - 75, y: 50 }, // Vị trí ban đầu
-                    style: { backgroundColor: "#1877f2", textColor: "#ffffff", shape: "ellipse", width: 150, height: 60 },
-                    createdAt: serverTimestamp()
-                };
-                await addDoc(collection(db, "nodes"), rootNodeData);
-                console.log("Root node created for map: ", mindMapDocRef.id);
+                    const rootNodeData = {
+                        mapId: mindMapDocRef.id,
+                        parentId: null,
+                        text: "Ý tưởng trung tâm",
+                        position: { x: (konvaContainer?.clientWidth || 800) / 2 - 75, y: 50 },
+                        style: { backgroundColor: "#1877f2", textColor: "#ffffff", shape: "ellipse", width: 150, height: 60 },
+                        createdAt: serverTimestamp()
+                    };
+                    await addDoc(collection(db, "nodes"), rootNodeData);
+                    console.log("Root node created for map: ", mindMapDocRef.id);
 
-                newMindmapTitleInput.value = ''; // Xóa input
-                // loadUserMindMaps(); // Danh sách sẽ tự cập nhật nếu dùng onSnapshot cho maps, hoặc gọi lại
-                // Tạm thời, cứ load lại danh sách
-                alert(`Sơ đồ "${title}" đã được tạo!`);
-            } catch (e) {
-                console.error("Error creating new mind map: ", e);
-                alert("Lỗi khi tạo sơ đồ: " + e.message);
-            }
-        });
+                    newMindmapTitleInput.value = '';
+                    alert(`Sơ đồ "${title}" đã được tạo!`);
+                } catch (e) {
+                    console.error("Error creating new mind map: ", e);
+                    alert("Lỗi khi tạo sơ đồ: " + e.message);
+                }
+            });
+        }
 
         async function loadUserMindMaps() {
-            if (!currentUser) return;
+            if (!currentUser || !db) return;
             showElement(mindmapListLoading);
-            mindmapListUl.innerHTML = ''; // Xóa danh sách cũ
+            if(mindmapListUl) mindmapListUl.innerHTML = '';
 
             try {
                 const q = query(collection(db, "mindmaps"), where("userId", "==", currentUser.uid));
-                // Sử dụng onSnapshot để danh sách map tự cập nhật
-                onSnapshot(q, (querySnapshot) => {
-                    mindmapListUl.innerHTML = ''; // Xóa trước khi render lại
+                // Hủy listener cũ nếu có trước khi tạo listener mới
+                if (typeof window.mindmapsListenerUnsubscribe === 'function') {
+                    window.mindmapsListenerUnsubscribe();
+                }
+                window.mindmapsListenerUnsubscribe = onSnapshot(q, (querySnapshot) => {
+                    if(mindmapListUl) mindmapListUl.innerHTML = '';
                     if (querySnapshot.empty) {
-                        mindmapListUl.innerHTML = '<li>Bạn chưa có sơ đồ nào. Hãy tạo một cái mới!</li>';
+                        if(mindmapListUl) mindmapListUl.innerHTML = '<li>Bạn chưa có sơ đồ nào. Hãy tạo một cái mới!</li>';
                     }
-                    querySnapshot.forEach((doc) => {
-                        const map = { id: doc.id, ...doc.data() };
+                    querySnapshot.forEach((docSnap) => { // Đổi tên biến để tránh nhầm lẫn với `doc` của Firestore
+                        const map = { id: docSnap.id, ...docSnap.data() };
                         const li = document.createElement('li');
                         li.textContent = map.title;
                         li.dataset.mapId = map.id;
@@ -498,11 +549,11 @@
 
                         const deleteButton = document.createElement('button');
                         deleteButton.textContent = 'Xóa';
-                        deleteButton.classList.add('danger', 'secondary'); // secondary để nhỏ hơn
+                        deleteButton.classList.add('danger', 'secondary');
                         deleteButton.style.fontSize = '0.8em';
                         deleteButton.style.padding = '5px 8px';
                         deleteButton.onclick = async (e) => {
-                            e.stopPropagation(); // Ngăn sự kiện click vào li
+                            e.stopPropagation();
                             if (confirm(`Bạn có chắc muốn xóa sơ đồ "${map.title}" và tất cả các nút của nó?`)) {
                                 await deleteMindMap(map.id);
                             }
@@ -512,26 +563,25 @@
                         li.addEventListener('click', () => {
                             showCanvasView(map.id, map.title);
                         });
-                        mindmapListUl.appendChild(li);
+                        if(mindmapListUl) mindmapListUl.appendChild(li);
                     });
                     hideElement(mindmapListLoading);
                 }, (error) => {
                     console.error("Error fetching user mind maps with onSnapshot: ", error);
-                    mindmapListUl.innerHTML = '<li>Lỗi khi tải danh sách sơ đồ.</li>';
+                    if(mindmapListUl) mindmapListUl.innerHTML = '<li>Lỗi khi tải danh sách sơ đồ.</li>';
                     hideElement(mindmapListLoading);
                 });
 
             } catch (e) {
                 console.error("Error setting up mind map listener: ", e);
-                mindmapListUl.innerHTML = '<li>Lỗi khi tải danh sách sơ đồ.</li>';
+                if(mindmapListUl) mindmapListUl.innerHTML = '<li>Lỗi khi tải danh sách sơ đồ.</li>';
                 hideElement(mindmapListLoading);
             }
         }
 
         async function deleteMindMap(mapId) {
-            if (!mapId) return;
+            if (!mapId || !db) return;
             try {
-                // 1. Xóa tất cả các nút thuộc về mind map này
                 const nodesQuery = query(collection(db, "nodes"), where("mapId", "==", mapId));
                 const nodesSnapshot = await getDocs(nodesQuery);
                 const batch = writeBatch(db);
@@ -541,11 +591,9 @@
                 await batch.commit();
                 console.log(`All nodes for map ${mapId} deleted.`);
 
-                // 2. Xóa mind map document
                 await deleteDoc(doc(db, "mindmaps", mapId));
                 console.log(`Mind map ${mapId} deleted.`);
                 alert("Sơ đồ đã được xóa.");
-                // Danh sách map sẽ tự cập nhật nhờ onSnapshot
             } catch (error) {
                 console.error("Error deleting mind map: ", error);
                 alert("Lỗi khi xóa sơ đồ: " + error.message);
@@ -555,10 +603,22 @@
 
         // --- FIRESTORE SERVICE LOGIC (Nodes) & KONVA INTEGRATION ---
         function initKonvaStage() {
+            // Hủy stage cũ và layer cũ nếu chúng tồn tại
             if (currentKonvaStage) {
-                currentKonvaStage.destroy(); // Hủy stage cũ nếu có
+                currentKonvaStage.destroy(); // Hủy bỏ hoàn toàn stage cũ
+                currentKonvaStage = null;
             }
+             if (currentKonvaLayer) {
+                currentKonvaLayer.destroy();
+                currentKonvaLayer = null;
+            }
+
+
             const container = document.getElementById('konva-container');
+            if (!container) {
+                console.error("Konva container not found!");
+                return;
+            }
             currentKonvaStage = new Konva.Stage({
                 container: 'konva-container',
                 width: container.clientWidth,
@@ -567,24 +627,27 @@
             });
             currentKonvaLayer = new Konva.Layer();
             currentKonvaStage.add(currentKonvaLayer);
-            selectedKonvaNode = null; // Reset selected node
+            selectedKonvaNode = null;
         }
 
         function loadAndListenNodesForCurrentMap() {
-            if (!currentMindMapId || !currentKonvaLayer) return;
+            if (!currentMindMapId || !currentKonvaLayer || !db) {
+                console.warn("Cannot load nodes: missing mapId, Konva layer, or DB service.");
+                return;
+            }
 
             showElement(konvaContainerLoading);
-            currentKonvaLayer.destroyChildren(); // Xóa node cũ
+            currentKonvaLayer.destroyChildren();
             currentKonvaLayer.draw();
 
             const q = query(collection(db, "nodes"), where("mapId", "==", currentMindMapId));
 
-            if (mindmapNodesUnsubscribe) mindmapNodesUnsubscribe(); // Hủy sub cũ
+            if (mindmapNodesUnsubscribe) mindmapNodesUnsubscribe();
 
             mindmapNodesUnsubscribe = onSnapshot(q, (querySnapshot) => {
                 const nodesFromDb = [];
-                querySnapshot.forEach((doc) => {
-                    nodesFromDb.push({ id: doc.id, ...doc.data() });
+                querySnapshot.forEach((docSnap) => {  // Đổi tên biến
+                    nodesFromDb.push({ id: docSnap.id, ...docSnap.data() });
                 });
                 renderNodesAndLines(nodesFromDb);
                 hideElement(konvaContainerLoading);
@@ -597,11 +660,15 @@
 
         function renderNodesAndLines(nodesData) {
             if (!currentKonvaLayer) return;
-            currentKonvaLayer.destroyChildren(); // Xóa tất cả mọi thứ để vẽ lại từ đầu
-            const konvaNodeObjects = {}; // Để lưu trữ Konva.Group cho việc vẽ đường nối
+            currentKonvaLayer.destroyChildren();
+            const konvaNodeObjects = {};
 
-            // 1. Vẽ các nút
             nodesData.forEach(nodeData => {
+                if (!nodeData.position || typeof nodeData.position.x !== 'number' || typeof nodeData.position.y !== 'number') {
+                    console.warn("Node data missing valid position, skipping:", nodeData);
+                    return; // Bỏ qua node này nếu không có vị trí hợp lệ
+                }
+
                 const defaultStyle = {
                     backgroundColor: "#e0e0e0", textColor: "#000000", shape: "rectangle",
                     width: 150, height: 50, cornerRadius: 5, fontSize: 14, fontFamily: 'Arial'
@@ -612,7 +679,7 @@
                     x: nodeData.position.x,
                     y: nodeData.position.y,
                     draggable: true,
-                    id: nodeData.id // Gán ID của Firestore
+                    id: nodeData.id
                 });
 
                 let shape;
@@ -623,8 +690,9 @@
                         fill: style.backgroundColor,
                         stroke: '#555',
                         strokeWidth: 1,
+                        name: 'nodeShape' // Thêm name để dễ query
                     });
-                } else { // Mặc định là rectangle
+                } else {
                     shape = new Konva.Rect({
                         width: style.width,
                         height: style.height,
@@ -632,6 +700,7 @@
                         stroke: '#555',
                         strokeWidth: 1,
                         cornerRadius: style.cornerRadius,
+                        name: 'nodeShape' // Thêm name để dễ query
                     });
                 }
                 group.add(shape);
@@ -650,6 +719,7 @@
                 group.add(text);
 
                 group.on('dragend', async function() {
+                    if(!db) return;
                     try {
                         await updateDoc(doc(db, "nodes", this.id()), {
                             position: { x: this.x(), y: this.y() }
@@ -658,15 +728,11 @@
                 });
 
                 group.on('click tap', function() {
-                    // Bỏ chọn nút cũ (nếu có)
                     if (selectedKonvaNode && selectedKonvaNode !== this) {
-                        selectedKonvaNode.findOne('Rect')?.strokeWidth(1);
-                        selectedKonvaNode.findOne('Ellipse')?.strokeWidth(1);
+                        selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1); // Dùng name để query
                     }
-                    // Chọn nút mới
                     selectedKonvaNode = this;
-                    this.findOne('Rect')?.strokeWidth(3); // Highlight
-                    this.findOne('Ellipse')?.strokeWidth(3); // Highlight
+                    this.findOne('.nodeShape')?.strokeWidth(3);
                     currentKonvaLayer.batchDraw();
                 });
 
@@ -678,14 +744,16 @@
                 currentKonvaLayer.add(group);
             });
 
-            // 2. Vẽ các đường nối (nhánh)
             nodesData.forEach(nodeData => {
                 if (nodeData.parentId && konvaNodeObjects[nodeData.parentId] && konvaNodeObjects[nodeData.id]) {
                     const parentKonvaNode = konvaNodeObjects[nodeData.parentId];
                     const childKonvaNode = konvaNodeObjects[nodeData.id];
 
-                    const parentStyle = { width: 150, height: 50, ...(nodesData.find(n=>n.id === nodeData.parentId)?.style || {}) };
-                    const childStyle = { width: 150, height: 50, ...(nodeData.style || {}) };
+                    const parentNodeFromData = nodesData.find(n=>n.id === nodeData.parentId);
+                    const childNodeFromData = nodeData; // Chính là nodeData hiện tại
+
+                    const parentStyle = { width: 150, height: 50, ...(parentNodeFromData?.style || {}) };
+                    const childStyle = { width: 150, height: 50, ...(childNodeFromData.style || {}) };
 
 
                     const line = new Konva.Line({
@@ -699,23 +767,24 @@
                         lineJoin: 'round'
                     });
                     currentKonvaLayer.add(line);
-                    line.moveToBottom(); // Đưa đường line xuống dưới các node
+                    line.moveToBottom();
                 }
             });
             currentKonvaLayer.batchDraw();
         }
 
-        // Chỉnh sửa text trên Konva Node
         function editTextOnKonvaNode(konvaGroup, konvaTextNode) {
+            if (!currentKonvaStage || !currentKonvaLayer) return;
             konvaTextNode.hide();
-            currentKonvaLayer.draw();
+            currentKonvaLayer.draw(); // Nên dùng batchDraw nếu có nhiều thay đổi
 
-            const textPosition = konvaGroup.getAbsolutePosition();
-            const stageBox = currentKonvaStage.container().getBoundingClientRect();
+            const textPosition = konvaGroup.getAbsolutePosition(); // Lấy vị trí tuyệt đối trên stage
+            const stageBox = currentKonvaStage.container().getBoundingClientRect(); // Vị trí của container trên trang
 
+            // Tính toán vị trí textarea trên trang
             const areaPosition = {
-                x: stageBox.left + textPosition.x * currentKonvaStage.scaleX() + currentKonvaStage.x(),
-                y: stageBox.top + textPosition.y * currentKonvaStage.scaleY() + currentKonvaStage.y()
+                x: stageBox.left + textPosition.x,
+                y: stageBox.top + textPosition.y
             };
 
             const textarea = document.createElement('textarea');
@@ -725,20 +794,29 @@
             textarea.style.position = 'absolute';
             textarea.style.top = areaPosition.y + 'px';
             textarea.style.left = areaPosition.x + 'px';
+            // Kích thước textarea nên khớp với kích thước của text node trên canvas (đã tính scale)
             textarea.style.width = konvaTextNode.width() * currentKonvaStage.scaleX() - (konvaTextNode.padding() || 0) * 2 * currentKonvaStage.scaleX() + 'px';
             textarea.style.height = konvaTextNode.height() * currentKonvaStage.scaleY() - (konvaTextNode.padding() || 0) * 2 * currentKonvaStage.scaleY() + 'px';
-            textarea.style.fontSize = konvaTextNode.fontSize() * currentKonvaStage.scaleY() + 'px';
+            textarea.style.fontSize = konvaTextNode.fontSize() * currentKonvaStage.scaleY() + 'px'; // Scale font size
             textarea.style.border = '1px solid #999';
-            textarea.style.padding = '0px';
+            textarea.style.padding = '0px'; // Padding đã được tính trong Konva.Text
             textarea.style.margin = '0px';
             textarea.style.overflow = 'hidden';
             textarea.style.background = 'white';
             textarea.style.outline = 'none';
             textarea.style.resize = 'none';
-            textarea.style.textAlign = 'center'; // Giống Konva.Text
+            textarea.style.textAlign = konvaTextNode.align();
             textarea.style.fontFamily = konvaTextNode.fontFamily();
-            textarea.style.lineHeight = konvaTextNode.lineHeight(); // Cần thiết cho vertical align
+            // Cần tính toán line-height và vertical-align cẩn thận hơn nếu muốn khớp hoàn toàn
+            // textarea.style.lineHeight = konvaTextNode.lineHeight(); // Konva tính line-height tự động
+            textarea.style.display = 'flex'; // Để thử vertical align
+            textarea.style.alignItems = 'center'; // Thử vertical align
+            textarea.style.justifyContent = 'center'; // Thử horizontal align (nếu text align center)
+
+
             textarea.focus();
+            textarea.select();
+
 
             async function saveAndRemoveTextarea() {
                 const newText = textarea.value;
@@ -748,9 +826,9 @@
                 konvaTextNode.text(newText);
                 konvaTextNode.show();
                 currentKonvaLayer.batchDraw();
-                window.removeEventListener('click', handleOutsideClick);
+                window.removeEventListener('click', handleOutsideClick); // Gỡ listener
 
-                // Cập nhật Firestore
+                if(!db) return;
                 try {
                     await updateDoc(doc(db, "nodes", konvaGroup.id()), { text: newText });
                 } catch (e) { console.error("Error updating node text in Firestore:", e); }
@@ -758,170 +836,126 @@
 
             textarea.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault(); // Ngăn tạo dòng mới
+                    e.preventDefault();
                     saveAndRemoveTextarea();
                 }
                 if (e.key === 'Escape') {
-                    if (textarea.parentNode) textarea.parentNode.removeChild(textarea); // Chỉ xóa textarea, không lưu
+                    if (textarea.parentNode) textarea.parentNode.removeChild(textarea);
                     konvaTextNode.show();
                     currentKonvaLayer.batchDraw();
-                    window.removeEventListener('click', handleOutsideClick);
+                    window.removeEventListener('click', handleOutsideClick); // Gỡ listener
                 }
             });
-            textarea.addEventListener('blur', saveAndRemoveTextarea); // Lưu khi mất focus
+            textarea.addEventListener('blur', saveAndRemoveTextarea);
 
             function handleOutsideClick(e) {
                 if (e.target !== textarea) {
                     saveAndRemoveTextarea();
                 }
             }
-            setTimeout(() => { // Đợi textarea focus rồi mới gắn listener
+            setTimeout(() => {
                 window.addEventListener('click', handleOutsideClick);
             }, 0);
         }
 
 
         // --- KONVA TOOLBAR ACTIONS ---
-        addChildNodeButton.addEventListener('click', async () => {
-            if (!selectedKonvaNode) {
-                alert("Vui lòng chọn một nút cha để thêm nút con.");
-                return;
-            }
-            if (!currentMindMapId) return;
-
-            const parentKonvaNode = selectedKonvaNode;
-            const parentNodeData = { // Lấy kích thước và vị trí của node cha
-                x: parentKonvaNode.x(),
-                y: parentKonvaNode.y(),
-                // Giả sử style mặc định nếu không lấy được từ DB (cần cải thiện)
-                width: parentKonvaNode.findOne('Rect')?.width() || parentKonvaNode.findOne('Ellipse')?.radiusX()*2 || 150,
-                height: parentKonvaNode.findOne('Rect')?.height() || parentKonvaNode.findOne('Ellipse')?.radiusY()*2 || 50,
-            };
-
-            const newNodeData = {
-                mapId: currentMindMapId,
-                parentId: parentKonvaNode.id(),
-                text: "Nút con mới",
-                position: { // Vị trí tương đối so với cha
-                    x: parentNodeData.x + parentNodeData.width / 4,
-                    y: parentNodeData.y + parentNodeData.height + 30
-                },
-                style: { backgroundColor: "#f0f0f0", textColor: "#333333", width: 120, height: 40 },
-                createdAt: serverTimestamp()
-            };
-            try {
-                await addDoc(collection(db, "nodes"), newNodeData);
-                // onSnapshot sẽ tự động vẽ lại
-            } catch (e) {
-                console.error("Error adding child node:", e);
-                alert("Lỗi khi thêm nút con: " + e.message);
-            }
-        });
-
-        deleteNodeButton.addEventListener('click', async () => {
-            if (!selectedKonvaNode) {
-                alert("Vui lòng chọn một nút để xóa.");
-                return;
-            }
-            if (!currentMindMapId) return;
-
-            const nodeIdToDelete = selectedKonvaNode.id();
-            if (confirm("Bạn có chắc muốn xóa nút này và TẤT CẢ các nút con của nó không? Hành động này không thể hoàn tác.")) {
-                try {
-                    await deleteNodeAndItsChildrenRecursive(nodeIdToDelete, currentMindMapId);
-                    selectedKonvaNode = null; // Bỏ chọn
-                    // onSnapshot sẽ tự động cập nhật canvas
-                    alert("Nút và các nút con (nếu có) đã được xóa.");
-                } catch (e) {
-                    console.error("Error deleting node:", e);
-                    alert("Lỗi khi xóa nút: " + e.message);
+        if (addChildNodeButton) {
+            addChildNodeButton.addEventListener('click', async () => {
+                if (!selectedKonvaNode) {
+                    alert("Vui lòng chọn một nút cha để thêm nút con.");
+                    return;
                 }
-            }
-        });
+                if (!currentMindMapId || !db) return;
 
-        async function deleteNodeAndItsChildrenRecursive(nodeId, mapId) {
-            const childrenQuery = query(collection(db, "nodes"), where("mapId", "==", mapId), where("parentId", "==", nodeId));
-            const childrenSnapshot = await getDocs(childrenQuery);
+                const parentKonvaNode = selectedKonvaNode;
+                const parentShape = parentKonvaNode.findOne('.nodeShape');
+                const parentWidth = parentShape?.width() || (parentShape?.radiusX && parentShape.radiusX() * 2) || 150;
+                const parentHeight = parentShape?.height() || (parentShape?.radiusY && parentShape.radiusY() * 2) || 50;
 
-            const batch = writeBatch(db);
 
-            for (const childDoc of childrenSnapshot.docs) {
-                // Đệ quy xóa các nút con của nút con này trước
-                await deleteNodeAndItsChildrenRecursive(childDoc.id, mapId);
-            }
-            // Sau khi tất cả các nút con (và cháu, chắt...) đã được thêm vào batch để xóa (hoặc đã được xóa trong các lần gọi đệ quy trước)
-            // Giờ thêm nút hiện tại vào batch để xóa
-            batch.delete(doc(db, "nodes", nodeId));
-            
-            // Chỉ commit batch ở lần gọi đầu tiên (không đệ quy) để tránh nhiều lần commit không cần thiết.
-            // Cách tốt hơn là truyền batch vào hàm đệ quy.
-            // Để đơn giản ở đây, ta sẽ commit ở mỗi bước, nhưng không tối ưu.
-            // CẢI TIẾN: Truyền batch vào hàm và chỉ commit ở hàm gọi gốc.
-            // Tuy nhiên, với cấu trúc hiện tại, mỗi lần gọi đệ quy sâu hơn sẽ xử lý nhánh con của nó.
-            // Ta sẽ xóa nút hiện tại sau khi các con của nó đã được xử lý.
-
-            // Xóa nút hiện tại
-            await deleteDoc(doc(db, "nodes", nodeId));
-            console.log(`Node ${nodeId} deleted.`);
-        }
-        // LƯU Ý: Hàm deleteNodeAndItsChildrenRecursive ở trên cần được kiểm tra kỹ lưỡng hơn
-        // về logic batch write để đảm bảo hiệu quả và tính đúng đắn.
-        // Một cách tiếp cận đơn giản hơn cho MVP có thể là chỉ xóa nút được chọn và
-        // để các nút con của nó trở thành "mồ côi" (parentId không còn tồn tại),
-        // hoặc cập nhật parentId của chúng thành null (nếu logic ứng dụng cho phép).
-        // Để xóa đệ quy an toàn và hiệu quả, thường cần Cloud Function nếu số lượng lớn.
-        // Trong client-side, nó có thể chậm và gặp giới hạn ghi của batch.
-        // Phiên bản đơn giản hơn cho deleteNodeButton:
-        /*
-        deleteNodeButton.addEventListener('click', async () => {
-            if (!selectedKonvaNode || !currentMindMapId) return;
-            const nodeIdToDelete = selectedKonvaNode.id();
-            if (confirm("Bạn có chắc muốn xóa nút này? (Các nút con sẽ không bị xóa theo trong phiên bản này)")) {
+                const newNodeData = {
+                    mapId: currentMindMapId,
+                    parentId: parentKonvaNode.id(),
+                    text: "Nút con mới",
+                    position: {
+                        x: parentKonvaNode.x() + parentWidth / 4, // Điều chỉnh vị trí tương đối
+                        y: parentKonvaNode.y() + parentHeight + 30 // Cách nút cha 1 khoảng
+                    },
+                    style: { backgroundColor: "#f9f9f9", textColor: "#333333", width: 120, height: 40, cornerRadius: 3 },
+                    createdAt: serverTimestamp()
+                };
                 try {
-                    await deleteDoc(doc(db, "nodes", nodeIdToDelete));
-                    selectedKonvaNode = null;
-                    alert("Nút đã được xóa.");
-                } catch (e) { console.error("Error deleting node:", e); }
-            }
-        });
-        */
+                    await addDoc(collection(db, "nodes"), newNodeData);
+                } catch (e) {
+                    console.error("Error adding child node:", e);
+                    alert("Lỗi khi thêm nút con: " + e.message);
+                }
+            });
+        }
 
+        if (deleteNodeButton) {
+            deleteNodeButton.addEventListener('click', async () => {
+                if (!selectedKonvaNode) {
+                    alert("Vui lòng chọn một nút để xóa.");
+                    return;
+                }
+                if (!currentMindMapId || !db) return;
+
+                const nodeIdToDelete = selectedKonvaNode.id();
+                const nodeTextToDelete = selectedKonvaNode.findOne('Text').text();
+
+                if (confirm(`Bạn có chắc muốn xóa nút "${nodeTextToDelete}"? (Lưu ý: Phiên bản này chỉ xóa nút được chọn, không xóa các nút con của nó một cách đệ quy).`)) {
+                    try {
+                         await deleteDoc(doc(db, "nodes", nodeIdToDelete));
+                         console.log(`Node ${nodeIdToDelete} deleted.`);
+                        selectedKonvaNode = null;
+                        alert("Nút đã được xóa.");
+                    } catch (e) {
+                        console.error("Error deleting node:", e);
+                        alert("Lỗi khi xóa nút: " + e.message);
+                    }
+                }
+            });
+        }
 
         // Konva Zoom & Pan
-        const scaleBy = 1.1;
-        zoomInButton.addEventListener('click', () => {
-            if (!currentKonvaStage) return;
-            const oldScale = currentKonvaStage.scaleX();
-            currentKonvaStage.scale({ x: oldScale * scaleBy, y: oldScale * scaleBy });
-            currentKonvaStage.batchDraw();
-        });
-        zoomOutButton.addEventListener('click', () => {
-            if (!currentKonvaStage) return;
-            const oldScale = currentKonvaStage.scaleX();
-            currentKonvaStage.scale({ x: oldScale / scaleBy, y: oldScale / scaleBy });
-            currentKonvaStage.batchDraw();
-        });
-        resetZoomButton.addEventListener('click', () => {
-            if (!currentKonvaStage) return;
-            currentKonvaStage.scale({ x: 1, y: 1 });
-            currentKonvaStage.position({ x: 0, y: 0 });
-            currentKonvaStage.batchDraw();
-        });
+        if(zoomInButton) {
+            zoomInButton.addEventListener('click', () => {
+                if (!currentKonvaStage) return;
+                const oldScale = currentKonvaStage.scaleX();
+                currentKonvaStage.scale({ x: oldScale * scaleBy, y: oldScale * scaleBy });
+                currentKonvaStage.batchDraw();
+            });
+        }
+        if(zoomOutButton) {
+            zoomOutButton.addEventListener('click', () => {
+                if (!currentKonvaStage) return;
+                const oldScale = currentKonvaStage.scaleX();
+                currentKonvaStage.scale({ x: oldScale / scaleBy, y: oldScale / scaleBy });
+                currentKonvaStage.batchDraw();
+            });
+        }
+        if(resetZoomButton) {
+            resetZoomButton.addEventListener('click', () => {
+                if (!currentKonvaStage) return;
+                currentKonvaStage.scale({ x: 1, y: 1 });
+                currentKonvaStage.position({ x: 0, y: 0 });
+                currentKonvaStage.batchDraw();
+            });
+        }
 
-        // Tự động điều chỉnh kích thước Stage khi cửa sổ thay đổi
         window.addEventListener('resize', () => {
-            if (currentKonvaStage && konvaContainer.offsetParent !== null) { // Chỉ resize nếu canvas đang hiển thị
+            if (currentKonvaStage && konvaContainer && konvaContainer.offsetParent !== null) {
                 const newWidth = konvaContainer.clientWidth;
                 const newHeight = konvaContainer.clientHeight;
                 currentKonvaStage.width(newWidth);
                 currentKonvaStage.height(newHeight);
-                currentKonvaStage.batchDraw();
+                // Không cần batchDraw ở đây nếu không có thay đổi nội dung,
+                // nhưng nếu layout thay đổi thì có thể cần.
+                // currentKonvaStage.batchDraw();
             }
         });
-
-        // --- INITIAL APP LOAD ---
-        // onAuthStateChanged sẽ tự động xử lý việc hiển thị UI ban đầu.
-
     </script>
 </body>
 </html>
