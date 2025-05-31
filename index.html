@@ -66,6 +66,15 @@
             font-size: 13px; 
             text-align: center;
         }
+        select { /* Style cho select dropdown */
+            padding: 6px;
+            margin-left: 3px;
+            margin-right: 10px;
+            border: 1px solid #dddfe2;
+            border-radius: 4px;
+            font-size: 13px;
+            background-color: white;
+        }
         button {
             padding: 8px 12px; 
             font-size: 14px; 
@@ -255,8 +264,9 @@
             vertical-align: middle;
             margin-right: 5px; 
         }
-        #node-style-panel input[type="number"] {
-            width: 40px; 
+        #node-style-panel input[type="number"], #node-style-panel select { /* Áp dụng style cho select */
+            width: auto; /* Để select tự co giãn */
+            min-width: 60px;
             padding: 4px; 
             font-size: 0.8em; 
         }
@@ -360,6 +370,14 @@
                     </div>
                      <div id="node-style-panel" class="toolbar-section hidden">
                         <div class="style-group">
+                            <label for="node-shape-select">Hình dạng:</label>
+                            <select id="node-shape-select" title="Hình dạng nút">
+                                <option value="rectangle">Chữ nhật</option>
+                                <option value="ellipse">Elip</option>
+                                <option value="roundedRectangle">Bo góc</option>
+                            </select>
+                        </div>
+                        <div class="style-group">
                             <label for="node-bg-color">Nền:</label>
                             <input type="color" id="node-bg-color" title="Màu nền nút">
                         </div>
@@ -418,7 +436,7 @@
             where,
             serverTimestamp,
             onSnapshot,
-            writeBatch // Đảm bảo writeBatch được import
+            writeBatch 
         } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
 
         // --- FIREBASE CONFIGURATION ---
@@ -462,6 +480,7 @@
 
         // --- DOM ELEMENTS ---
         const nodeStylePanel = document.getElementById('node-style-panel');
+        const nodeShapeSelect = document.getElementById('node-shape-select'); // Mới
         const nodeBgColorInput = document.getElementById('node-bg-color');
         const nodeTextColorInput = document.getElementById('node-text-color');
         const nodeBorderColorInput = document.getElementById('node-border-color');
@@ -704,6 +723,7 @@
                 return;
             }
             const style = nodeData.style;
+            if(nodeShapeSelect) nodeShapeSelect.value = style.shape || 'rectangle'; // Mới
             if(nodeBgColorInput) nodeBgColorInput.value = style.backgroundColor || '#e0e0e0';
             if(nodeTextColorInput) nodeTextColorInput.value = style.textColor || '#000000';
             if(nodeBorderColorInput) nodeBorderColorInput.value = style.borderColor || '#555555'; 
@@ -723,6 +743,19 @@
                 if (nodeSnap.exists()) {
                     const existingStyle = nodeSnap.data().style || {};
                     const updatedStyle = { ...existingStyle, [property]: processedValue };
+                    
+                    // Nếu thay đổi hình dạng, có thể cần reset/điều chỉnh một số thuộc tính khác
+                    if (property === 'shape') {
+                        if (processedValue === 'ellipse') {
+                            // Ellipse không dùng cornerRadius, có thể xóa đi nếu muốn
+                            // delete updatedStyle.cornerRadius; 
+                        } else if (processedValue === 'rectangle' && !updatedStyle.cornerRadius) {
+                            updatedStyle.cornerRadius = 0; // Mặc định cho rectangle
+                        } else if (processedValue === 'roundedRectangle' && (!updatedStyle.cornerRadius || updatedStyle.cornerRadius === 0) ) {
+                             updatedStyle.cornerRadius = 5; // Mặc định cho roundedRectangle
+                        }
+                    }
+
                     await updateDoc(nodeRef, { style: updatedStyle });
                 } else {
                     console.warn("Node not found for style update:", nodeId);
@@ -732,6 +765,7 @@
             }
         }
 
+        if (nodeShapeSelect) nodeShapeSelect.addEventListener('change', (e) => handleNodeStyleChange('shape', e.target.value)); // Mới
         if (nodeBgColorInput) nodeBgColorInput.addEventListener('input', (e) => handleNodeStyleChange('backgroundColor', e.target.value));
         if (nodeTextColorInput) nodeTextColorInput.addEventListener('input', (e) => handleNodeStyleChange('textColor', e.target.value));
         if (nodeBorderColorInput) nodeBorderColorInput.addEventListener('input', (e) => handleNodeStyleChange('borderColor', e.target.value));
@@ -773,7 +807,7 @@
                             backgroundColor: "#1877f2", 
                             textColor: "#ffffff", 
                             borderColor: "#0e5aab", 
-                            shape: "ellipse", 
+                            shape: "ellipse", // Nút gốc mặc định là elip
                             width: 150, height: 60,
                             lineColor: "#888888", 
                             lineWidth: 2         
@@ -1029,7 +1063,7 @@
 
                 const defaultNodeStyle = {
                     backgroundColor: "#e0e0e0", textColor: "#000000", borderColor: "#555555", 
-                    shape: "rectangle",
+                    shape: "rectangle", // Mặc định là rectangle
                     width: 150, height: 50, cornerRadius: 5, fontSize: 14, fontFamily: 'Arial',
                     lineColor: "#888888", lineWidth: 2 
                 };
@@ -1053,14 +1087,25 @@
                         strokeWidth: 1, 
                         name: 'nodeShape' 
                     });
-                } else {
+                } else if (style.shape === 'roundedRectangle') {
+                     shape = new Konva.Rect({
+                        width: style.width,
+                        height: style.height,
+                        fill: style.backgroundColor,
+                        stroke: style.borderColor, 
+                        strokeWidth: 1, 
+                        cornerRadius: style.cornerRadius || 10, // Giá trị bo góc mặc định nếu là roundedRectangle
+                        name: 'nodeShape' 
+                    });
+                }
+                else { // Mặc định là 'rectangle'
                     shape = new Konva.Rect({
                         width: style.width,
                         height: style.height,
                         fill: style.backgroundColor,
                         stroke: style.borderColor, 
                         strokeWidth: 1, 
-                        cornerRadius: style.cornerRadius,
+                        cornerRadius: 0, // Hình chữ nhật không bo góc
                         name: 'nodeShape' 
                     });
                 }
@@ -1256,7 +1301,8 @@
                             height: defaultChildHeight, 
                             cornerRadius: 3,
                             lineColor: "#888888", 
-                            lineWidth: 2
+                            lineWidth: 2,
+                            shape: "rectangle" // Mặc định hình dạng cho nút mới
                         },
                         createdAt: serverTimestamp()
                     };
@@ -1409,7 +1455,7 @@
                      if(contextMenu) hideElement(contextMenu);
                      return;
                 }
-                await deleteNodeLogic(rightClickedKonvaNode); // Sử dụng logic xóa đệ quy
+                await deleteNodeLogic(rightClickedKonvaNode); 
                 if(contextMenu) hideElement(contextMenu);
             });
         }
@@ -1438,7 +1484,8 @@
                 style: { 
                     backgroundColor: "#f9f9f9", textColor: "#333333", borderColor: "#cccccc", 
                     width: 120, height: 40, cornerRadius: 3,
-                    lineColor: "#888888", lineWidth: 2
+                    lineColor: "#888888", lineWidth: 2,
+                    shape: "rectangle" // Mặc định hình dạng cho nút mới
                 },
                 createdAt: serverTimestamp()
             };
@@ -1450,7 +1497,6 @@
             }
         }
         
-        // Hàm tìm tất cả ID của nút con cháu
         function findAllDescendantNodeIds(parentNodeId, allNodes) {
             let descendantIds = [];
             const directChildren = allNodes.filter(node => node.parentId === parentNodeId);
@@ -1487,7 +1533,6 @@
                         rightClickedKonvaNode = null;
                     }
                     alert("Nút và các nút con đã được xóa.");
-                    // onSnapshot sẽ tự động cập nhật canvas
                 } catch (e) {
                     console.error("Error deleting node and descendants:", e);
                     alert("Lỗi khi xóa nút: " + e.message);
@@ -1522,7 +1567,7 @@
         function handleGlobalKeyDown(e) {
             if (isEditingText) return; 
 
-            if (!contextMenu.classList.contains('hidden')) {
+            if (contextMenu && !contextMenu.classList.contains('hidden')) { // Kiểm tra contextMenu tồn tại
                 if (e.key === 'Escape') {
                     hideElement(contextMenu);
                 }
@@ -1555,7 +1600,7 @@
                 case 'Backspace':
                     if (selectedKonvaNode) {
                         e.preventDefault();
-                        deleteNodeLogic(selectedKonvaNode); // Gọi logic xóa đệ quy
+                        deleteNodeLogic(selectedKonvaNode); 
                     }
                     break;
                 case 'ArrowUp':
