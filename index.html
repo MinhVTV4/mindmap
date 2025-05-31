@@ -13,13 +13,13 @@
             background-color: #f0f2f5;
             color: #1c1e21;
             height: 100%;
-            overflow: hidden; /* Ngăn cuộn trang chính */
-            -webkit-touch-callout: none; /* iOS Safari */
-            -webkit-user-select: none; /* Safari */
-            -khtml-user-select: none; /* Konqueror HTML */
-            -moz-user-select: none; /* Old versions of Firefox */
-            -ms-user-select: none; /* Internet Explorer/Edge */
-            user-select: none; /* Non-prefixed version, currently supported by Chrome, Edge, Opera and Firefox */
+            overflow: hidden;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
         #app-root {
             display: flex;
@@ -35,7 +35,6 @@
             display: flex;
             flex-direction: column;
         }
-        /* --- AUTH SECTION --- */
         #auth-section {
             padding: 20px;
             max-width: 450px;
@@ -72,7 +71,7 @@
             font-size: 13px;
             text-align: center;
         }
-        select { /* Style cho select dropdown */
+        select {
             padding: 6px;
             margin-left: 3px;
             margin-right: 10px;
@@ -93,204 +92,76 @@
             margin-right: 6px;
             transition: background-color 0.3s;
         }
-        button:hover {
-            background-color: #166fe5;
-        }
-        button.secondary {
-            background-color: #e4e6eb;
-            color: #4b4f56;
-        }
-        button.secondary:hover {
-            background-color: #ccd0d5;
-        }
-        button.danger {
-            background-color: #fa3e3e;
-        }
-        button.danger:hover {
-            background-color: #e03030;
-        }
-        .auth-toggle {
-            text-align: center;
-            margin-top: 15px;
-        }
-        .auth-toggle a {
-            color: #1877f2;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        .auth-toggle a:hover {
-            text-decoration: underline;
-        }
-        .error-message {
-            color: #fa3e3e;
-            font-size: 0.9em;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-        /* --- MAIN APP SECTION --- */
-        #main-app-section {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-        }
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 8px;
-            margin-bottom: 8px;
-            border-bottom: 1px solid #dddfe2;
-            flex-shrink: 0;
-        }
-        header h1 {
-            color: #1c1e21;
-            font-size: 18px;
-            margin: 0;
-        }
-        #user-info span {
-            margin-right: 8px;
-            font-size: 0.85em;
-        }
-        #mindmap-management-view {
-             display: flex;
-             flex-direction: column;
-        }
-        #mindmap-management, #canvas-view {
-            margin-bottom: 8px;
-        }
-        #mindmap-list-container{
-            flex-grow: 1;
-            overflow-y: auto;
-        }
-        #mindmap-list {
-            list-style: none;
-            padding: 0;
-        }
-        #mindmap-list li {
-            padding: 8px;
-            border: 1px solid #dddfe2;
-            margin-bottom: 4px;
-            cursor: pointer;
-            border-radius: 6px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: background-color 0.2s;
-        }
-        #mindmap-list li:hover {
-            background-color: #f0f2f5;
-        }
-
-        #canvas-view {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        #canvas-toolbar {
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            padding: 6px 5px;
-            margin-bottom: 5px;
-            border-bottom: 1px solid #ccd0d5;
-            flex-shrink: 0;
-        }
-        #canvas-toolbar .toolbar-section {
-            display: flex;
-            align-items: center;
-            margin-right: 15px;
-            margin-bottom: 5px;
-        }
-        #canvas-toolbar .toolbar-section:last-child {
-            margin-right: 0;
-        }
-        #canvas-toolbar h2 {
-            margin: 0 10px 0 0;
-            font-size: 16px;
-            font-weight: 500;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 150px;
-        }
-        #back-to-maps-list-button {
-            padding: 6px 8px;
-            font-size: 18px;
-            line-height: 1;
-        }
-        #konva-container {
-            width: 100%;
-            flex-grow: 1;
-            background-color: #f7f7f7;
-            border: 1px solid #ccd0d5;
-            border-radius: 6px;
-            position: relative;
-            overflow: hidden;
-        }
-        .hidden {
-            display: none !important;
-        }
-        .loading-indicator { /* Chung cho các loading indicator */
-            text-align: center;
-            padding: 20px;
-            font-style: italic;
-            color: #555;
-        }
-        /* AI Loading Indicator */
-        #ai-loading-indicator {
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.6);
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            font-size: 1.2em;
-            text-shadow: 1px 1px 2px black;
-        }
-
-        /* Node Style Panel */
-        #node-style-panel {
-            padding: 5px;
-            background-color: #f9f9f9;
-            border: 1px solid #e0e0e0;
-            border-radius: 4px;
-            box-sizing: border-box;
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-        }
+        button:hover { background-color: #166fe5; }
+        button.secondary { background-color: #e4e6eb; color: #4b4f56; }
+        button.secondary:hover { background-color: #ccd0d5; }
+        button.danger { background-color: #fa3e3e; }
+        button.danger:hover { background-color: #e03030; }
+        .auth-toggle { text-align: center; margin-top: 15px; }
+        .auth-toggle a { color: #1877f2; text-decoration: none; font-weight: bold; }
+        .auth-toggle a:hover { text-decoration: underline; }
+        .error-message { color: #fa3e3e; font-size: 0.9em; margin-bottom: 10px; text-align: center; }
+        #main-app-section { display: flex; flex-direction: column; height: 100%; padding: 8px; box-sizing: border-box; }
+        header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid #dddfe2; flex-shrink: 0; }
+        header h1 { color: #1c1e21; font-size: 18px; margin: 0; }
+        #user-info span { margin-right: 8px; font-size: 0.85em; }
+        #mindmap-management-view { display: flex; flex-direction: column; }
+        #mindmap-management, #canvas-view { margin-bottom: 8px; }
+        #mindmap-list-container{ flex-grow: 1; overflow-y: auto; }
+        #mindmap-list { list-style: none; padding: 0; }
+        #mindmap-list li { padding: 8px; border: 1px solid #dddfe2; margin-bottom: 4px; cursor: pointer; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; transition: background-color 0.2s; }
+        #mindmap-list li:hover { background-color: #f0f2f5; }
+        #canvas-view { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
+        #canvas-toolbar { display: flex; align-items: center; flex-wrap: wrap; padding: 6px 5px; margin-bottom: 5px; border-bottom: 1px solid #ccd0d5; flex-shrink: 0; }
+        #canvas-toolbar .toolbar-section { display: flex; align-items: center; margin-right: 15px; margin-bottom: 5px; }
+        #canvas-toolbar .toolbar-section:last-child { margin-right: 0; }
+        #canvas-toolbar h2 { margin: 0 10px 0 0; font-size: 16px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+        #back-to-maps-list-button { padding: 6px 8px; font-size: 18px; line-height: 1; }
+        #konva-container { width: 100%; flex-grow: 1; background-color: #f7f7f7; border: 1px solid #ccd0d5; border-radius: 6px; position: relative; overflow: hidden; }
+        .hidden { display: none !important; }
+        .loading-indicator { text-align: center; padding: 20px; font-style: italic; color: #555; }
+        #ai-loading-indicator { position: fixed; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); color: white; display: flex; justify-content: center; align-items: center; z-index: 2000; font-size: 1.2em; text-shadow: 1px 1px 2px black; }
+        #node-style-panel { padding: 5px; background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 4px; box-sizing: border-box; display: flex; align-items: center; flex-wrap: wrap; }
         #node-style-panel h5 { margin: 0 5px 0 0; font-size: 0.85em; color: #606770; white-space: nowrap; }
         #node-style-panel label { margin-right: 2px; font-size: 0.8em; vertical-align: middle; white-space: nowrap; }
         #node-style-panel input[type="color"] { width: 22px; height: 22px; padding: 0; border: 1px solid #ccc; border-radius: 3px; vertical-align: middle; margin-right: 5px; }
         #node-style-panel input[type="number"], #node-style-panel select { width: auto; min-width: 60px; padding: 4px; font-size: 0.8em; }
         .style-group { margin-bottom: 0; display: flex; align-items: center; margin-right: 8px; }
         .style-group:last-child { margin-right: 0; }
-
-        /* Context Menu */
         #context-menu { position: absolute; z-index: 1000; background-color: white; border: 1px solid #ccc; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); border-radius: 4px; padding: 5px 0; }
         #context-menu ul { list-style: none; padding: 0; margin: 0; }
         #context-menu li { padding: 8px 15px; cursor: pointer; font-size: 0.9em; }
         #context-menu li:hover { background-color: #f0f0f0; }
 
-        /* AI Response Modal */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1001; }
-        .modal-content { background-color: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 80%; max-width: 600px; max-height: 80vh; overflow-y: auto; }
+        /* Modal Styles (Chung cho AI Response và Node Content) */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1001; padding: 15px; box-sizing: border-box;}
+        .modal-content { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); width: 90%; max-width: 650px; max-height: 85vh; display: flex; flex-direction: column; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
-        .modal-header h4 { margin: 0; font-size: 1.25em; color: #1877f2; }
-        .modal-close-button { background: none; border: none; font-size: 1.8em; cursor: pointer; color: #888; line-height: 1; padding: 0 5px;}
-        .modal-close-button:hover { color: #333; }
-        .modal-body p { margin-bottom: 10px; line-height: 1.6; }
-        .modal-body strong { color: #333; }
-        .modal-body pre { background-color: #f9f9f9; padding: 10px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; font-size: 0.9em; }
-
+        .modal-header h4 { margin: 0; font-size: 1.2em; color: #333; }
+        .modal-close-button { background: none; border: none; font-size: 1.6em; cursor: pointer; color: #777; line-height: 1; padding: 0 5px;}
+        .modal-close-button:hover { color: #000; }
+        .modal-body { overflow-y: auto; line-height: 1.6; font-size: 0.95em; }
+        .modal-body p { margin-top:0; margin-bottom: 1em; }
+        .modal-body strong { color: #1877f2; }
+        .modal-body pre, .modal-body div[contenteditable="false"] {
+            background-color: #f8f9fa;
+            padding: 12px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 0.9em;
+            border: 1px solid #e9ecef;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+        .read-more-indicator {
+            fill: #007bff;
+            cursor: pointer;
+            opacity: 0.7;
+        }
+        .read-more-indicator:hover {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -332,8 +203,7 @@
                 <div id="mindmap-list-container">
                     <h3>Danh sách sơ đồ của bạn:</h3>
                     <div id="mindmap-list-loading" class="loading-indicator hidden">Đang tải danh sách...</div>
-                    <ul id="mindmap-list">
-                        </ul>
+                    <ul id="mindmap-list"></ul>
                 </div>
             </div>
 
@@ -431,6 +301,7 @@
             <ul>
                 <li id="ctx-add-child">Thêm nút con (Tab)</li>
                 <li id="ctx-edit-text">Sửa văn bản (Enter)</li>
+                <li id="ctx-view-full-content">📄 Xem toàn bộ nội dung</li>
                 <li id="ctx-suggest-children">✨ Gợi ý nút con (AI)</li>
                 <li id="ctx-expand-node">🔍 Mở rộng ý tưởng (AI)</li>
                 <li id="ctx-generate-examples">💡 AI Tạo Ví Dụ</li>
@@ -447,7 +318,17 @@
                     <h4 id="ai-response-modal-title">Phản hồi từ AI</h4>
                     <button id="ai-response-modal-close-button" class="modal-close-button">&times;</button>
                 </div>
-                <div class="modal-body" id="ai-response-modal-body">
+                <div class="modal-body" id="ai-response-modal-body"></div>
+            </div>
+        </div>
+
+        <div id="node-content-modal-overlay" class="modal-overlay hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 id="node-content-modal-title">Nội dung đầy đủ của nút</h4>
+                    <button id="node-content-modal-close-button" class="modal-close-button">&times;</button>
+                </div>
+                <div class="modal-body" id="node-content-modal-body">
                     </div>
             </div>
         </div>
@@ -481,7 +362,7 @@
         import { getAI, getGenerativeModel, GoogleAIBackend } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-ai.js";
 
 
-        // --- FIREBASE CONFIGURATION ---
+       // --- FIREBASE CONFIGURATION ---
         const firebaseConfig = {
             apiKey: "AIzaSyDLVuv2RGAJWUjhan-5oNCkGBwQZAN60aY", // Thay bằng API Key của bạn
             authDomain: "vocab-91599.firebaseapp.com", // Thay bằng Auth Domain của bạn
@@ -507,7 +388,7 @@
             console.log("Firebase initialized successfully with AI Logic SDK!");
         } catch (error) {
             console.error("Firebase initialization error:", error);
-            alert("Lỗi nghiêm trọng: Không thể khởi tạo Firebase hoặc AI SDK. Ứng dụng có thể không hoạt động. Chi tiết: " + error.message);
+            alert("Lỗi nghiêm trọng: Không thể khởi tạo Firebase hoặc AI SDK. Chi tiết: " + error.message);
         }
 
 
@@ -534,7 +415,7 @@
             iconSpacing: 5,
             lineColor: "#888888", lineWidth: 3, lineDash: []
         };
-
+        const MAX_DISPLAY_LINES_IN_NODE = 4;
 
         // --- DOM ELEMENTS ---
         const nodeStylePanel = document.getElementById('node-style-panel');
@@ -549,10 +430,10 @@
         const nodeLineDashSelect = document.getElementById('node-line-dash-select');
         const nodeLineWidthInput = document.getElementById('node-line-width');
 
-        // Context Menu Elements
         const contextMenu = document.getElementById('context-menu');
         const ctxAddChildButton = document.getElementById('ctx-add-child');
         const ctxEditTextButton = document.getElementById('ctx-edit-text');
+        const ctxViewFullContentButton = document.getElementById('ctx-view-full-content');
         const ctxSuggestChildrenButton = document.getElementById('ctx-suggest-children');
         const ctxExpandNodeButton = document.getElementById('ctx-expand-node');
         const ctxGenerateExamplesButton = document.getElementById('ctx-generate-examples');
@@ -560,14 +441,16 @@
         const ctxDeleteNodeButton = document.getElementById('ctx-delete-node');
         const aiLoadingIndicator = document.getElementById('ai-loading-indicator');
 
-        // AI Response Modal Elements
         const aiResponseModalOverlay = document.getElementById('ai-response-modal-overlay');
         const aiResponseModalTitle = document.getElementById('ai-response-modal-title');
         const aiResponseModalBody = document.getElementById('ai-response-modal-body');
         const aiResponseModalCloseButton = document.getElementById('ai-response-modal-close-button');
 
+        const nodeContentModalOverlay = document.getElementById('node-content-modal-overlay');
+        const nodeContentModalTitle = document.getElementById('node-content-modal-title');
+        const nodeContentModalBody = document.getElementById('node-content-modal-body');
+        const nodeContentModalCloseButton = document.getElementById('node-content-modal-close-button');
 
-        // Auth
         const authSection = document.getElementById('auth-section');
         const loginForm = document.getElementById('login-form');
         const registerForm = document.getElementById('register-form');
@@ -582,20 +465,17 @@
         const loginErrorMsg = document.getElementById('login-error');
         const registerErrorMsg = document.getElementById('register-error');
 
-        // Main App
         const mainAppSection = document.getElementById('main-app-section');
         const mainAppTitle = document.getElementById('main-app-title');
         const userEmailDisplay = document.getElementById('user-email-display');
         const logoutButton = document.getElementById('logout-button');
 
-        // Mind Map Management View
         const mindmapManagementView = document.getElementById('mindmap-management-view');
         const newMindmapTitleInput = document.getElementById('new-mindmap-title-input');
         const createMindmapButton = document.getElementById('create-mindmap-button');
         const mindmapListUl = document.getElementById('mindmap-list');
         const mindmapListLoading = document.getElementById('mindmap-list-loading');
 
-        // Canvas View
         const canvasView = document.getElementById('canvas-view');
         const backToMapsListButton = document.getElementById('back-to-maps-list-button');
         const currentMindmapTitleDisplay = document.getElementById('current-mindmap-title-display');
@@ -635,7 +515,6 @@
             }
         }
 
-        // AI Response Modal Functions
         function openAiResponseModal(title, userQuestion, aiAnswer) {
             if (aiResponseModalOverlay && aiResponseModalTitle && aiResponseModalBody) {
                 aiResponseModalTitle.textContent = title || "Phản hồi từ AI";
@@ -661,6 +540,30 @@
             aiResponseModalOverlay.addEventListener('click', function(event) {
                 if (event.target === aiResponseModalOverlay) { 
                     closeAiResponseModal();
+                }
+            });
+        }
+
+        function openNodeContentModal(nodeTitle, fullContent) {
+            if (nodeContentModalOverlay && nodeContentModalTitle && nodeContentModalBody) {
+                nodeContentModalTitle.textContent = `Nội dung: ${nodeTitle.substring(0, 30)}${nodeTitle.length > 30 ? '...' : ''}`;
+                const formattedContent = fullContent.replace(/\n/g, '<br>');
+                nodeContentModalBody.innerHTML = `<div contenteditable="false" style="white-space: pre-wrap;">${formattedContent}</div>`;
+                showElement(nodeContentModalOverlay);
+            }
+        }
+        function closeNodeContentModal() {
+            if (nodeContentModalOverlay) {
+                hideElement(nodeContentModalOverlay);
+            }
+        }
+        if (nodeContentModalCloseButton) {
+            nodeContentModalCloseButton.addEventListener('click', closeNodeContentModal);
+        }
+        if (nodeContentModalOverlay) {
+            nodeContentModalOverlay.addEventListener('click', function(event) {
+                if (event.target === nodeContentModalOverlay) {
+                    closeNodeContentModal();
                 }
             });
         }
@@ -692,7 +595,7 @@
                 const email = registerEmailInput.value;
                 const password = registerPasswordInput.value;
                 clearAuthError(registerErrorMsg);
-                if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY_HERE") {
+                if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY") {
                     displayAuthError(registerErrorMsg, "Lỗi cấu hình Firebase: API Key không hợp lệ. Vui lòng kiểm tra lại firebaseConfig.");
                     return;
                 }
@@ -713,7 +616,7 @@
                 const email = loginEmailInput.value;
                 const password = loginPasswordInput.value;
                 clearAuthError(loginErrorMsg);
-                 if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY_HERE") {
+                 if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY") {
                     displayAuthError(loginErrorMsg, "Lỗi cấu hình Firebase: API Key không hợp lệ. Vui lòng kiểm tra lại firebaseConfig.");
                     return;
                 }
@@ -873,11 +776,6 @@
                         else if (processedValue === 'rectangle' && !updatedStyle.cornerRadius) { updatedStyle.cornerRadius = 0; }
                         else if (processedValue === 'roundedRectangle' && (!updatedStyle.cornerRadius || updatedStyle.cornerRadius === 0) ) { updatedStyle.cornerRadius = 5; }
                     }
-
-                    if (['fontFamily', 'fontSize', 'text', 'icon'].includes(property) || (property === 'style' && (value.fontFamily || value.fontSize || value.text || value.icon))) {
-                        const styleForCalc = property === 'style' ? { ...existingStyle, ...value } : updatedStyle;
-                        updatedStyle = { ...updatedStyle, ...calculateNodeHeight(styleForCalc.text || existingData.text, styleForCalc) };
-                    }
                     await updateDoc(nodeRef, { style: updatedStyle });
                 } else {
                     console.warn("Node not found for style update:", nodeId);
@@ -886,30 +784,26 @@
                 console.error(`Error updating node style (${property}):`, e);
             }
         }
-        function calculateNodeHeight(text, styleConfig) {
+        function calculatePotentialFullHeight(text, styleConfig) {
             const style = { ...DEFAULT_NODE_STYLE, ...styleConfig };
             const textPadding = style.padding;
-            const iconSize = style.iconSize;
-            const iconSpacing = style.iconSpacing;
             let iconTextWidth = 0;
-
             if (style.icon && style.icon !== '') {
-                const tempIconForCalc = new Konva.Text({ text: style.icon, fontSize: iconSize, fontFamily: style.fontFamily });
-                iconTextWidth = tempIconForCalc.width() + iconSpacing;
+                const tempIconForCalc = new Konva.Text({ text: style.icon, fontSize: style.iconSize, fontFamily: style.fontFamily });
+                iconTextWidth = tempIconForCalc.width() + style.iconSpacing;
             }
-
             const mainTextWidth = style.width - 2 * textPadding - iconTextWidth;
-
             const tempText = new Konva.Text({
                 text: text,
                 fontSize: style.fontSize,
                 fontFamily: style.fontFamily,
                 width: mainTextWidth > 0 ? mainTextWidth : 0,
-                align: 'center'
+                align: 'center',
+                lineHeight: 1.2
             });
             const actualTextContentHeight = tempText.height();
-            const dynamicShapeHeight = Math.max(style.minHeight, actualTextContentHeight + 2 * textPadding, style.icon ? (iconSize + 2 * textPadding) : 0);
-            return { height: dynamicShapeHeight };
+            const dynamicShapeHeight = Math.max(style.minHeight, actualTextContentHeight + 2 * textPadding, style.icon ? (style.iconSize + 2 * textPadding) : 0);
+            return dynamicShapeHeight;
         }
         if (nodeShapeSelect) nodeShapeSelect.addEventListener('change', (e) => handleNodeStyleChange('shape', e.target.value));
         if (nodeFontFamilySelect) nodeFontFamilySelect.addEventListener('change', (e) => handleNodeStyleChange('fontFamily', e.target.value));
@@ -1018,134 +912,69 @@
                 currentKonvaStage.position(newPos); currentKonvaStage.batchDraw(); saveCanvasState();
             });
             currentKonvaStage.on('click tap', function(e) {
-                if (e.target === currentKonvaStage) { // Clicked on empty stage area
+                if (e.target === currentKonvaStage) {
                     if (selectedKonvaNode) { selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1); removeCreationHandle(selectedKonvaNode); selectedKonvaNode = null; if(nodeStylePanel) hideElement(nodeStylePanel); currentKonvaLayer.batchDraw(); }
                     if(contextMenu) hideElement(contextMenu);
                 }
-                // Click/tap on a node is handled by the node's own event listener
             });
-
-            // Mouse Right-Click for Context Menu
             currentKonvaStage.on('contextmenu', function(e) {
-                e.evt.preventDefault();
-                let targetNodeGroup = e.target;
-                while (targetNodeGroup && targetNodeGroup !== currentKonvaStage && !targetNodeGroup.hasName('mindmapNodeGroup')) {
-                    targetNodeGroup = targetNodeGroup.getParent();
-                }
-
+                e.evt.preventDefault(); let targetNodeGroup = e.target;
+                while (targetNodeGroup && targetNodeGroup !== currentKonvaStage && !targetNodeGroup.hasName('mindmapNodeGroup')) { targetNodeGroup = targetNodeGroup.getParent(); }
                 if (targetNodeGroup && targetNodeGroup.hasName('mindmapNodeGroup')) {
                     rightClickedKonvaNode = targetNodeGroup;
                     if (!selectedKonvaNode || selectedKonvaNode.id() !== rightClickedKonvaNode.id()) {
                         if (selectedKonvaNode) { selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1); removeCreationHandle(selectedKonvaNode); }
-                        selectedKonvaNode = rightClickedKonvaNode;
-                        selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(3);
-                        const nodeDataForHandle = allNodesDataForCurrentMap.find(n => n.id === selectedKonvaNode.id());
+                        selectedKonvaNode = rightClickedKonvaNode; selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(3);
                         const shape = selectedKonvaNode.findOne('.nodeShape');
-                        const currentHeightForHandle = nodeDataForHandle?.style?.height || shape?.height() || DEFAULT_NODE_STYLE.minHeight;
-                        addCreationHandle(selectedKonvaNode, currentHeightForHandle);
+                        addCreationHandle(selectedKonvaNode, shape.height());
                         const nodeData = allNodesDataForCurrentMap.find(n => n.id === selectedKonvaNode.id());
                         if (nodeData) updateNodeStylePanel(nodeData);
                         currentKonvaLayer.batchDraw();
                     }
-                    if(contextMenu) {
-                        contextMenu.style.top = e.evt.pageY + 'px';
-                        contextMenu.style.left = e.evt.pageX + 'px';
-                        showElement(contextMenu);
-                    }
-                } else {
-                    rightClickedKonvaNode = null;
-                    if(contextMenu) hideElement(contextMenu);
-                }
+                    if(contextMenu) { contextMenu.style.top = e.evt.pageY + 'px'; contextMenu.style.left = e.evt.pageX + 'px'; showElement(contextMenu); }
+                } else { rightClickedKonvaNode = null; if(contextMenu) hideElement(contextMenu); }
             });
 
-            // Touch "Long Press" for Context Menu
-            let longPressTimeoutId = null;
-            let touchStartTargetNode = null;
-            let touchStartPointerPos = null; // For pageX, pageY
-            let touchStartX = 0, touchStartY = 0; // For movement threshold
-            const LONG_PRESS_DELAY = 750; // ms
-            const MOVE_THRESHOLD = 10; // pixels
+            let longPressTimeoutId = null; let touchStartTargetNode = null; let touchStartPointerPos = null;
+            let touchStartX = 0, touchStartY = 0; const LONG_PRESS_DELAY = 750; const MOVE_THRESHOLD = 10;
 
             currentKonvaStage.on('touchstart', function(e) {
                 let targetNodeGroup = e.target;
-                while (targetNodeGroup && targetNodeGroup !== currentKonvaStage && !targetNodeGroup.hasName('mindmapNodeGroup')) {
-                    targetNodeGroup = targetNodeGroup.getParent();
-                }
-
+                while (targetNodeGroup && targetNodeGroup !== currentKonvaStage && !targetNodeGroup.hasName('mindmapNodeGroup')) { targetNodeGroup = targetNodeGroup.getParent(); }
                 if (targetNodeGroup && targetNodeGroup.hasName('mindmapNodeGroup')) {
-                    // e.evt.preventDefault(); // Be cautious with this, might prevent scrolling on canvas if needed
                     touchStartTargetNode = targetNodeGroup;
                     if (e.evt.touches && e.evt.touches.length > 0) {
-                        touchStartX = e.evt.touches[0].pageX;
-                        touchStartY = e.evt.touches[0].pageY;
+                        touchStartX = e.evt.touches[0].pageX; touchStartY = e.evt.touches[0].pageY;
                         touchStartPointerPos = { x: e.evt.touches[0].pageX, y: e.evt.touches[0].pageY };
-                    } else { // Fallback
-                        touchStartX = e.evt.pageX || 0;
-                        touchStartY = e.evt.pageY || 0;
-                        touchStartPointerPos = { x: touchStartX, y: touchStartY };
-                    }
-
+                    } else { touchStartX = e.evt.pageX || 0; touchStartY = e.evt.pageY || 0; touchStartPointerPos = { x: touchStartX, y: touchStartY }; }
                     clearTimeout(longPressTimeoutId);
                     longPressTimeoutId = setTimeout(() => {
                         if (touchStartTargetNode) {
-                            // Long press confirmed
-                            // e.evt.preventDefault(); // This 'e' is from touchstart, might be stale or not what we want to prevent default on here.
-                                                    // The default context menu from long press is usually handled by browser if not prevented on original touchstart.
-                                                    // For now, let's rely on the contextmenu event for mouse and this custom for touch.
-
                             rightClickedKonvaNode = touchStartTargetNode;
                             if (!selectedKonvaNode || selectedKonvaNode.id() !== rightClickedKonvaNode.id()) {
-                                if (selectedKonvaNode) {
-                                    selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1);
-                                    removeCreationHandle(selectedKonvaNode);
-                                }
-                                selectedKonvaNode = rightClickedKonvaNode;
-                                selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(3);
-                                const nodeDataForHandle = allNodesDataForCurrentMap.find(n => n.id === selectedKonvaNode.id());
+                                if (selectedKonvaNode) { selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1); removeCreationHandle(selectedKonvaNode); }
+                                selectedKonvaNode = rightClickedKonvaNode; selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(3);
                                 const shape = selectedKonvaNode.findOne('.nodeShape');
-                                const currentHeightForHandle = nodeDataForHandle?.style?.height || shape?.height() || DEFAULT_NODE_STYLE.minHeight;
-                                addCreationHandle(selectedKonvaNode, currentHeightForHandle);
+                                addCreationHandle(selectedKonvaNode, shape.height());
                                 const nodeData = allNodesDataForCurrentMap.find(n => n.id === selectedKonvaNode.id());
                                 if (nodeData) updateNodeStylePanel(nodeData);
                                 currentKonvaLayer.batchDraw();
                             }
-
-                            if(contextMenu && touchStartPointerPos) {
-                                contextMenu.style.top = touchStartPointerPos.y + 'px';
-                                contextMenu.style.left = touchStartPointerPos.x + 'px';
-                                showElement(contextMenu);
-                            }
-                            touchStartTargetNode = null; // Reset
-                            longPressTimeoutId = null;
+                            if(contextMenu && touchStartPointerPos) { contextMenu.style.top = touchStartPointerPos.y + 'px'; contextMenu.style.left = touchStartPointerPos.x + 'px'; showElement(contextMenu); }
+                            touchStartTargetNode = null; longPressTimeoutId = null;
                         }
                     }, LONG_PRESS_DELAY);
-                } else {
-                    clearTimeout(longPressTimeoutId);
-                    touchStartTargetNode = null;
-                }
+                } else { clearTimeout(longPressTimeoutId); touchStartTargetNode = null; }
             });
-
-            currentKonvaStage.on('touchend', function(e) {
-                clearTimeout(longPressTimeoutId);
-                touchStartTargetNode = null;
-                // 'tap' event on nodes will handle selection
-            });
-
+            currentKonvaStage.on('touchend', function(e) { clearTimeout(longPressTimeoutId); touchStartTargetNode = null; });
             currentKonvaStage.on('touchmove', function(e) {
                 if (touchStartTargetNode && e.evt.touches && e.evt.touches.length > 0) {
-                    const deltaX = Math.abs(e.evt.touches[0].pageX - touchStartX);
-                    const deltaY = Math.abs(e.evt.touches[0].pageY - touchStartY);
-                    if (deltaX > MOVE_THRESHOLD || deltaY > MOVE_THRESHOLD) {
-                        clearTimeout(longPressTimeoutId);
-                        touchStartTargetNode = null;
-                    }
-                } else { // If not a touch event or no touches, clear timeout
-                     clearTimeout(longPressTimeoutId);
-                     touchStartTargetNode = null;
-                }
+                    const deltaX = Math.abs(e.evt.touches[0].pageX - touchStartX); const deltaY = Math.abs(e.evt.touches[0].pageY - touchStartY);
+                    if (deltaX > MOVE_THRESHOLD || deltaY > MOVE_THRESHOLD) { clearTimeout(longPressTimeoutId); touchStartTargetNode = null; }
+                } else { clearTimeout(longPressTimeoutId); touchStartTargetNode = null; }
             });
         }
-        async function saveCanvasState() { /* ... giữ nguyên ... */ }
+        async function saveCanvasState() { /* ... */ }
         function loadAndListenNodesForCurrentMap() {
             if (!currentMindMapId || !currentKonvaLayer || !db) { console.warn("Cannot load nodes..."); return; }
             showElement(konvaContainerLoading); currentKonvaLayer.destroyChildren(); currentKonvaLayer.draw(); allNodesDataForCurrentMap = [];
@@ -1158,70 +987,173 @@
         }
         function renderNodesAndLines(nodesData) {
             if (!currentKonvaLayer) return;
-            currentKonvaLayer.destroyChildren(); const konvaNodeObjects = {};
-            nodesData.forEach(nodeData => {
-                if (!nodeData.position || typeof nodeData.position.x !== 'number' || typeof nodeData.position.y !== 'number') { console.warn("Node data missing valid position, skipping:", nodeData); return; }
-                const style = { ...DEFAULT_NODE_STYLE, ...(nodeData.style || {}) };
-                const dynamicShapeHeight = nodeData.style?.height || calculateNodeHeight(nodeData.text, style).height;
+            currentKonvaLayer.destroyChildren();
+            const konvaNodeObjects = {};
 
-                const textPadding = style.padding; const iconSize = style.iconSize; const iconSpacing = style.iconSpacing;
-                let iconTextWidth = 0; let iconObject = null;
-                if (style.icon && style.icon !== '') {
-                    iconObject = new Konva.Text({ text: style.icon, fontSize: iconSize, fontFamily: style.fontFamily, fill: style.textColor, x: textPadding, listening: false, name: 'nodeIcon' });
-                    iconTextWidth = iconObject.width() + iconSpacing;
+            nodesData.forEach(nodeData => {
+                if (!nodeData.position || typeof nodeData.position.x !== 'number' || typeof nodeData.position.y !== 'number') {
+                    console.warn("Node data missing valid position, skipping:", nodeData);
+                    return;
                 }
-                const mainTextWidth = style.width - 2 * textPadding - iconTextWidth;
-                const group = new Konva.Group({ x: nodeData.position.x, y: nodeData.position.y, draggable: true, id: nodeData.id, name: 'mindmapNodeGroup' });
+
+                const style = { ...DEFAULT_NODE_STYLE, ...(nodeData.style || {}) };
+                const fullText = nodeData.text || "";
+
+                let iconWidthForCalc = 0;
+                if (style.icon && style.icon !== '') {
+                    const tempIcon = new Konva.Text({ text: style.icon, fontSize: style.iconSize, fontFamily: style.fontFamily });
+                    iconWidthForCalc = tempIcon.width() + style.iconSpacing;
+                }
+                const textRenderWidth = style.width - (2 * style.padding) - iconWidthForCalc;
+
+                const tempTextObj = new Konva.Text({
+                    text: fullText,
+                    fontSize: style.fontSize,
+                    fontFamily: style.fontFamily,
+                    width: textRenderWidth > 0 ? textRenderWidth : 0,
+                    lineHeight: 1.2,
+                    align: 'center'
+                });
+                const fullTextActualHeight = tempTextObj.height();
+
+                const estimatedLineHeight = style.fontSize * 1.2;
+                const maxVisibleTextHeightInNode = estimatedLineHeight * MAX_DISPLAY_LINES_IN_NODE;
+                const isTextTruncated = fullTextActualHeight > maxVisibleTextHeightInNode;
+                const textDisplayHeight = isTextTruncated ? maxVisibleTextHeightInNode : fullTextActualHeight;
+
+                let shapeRenderHeight = Math.max(style.minHeight, textDisplayHeight + (2 * style.padding));
+                
+                if (isTextTruncated) {
+                    const readMoreIndicatorHeight = estimatedLineHeight * 0.8;
+                    shapeRenderHeight = Math.max(shapeRenderHeight, textDisplayHeight + (2 * style.padding) + readMoreIndicatorHeight + style.padding * 0.5);
+                }
+
+                const group = new Konva.Group({
+                    x: nodeData.position.x,
+                    y: nodeData.position.y,
+                    draggable: true,
+                    id: nodeData.id,
+                    name: 'mindmapNodeGroup',
+                    fullTextData: fullText
+                });
+
                 let shape;
                 if (style.shape === 'ellipse') {
-                    shape = new Konva.Ellipse({ x: style.width / 2, y: dynamicShapeHeight / 2, radiusX: style.width / 2, radiusY: dynamicShapeHeight / 2, fill: style.backgroundColor, stroke: style.borderColor, strokeWidth: 1, name: 'nodeShape' });
+                    shape = new Konva.Ellipse({ x: style.width / 2, y: shapeRenderHeight / 2, radiusX: style.width / 2, radiusY: shapeRenderHeight / 2, fill: style.backgroundColor, stroke: style.borderColor, strokeWidth: 1, name: 'nodeShape' });
                 } else if (style.shape === 'roundedRectangle') {
-                    shape = new Konva.Rect({ width: style.width, height: dynamicShapeHeight, fill: style.backgroundColor, stroke: style.borderColor, strokeWidth: 1, cornerRadius: style.cornerRadius || 10, name: 'nodeShape' });
+                    shape = new Konva.Rect({ width: style.width, height: shapeRenderHeight, fill: style.backgroundColor, stroke: style.borderColor, strokeWidth: 1, cornerRadius: style.cornerRadius || 10, name: 'nodeShape' });
                 } else {
-                    shape = new Konva.Rect({ width: style.width, height: dynamicShapeHeight, fill: style.backgroundColor, stroke: style.borderColor, strokeWidth: 1, cornerRadius: 0, name: 'nodeShape' });
+                    shape = new Konva.Rect({ width: style.width, height: shapeRenderHeight, fill: style.backgroundColor, stroke: style.borderColor, strokeWidth: 1, cornerRadius: 0, name: 'nodeShape' });
                 }
-                group.add(shape); shape.moveToBottom();
-                if (iconObject) { iconObject.y((dynamicShapeHeight - iconObject.height()) / 2); group.add(iconObject); }
+                group.add(shape);
+                shape.moveToBottom();
+
+                if (style.icon && style.icon !== '') {
+                    const iconObject = new Konva.Text({
+                        text: style.icon, fontSize: style.iconSize, fontFamily: style.fontFamily, fill: style.textColor,
+                        x: style.padding, y: (shapeRenderHeight - style.iconSize) / 2,
+                        listening: false, name: 'nodeIcon'
+                    });
+                    group.add(iconObject);
+                }
+
                 const textToRender = new Konva.Text({
-                    text: nodeData.text, fontSize: style.fontSize, fontFamily: style.fontFamily, fill: style.textColor,
-                    width: mainTextWidth > 0 ? mainTextWidth : 0, x: textPadding + iconTextWidth, padding: 0, align: 'center', listening: false
+                    text: fullText,
+                    fontSize: style.fontSize, fontFamily: style.fontFamily, fill: style.textColor,
+                    width: textRenderWidth > 0 ? textRenderWidth : 0,
+                    height: textDisplayHeight, 
+                    x: style.padding + iconWidthForCalc,
+                    y: style.padding,
+                    align: 'center',
+                    verticalAlign: 'top',
+                    lineHeight: 1.2,
+                    listening: true,
+                    name: 'nodeTextContent'
                 });
-                textToRender.y((dynamicShapeHeight - textToRender.height()) / 2); group.add(textToRender);
+
+                if (isTextTruncated) {
+                    // console.log(`Node ${nodeData.id} is truncated. Type of clip: ${typeof textToRender.clip}`);
+                    if (typeof textToRender.clip === 'function') {
+                         textToRender.clip({
+                            x: 0,
+                            y: 0,
+                            width: textRenderWidth,
+                            height: textDisplayHeight
+                        });
+                    } else {
+                        console.warn(`textToRender.clip is not a function for node ${nodeData.id}. textToRender:`, textToRender, "Attempting to set clip as an attribute.");
+                        // Fallback: try setting as an attribute if .clip() method is not found
+                        // This is less likely to work for visual clipping but might be a property in some contexts
+                        try {
+                            textToRender.setAttr('clip', { x: 0, y: 0, width: textRenderWidth, height: textDisplayHeight });
+                        } catch (clipAttrError) {
+                            console.error("Failed to set clip as attribute:", clipAttrError);
+                        }
+                    }
+
+                     const readMoreText = new Konva.Text({
+                        x: style.padding + iconWidthForCalc,
+                        y: style.padding + textDisplayHeight + style.padding * 0.2,
+                        text: '... Xem thêm',
+                        fontSize: style.fontSize * 0.8,
+                        fill: '#007bff',
+                        fontStyle: 'italic',
+                        name: 'readMoreIndicator',
+                        width: textRenderWidth,
+                        align: 'right'
+                    });
+                    group.add(readMoreText);
+                    readMoreText.on('click tap', () => {
+                        openNodeContentModal(nodeData.text.substring(0,30)+"...", fullText);
+                    });
+                }
+                group.add(textToRender);
+                
+                if (isTextTruncated) {
+                    textToRender.on('click tap', () => {
+                         openNodeContentModal(nodeData.text.substring(0,30)+"...", fullText);
+                    });
+                }
+
                 group.on('dragend', async function() { if(!db) return; try { await updateDoc(doc(db, "nodes", this.id()), { position: { x: this.x(), y: this.y() } }); } catch (e) { console.error("Error updating node position:", e); } });
-                group.on('click tap', function(e) { // This handles selection on short tap
+                group.on('click tap', function(e) {
                     e.evt.cancelBubble = true;
-                    // If a long press was initiated and menu shown, this tap might occur when selecting a menu item.
-                    // Or it's a genuine tap on the node.
-                    // The context menu itself will be hidden by its own item click handlers or stage click.
+                    if (isEditingText) return;
+                    if (e.target.name() === 'readMoreIndicator') return;
+
                     if (selectedKonvaNode && selectedKonvaNode !== this) { selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1); removeCreationHandle(selectedKonvaNode); }
                     selectedKonvaNode = this; this.findOne('.nodeShape')?.strokeWidth(3);
-                    const nodeDataForHandle = allNodesDataForCurrentMap.find(n => n.id === this.id());
-                    const currentHeightForHandle = nodeDataForHandle?.style?.height || this.findOne('.nodeShape')?.height() || DEFAULT_NODE_STYLE.minHeight;
-                    addCreationHandle(this, currentHeightForHandle);
+                    addCreationHandle(this, shape.height());
                     const clickedNodeData = allNodesDataForCurrentMap.find(n => n.id === this.id());
                     if(clickedNodeData) updateNodeStylePanel(clickedNodeData);
                     currentKonvaLayer.batchDraw();
-                    // Do not hide context menu here, as this tap might be part of selecting the node before a context menu action.
-                    // The stage click/tap and menu item clicks will handle hiding the context menu.
+                    if(contextMenu && e.evt.button !== 2) hideElement(contextMenu);
                 });
-                group.on('dblclick dbltap', function() { editTextOnKonvaNode(this, textToRender, dynamicShapeHeight); if(contextMenu) hideElement(contextMenu); });
-                konvaNodeObjects[nodeData.id] = group; currentKonvaLayer.add(group);
+                group.on('dblclick dbltap', function() {
+                    const textNode = this.findOne('.nodeTextContent');
+                    const shapeNode = this.findOne('.nodeShape');
+                    if (textNode && shapeNode) {
+                         editTextOnKonvaNode(this, textNode, shapeNode.height());
+                    }
+                    if(contextMenu) hideElement(contextMenu);
+                });
+
+                konvaNodeObjects[nodeData.id] = group;
+                currentKonvaLayer.add(group);
+
                 if (selectedKonvaNode && selectedKonvaNode.id() === nodeData.id) {
                     shape.strokeWidth(3);
-                    const nodeDataForHandle = allNodesDataForCurrentMap.find(n => n.id === selectedKonvaNode.id());
-                    const currentHeightForHandle = nodeDataForHandle?.style?.height || group.findOne('.nodeShape')?.height() || DEFAULT_NODE_STYLE.minHeight;
-                    addCreationHandle(group, currentHeightForHandle);
+                    addCreationHandle(group, shape.height());
                 }
             });
+
             nodesData.forEach(nodeData => {
                 if (nodeData.parentId && konvaNodeObjects[nodeData.parentId] && konvaNodeObjects[nodeData.id]) {
                     const parentKonvaNode = konvaNodeObjects[nodeData.parentId]; const childKonvaNode = konvaNodeObjects[nodeData.id];
                     const parentNodeFromData = allNodesDataForCurrentMap.find(n=>n.id === nodeData.parentId);
                     const parentRenderedShape = parentKonvaNode.findOne('.nodeShape'); const childRenderedShape = childKonvaNode.findOne('.nodeShape');
-                    const parentActualHeight = parentRenderedShape ? parentRenderedShape.height() : (parentNodeFromData?.style?.height || DEFAULT_NODE_STYLE.minHeight);
-                    const childActualHeight = childRenderedShape ? childRenderedShape.height() : (nodeData.style?.height || DEFAULT_NODE_STYLE.minHeight);
-                    const parentActualWidth = parentRenderedShape ? parentRenderedShape.width() : (parentNodeFromData?.style?.width || DEFAULT_NODE_STYLE.width);
-                    const childActualWidth = childRenderedShape ? childRenderedShape.width() : (nodeData.style?.width || DEFAULT_NODE_STYLE.width);
+                    const parentActualHeight = parentRenderedShape.height(); const childActualHeight = childRenderedShape.height();
+                    const parentActualWidth = parentRenderedShape.width(); const childActualWidth = childRenderedShape.width();
                     const parentStyle = { ...DEFAULT_NODE_STYLE, ...(parentNodeFromData?.style || {}) };
                     const line = new Konva.Line({
                         points: [ parentKonvaNode.x() + parentActualWidth / 2, parentKonvaNode.y() + parentActualHeight / 2, childKonvaNode.x() + childActualWidth / 2, childKonvaNode.y() + childActualHeight / 2 ],
@@ -1234,70 +1166,158 @@
         }
 
         const HANDLE_RADIUS = 8; const HANDLE_FILL = 'rgba(0,180,0,0.7)'; const HANDLE_STROKE = 'rgba(0,100,0,0.9)';
-        function addCreationHandle(parentNodeGroup, parentCurrentHeight) {
+        function addCreationHandle(parentNodeGroup, parentCurrentShapeHeight) {
             if (!parentNodeGroup || parentNodeGroup.findOne('.creationHandle')) return;
-            const parentShape = parentNodeGroup.findOne('.nodeShape'); if (!parentShape) return;
-            const shapeWidth = parentShape.width(); const actualHeight = parentCurrentHeight || parentShape.height();
-            let handleX = shapeWidth / 2; let handleY = actualHeight;
-            if (parentShape.getClassName() === 'Ellipse') { handleX = parentShape.x(); handleY = parentShape.y() + parentShape.radiusY(); }
+            const parentShapeInitial = parentNodeGroup.findOne('.nodeShape');
+            if (!parentShapeInitial) {
+                console.error("addCreationHandle: parentShapeInitial is undefined. Cannot add handle to node:", parentNodeGroup.id());
+                return;
+            }
+            const shapeWidth = parentShapeInitial.width();
+            let handleX = shapeWidth / 2;
+            let handleY = parentCurrentShapeHeight; // Use the passed height
+            if (parentShapeInitial.getClassName() === 'Ellipse') {
+                handleX = parentShapeInitial.x(); // Ellipse x is center
+                handleY = parentShapeInitial.y() + parentShapeInitial.radiusY();
+            }
+
             const handle = new Konva.Circle({
                 x: handleX, y: handleY, radius: HANDLE_RADIUS, fill: HANDLE_FILL, stroke: HANDLE_STROKE, strokeWidth: 1, draggable: true, name: 'creationHandle',
                 dragBoundFunc: function(pos) { const parentAbsPos = parentNodeGroup.getAbsolutePosition(); return { x: pos.x - parentAbsPos.x, y: pos.y - parentAbsPos.y, }; }
             });
             parentNodeGroup.add(handle); parentNodeGroup.creationHandle = handle;
-            handle.on('dragstart', function(e) { /* ... giữ nguyên ... */ });
-            handle.on('dragmove', function(e) { /* ... giữ nguyên ... */ });
-            handle.on('dragend', async function(e) { /* ... giữ nguyên ... */ });
+
+            handle.on('dragstart', function(e) {
+                e.evt.cancelBubble = true;
+                // Use parentNodeGroup from the closure
+                if (!currentKonvaLayer || !parentNodeGroup) {
+                    console.error("dragstart: currentKonvaLayer or parentNodeGroup is missing");
+                    return;
+                }
+                const currentParentShape = parentNodeGroup.findOne('.nodeShape');
+                if (!currentParentShape) {
+                    console.error("dragstart: currentParentShape is undefined. parentNodeGroup ID:", parentNodeGroup.id());
+                    return;
+                }
+                const parentStyle = allNodesDataForCurrentMap.find(n => n.id === parentNodeGroup.id())?.style || {};
+                const lineColor = parentStyle.lineColor || '#007bff';
+                const lineWidth = parentStyle.lineWidth || 2;
+                let startX = currentParentShape.width() / 2;
+                let startY = currentParentShape.height() / 2;
+                if (currentParentShape.getClassName() === 'Ellipse') {
+                    startX = currentParentShape.x();
+                    startY = currentParentShape.y();
+                }
+                tempCreationLine = new Konva.Line({ points: [ startX, startY, this.x(), this.y() ], stroke: lineColor, strokeWidth: lineWidth, dash: parentStyle.lineDash || [] });
+                parentNodeGroup.add(tempCreationLine); // Add to parentNodeGroup
+                currentKonvaLayer.batchDraw();
+            });
+            handle.on('dragmove', function(e) {
+                e.evt.cancelBubble = true;
+                if (tempCreationLine) {
+                    const points = tempCreationLine.points();
+                    points[2] = this.x();
+                    points[3] = this.y();
+                    tempCreationLine.points(points);
+                    currentKonvaLayer.batchDraw();
+                }
+            });
+            handle.on('dragend', async function(e) {
+                e.evt.cancelBubble = true;
+                if (tempCreationLine) { tempCreationLine.destroy(); tempCreationLine = null; }
+
+                // Use parentNodeGroup from the closure
+                if (!parentNodeGroup) {
+                     console.error("dragend: parentNodeGroup is missing");
+                     return;
+                }
+                const currentParentShapeForReset = parentNodeGroup.findOne('.nodeShape');
+                if (!currentParentShapeForReset) {
+                    console.error("dragend: currentParentShapeForReset is undefined. parentNodeGroup ID:", parentNodeGroup.id());
+                    const groupWidth = parentNodeGroup.width() || DEFAULT_NODE_STYLE.width;
+                    const groupHeight = parentNodeGroup.height() || parentCurrentShapeHeight; // Use initial height as fallback
+                    this.position({ x: groupWidth / 2, y: groupHeight });
+                    currentKonvaLayer.batchDraw();
+                    return;
+                }
+
+                const handleFinalRelativeX = this.x(); const handleFinalRelativeY = this.y();
+                const parentAbsPos = parentNodeGroup.getAbsolutePosition();
+                const newNodeAbsX = parentAbsPos.x + handleFinalRelativeX;
+                const newNodeAbsY = parentAbsPos.y + handleFinalRelativeY;
+
+                let resetHandleX = currentParentShapeForReset.width() / 2;
+                let resetHandleY = currentParentShapeForReset.height();
+                if (currentParentShapeForReset.getClassName() === 'Ellipse') {
+                    resetHandleX = currentParentShapeForReset.x();
+                    resetHandleY = currentParentShapeForReset.y() + currentParentShapeForReset.radiusY();
+                }
+                this.position({ x: resetHandleX, y: resetHandleY });
+
+                if (currentMindMapId && db && parentNodeGroup) { // Check parentNodeGroup instead of selectedKonvaNode
+                    const defaultChildWidth = 120; const defaultChildMinHeight = 40; const defaultChildPadding = 10;
+                    const newNodeData = {
+                        mapId: currentMindMapId, parentId: parentNodeGroup.id(), text: "Nút mới (kéo)",
+                        position: { x: newNodeAbsX - defaultChildWidth / 2, y: newNodeAbsY - defaultChildMinHeight / 2 },
+                        style: { ...DEFAULT_NODE_STYLE, backgroundColor: "#f9f9f9", textColor: "#333333", borderColor: "#cccccc", width: defaultChildWidth, minHeight: defaultChildMinHeight, padding: defaultChildPadding, cornerRadius: 3, shape: "rectangle", icon: '' },
+                        createdAt: serverTimestamp()
+                    };
+                    try { await addDoc(collection(db, "nodes"), newNodeData); }
+                    catch (err) { console.error("Error creating child node by dragging:", err); alert("Lỗi khi tạo nút con: " + err.message); }
+                }
+                currentKonvaLayer.batchDraw();
+            });
             currentKonvaLayer.batchDraw();
         }
         function removeCreationHandle(parentNodeGroup) { if (parentNodeGroup && parentNodeGroup.creationHandle) { parentNodeGroup.creationHandle.destroy(); parentNodeGroup.creationHandle = null; currentKonvaLayer.batchDraw(); } }
+
         function editTextOnKonvaNode(konvaGroup, konvaTextNode, currentShapeHeight) {
             if (!currentKonvaStage || !currentKonvaLayer || isEditingText) return;
-            isEditingText = true; konvaTextNode.hide(); const iconNode = konvaGroup.findOne('.nodeIcon'); if (iconNode) iconNode.hide();
+            isEditingText = true;
+            const fullTextData = konvaGroup.getAttr('fullTextData') || konvaTextNode.text();
+            konvaTextNode.hide();
+            const iconNode = konvaGroup.findOne('.nodeIcon'); if (iconNode) iconNode.hide();
+            const readMoreNode = konvaGroup.findOne('.readMoreIndicator'); if (readMoreNode) readMoreNode.hide();
             currentKonvaLayer.draw();
-            const textAbsPos = konvaTextNode.getAbsolutePosition(); const stageBox = currentKonvaStage.container().getBoundingClientRect();
+
+            const textAbsPos = konvaTextNode.getAbsolutePosition();
+            const stageBox = currentKonvaStage.container().getBoundingClientRect();
             let textareaBeingRemoved = false;
             const areaPosition = { x: stageBox.left + textAbsPos.x, y: stageBox.top + textAbsPos.y };
-            const textarea = document.createElement('textarea'); document.body.appendChild(textarea);
-            textarea.value = konvaTextNode.text();
-            textarea.style.position = 'absolute'; textarea.style.top = areaPosition.y + 'px'; textarea.style.left = areaPosition.x + 'px';
-            textarea.style.width = konvaTextNode.width() * currentKonvaStage.scaleX() + 'px';
-            textarea.style.height = konvaTextNode.height() * currentKonvaStage.scaleY() + 'px';
+
+            const textarea = document.createElement('textarea');
+            document.body.appendChild(textarea);
+            textarea.value = fullTextData;
+            textarea.style.position = 'absolute';
+            textarea.style.top = areaPosition.y + 'px';
+            textarea.style.left = areaPosition.x + 'px';
+            const textBlockWidth = konvaTextNode.width() * currentKonvaStage.scaleX();
+            const textBlockHeight = konvaTextNode.height() * currentKonvaStage.scaleY();
+            textarea.style.width = textBlockWidth + 'px';
+            textarea.style.height = Math.max(textBlockHeight, currentShapeHeight * 0.5 * currentKonvaStage.scaleY()) + 'px';
             textarea.style.fontSize = konvaTextNode.fontSize() * currentKonvaStage.scaleY() + 'px';
             textarea.style.border = '1px solid #999'; textarea.style.padding = '0px'; textarea.style.margin = '0px';
-            textarea.style.overflow = 'hidden'; textarea.style.background = 'white'; textarea.style.outline = 'none';
+            textarea.style.overflow = 'auto'; textarea.style.background = 'white'; textarea.style.outline = 'none';
             textarea.style.resize = 'none'; textarea.style.textAlign = konvaTextNode.align(); textarea.style.fontFamily = konvaTextNode.fontFamily();
-            textarea.style.display = 'flex'; textarea.style.alignItems = 'center'; textarea.style.justifyContent = 'center';
+            textarea.style.lineHeight = (konvaTextNode.lineHeight() || 1.2) * currentKonvaStage.scaleY() + 'px';
             textarea.focus(); textarea.select();
 
             async function saveAndRemoveTextarea() {
                 if (textareaBeingRemoved) return; textareaBeingRemoved = true;
-                const newText = textarea.value;
+                const newFullText = textarea.value;
                 if (textarea.parentNode) { textarea.parentNode.removeChild(textarea); }
-                const nodeRef = doc(db, "nodes", konvaGroup.id());
-                const nodeSnap = await getDoc(nodeRef);
-                let currentStyleForCalc = DEFAULT_NODE_STYLE;
-                if (nodeSnap.exists() && nodeSnap.data().style) { currentStyleForCalc = {...DEFAULT_NODE_STYLE, ...nodeSnap.data().style}; }
-                const { height: newFinalShapeHeight } = calculateNodeHeight(newText, currentStyleForCalc);
                 window.removeEventListener('click', handleOutsideClick); isEditingText = false;
                 if(!db) return;
                 try {
-                    const updatedNodeData = { text: newText, style: { ...currentStyleForCalc, height: newFinalShapeHeight } };
-                    await updateDoc(nodeRef, updatedNodeData);
+                    await updateDoc(doc(db, "nodes", konvaGroup.id()), { text: newFullText });
                 } catch (e) {
-                    console.error("Error updating node text and height in Firestore:", e);
-                    const originalKonvaTextNode = konvaGroup.findOne('Text');
-                    if (originalKonvaTextNode) { originalKonvaTextNode.text(textarea.value); originalKonvaTextNode.show(); }
-                    const originalIconNode = konvaGroup.findOne('.nodeIcon'); if (originalIconNode) originalIconNode.show();
-                    currentKonvaLayer.batchDraw();
+                    console.error("Error updating node text in Firestore:", e);
                 }
             }
             function removeTextareaWithoutSaving() {
                 if (textareaBeingRemoved) return; textareaBeingRemoved = true;
                 if (textarea.parentNode) { textarea.parentNode.removeChild(textarea); }
-                const originalKonvaTextNode = konvaGroup.findOne('Text'); if (originalKonvaTextNode) { originalKonvaTextNode.show(); }
-                const originalIconNode = konvaGroup.findOne('.nodeIcon'); if (originalIconNode) originalIconNode.show();
-                currentKonvaLayer.batchDraw(); window.removeEventListener('click', handleOutsideClick); isEditingText = false;
+                window.removeEventListener('click', handleOutsideClick); isEditingText = false;
             }
             textarea.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveAndRemoveTextarea(); } if (e.key === 'Escape') { removeTextareaWithoutSaving(); } });
             textarea.addEventListener('blur', saveAndRemoveTextarea);
@@ -1306,14 +1326,12 @@
         }
 
 
-        // --- AI LOGIC FOR SUGGESTING CHILD NODES ---
+        // --- AI LOGIC FUNCTIONS ---
         async function suggestChildNodesWithAI(parentNodeKonva) {
-            if (!generativeModel || !parentNodeKonva || !currentMindMapId || !currentUser || !db) {
-                alert("Chức năng AI chưa sẵn sàng hoặc thiếu thông tin cần thiết."); if(contextMenu) hideElement(contextMenu); return;
-            }
+            if (!generativeModel || !parentNodeKonva || !currentMindMapId || !currentUser || !db) { alert("Chức năng AI chưa sẵn sàng."); if(contextMenu) hideElement(contextMenu); return; }
             const parentNodeId = parentNodeKonva.id();
             const parentNodeData = allNodesDataForCurrentMap.find(n => n.id === parentNodeId);
-            if (!parentNodeData) { alert("Không tìm thấy dữ liệu cho nút cha đã chọn."); if(contextMenu) hideElement(contextMenu); return; }
+            if (!parentNodeData) { alert("Không tìm thấy dữ liệu nút cha."); if(contextMenu) hideElement(contextMenu); return; }
             const parentText = parentNodeData.text;
             const prompt = `Cho một nút sơ đồ tư duy với nội dung là "${parentText}", hãy gợi ý 3 ý tưởng ngắn gọn (khoảng 2-5 từ mỗi ý tưởng) cho các nút con liên quan trực tiếp. Mỗi ý tưởng trên một dòng riêng biệt. Không sử dụng đánh số, gạch đầu dòng hay bất kỳ ký tự đặc biệt nào ở đầu dòng.`;
             showLoadingIndicator("AI đang tạo gợi ý..."); if(contextMenu) hideElement(contextMenu);
@@ -1325,18 +1343,16 @@
                     const batch = writeBatch(db);
                     let startX = parentNodeKonva.x(); let startY = parentNodeKonva.y();
                     const parentShape = parentNodeKonva.findOne('.nodeShape');
-                    const parentWidth = parentShape?.width() || (parentShape?.radiusX && parentShape.radiusX() * 2) || DEFAULT_NODE_STYLE.width;
-                    const parentHeight = parentShape?.height() || (parentShape?.radiusY && parentShape.radiusY() * 2) || DEFAULT_NODE_STYLE.minHeight;
+                    const parentWidth = parentShape?.width() || DEFAULT_NODE_STYLE.width;
+                    const parentHeight = parentShape?.height() || DEFAULT_NODE_STYLE.minHeight;
                     startX += parentWidth / 4; startY += parentHeight + 30;
                     const yOffsetIncrement = (DEFAULT_NODE_STYLE.minHeight || 50) + 20;
                     suggestions.slice(0, 5).forEach((suggestion, index) => {
                         const newNodeId = doc(collection(db, "nodes")).id;
-                        const nodeStyleForCalc = { ...DEFAULT_NODE_STYLE, width: 130, fontSize: 13, padding: 10, icon: '' };
-                        const { height: newGeneratedNodeHeight } = calculateNodeHeight(suggestion, nodeStyleForCalc);
                         const newNodeData = {
                             mapId: currentMindMapId, parentId: parentNodeId, text: suggestion,
                             position: { x: startX, y: startY + (index * yOffsetIncrement) },
-                            style: { ...DEFAULT_NODE_STYLE, backgroundColor: "#E3F2FD", textColor: "#0D47A1", borderColor: "#90CAF9", shape: "roundedRectangle", cornerRadius: 8, width: 130, minHeight: 40, fontSize: 13, height: newGeneratedNodeHeight, icon: '' },
+                            style: { ...DEFAULT_NODE_STYLE, backgroundColor: "#E3F2FD", textColor: "#0D47A1", borderColor: "#90CAF9", shape: "roundedRectangle", cornerRadius: 8, width: 130, minHeight: 40, fontSize: 13, icon: '' },
                             createdAt: serverTimestamp()
                         };
                         const nodeRef = doc(db, "nodes", newNodeId); batch.set(nodeRef, newNodeData);
@@ -1346,116 +1362,62 @@
             } catch (error) {
                 console.error("Error calling Gemini API (suggestChildNodesWithAI):", error);
                 let userMessage = "Lỗi khi AI gợi ý nút con: " + error.message;
-                if (error.message && error.message.includes("API key not valid")) { userMessage += "\nVui lòng kiểm tra lại thiết lập API Key trong Firebase Console cho Gemini API."; }
-                else if (error.message && (error.message.includes("429") || error.message.toLowerCase().includes("quota")) ) { userMessage = "Bạn đã gửi quá nhiều yêu cầu tới AI hoặc đã hết hạn ngạch. Vui lòng thử lại sau ít phút."; }
-                else if (error.message && error.message.toLowerCase().includes("billing")){ userMessage = "Có vấn đề với cài đặt thanh toán cho dự án Firebase của bạn. Vui lòng kiểm tra trong Google Cloud Console."; }
-                else if (error.message && error.message.toLowerCase().includes("model not found")){ userMessage = "Model AI không được tìm thấy. Vui lòng kiểm tra lại tên model đã cấu hình.";}
+                if (error.message?.includes("API key not valid")) { userMessage += "\nVui lòng kiểm tra lại thiết lập API Key trong Firebase Console cho Gemini API."; }
+                else if (error.message?.includes("429") || error.message?.toLowerCase().includes("quota")) { userMessage = "Bạn đã gửi quá nhiều yêu cầu tới AI hoặc đã hết hạn ngạch. Vui lòng thử lại sau ít phút."; }
+                else if (error.message?.toLowerCase().includes("billing")){ userMessage = "Có vấn đề với cài đặt thanh toán cho dự án Firebase của bạn. Vui lòng kiểm tra trong Google Cloud Console."; }
+                else if (error.message?.toLowerCase().includes("model not found")){ userMessage = "Model AI không được tìm thấy. Vui lòng kiểm tra lại tên model đã cấu hình.";}
                 alert(userMessage);
             } finally { hideLoadingIndicator(); }
         }
-
-        // --- AI LOGIC FOR EXPANDING NODE TEXT ---
         async function expandNodeWithAI(targetNodeKonva) {
-            if (!generativeModel || !targetNodeKonva || !currentMindMapId || !currentUser || !db) {
-                alert("Chức năng AI chưa sẵn sàng hoặc thiếu thông tin cần thiết.");
-                if(contextMenu) hideElement(contextMenu);
-                return;
-            }
-
+            if (!generativeModel || !targetNodeKonva || !currentMindMapId || !currentUser || !db) { alert("Chức năng AI chưa sẵn sàng."); if(contextMenu) hideElement(contextMenu); return; }
             const targetNodeId = targetNodeKonva.id();
             const targetNodeData = allNodesDataForCurrentMap.find(n => n.id === targetNodeId);
-
-            if (!targetNodeData) {
-                alert("Không tìm thấy dữ liệu cho nút đã chọn để mở rộng.");
-                if(contextMenu) hideElement(contextMenu);
-                return;
-            }
-
+            if (!targetNodeData) { alert("Không tìm thấy dữ liệu cho nút đã chọn."); if(contextMenu) hideElement(contextMenu); return; }
             const currentText = targetNodeData.text;
             const prompt = `Với ý tưởng chính là "${currentText}", hãy viết một đoạn văn bản chi tiết hơn (khoảng 3-5 câu) để giải thích, làm rõ hoặc mở rộng ý tưởng này. Giữ văn phong mạch lạc và tập trung vào chủ đề.`;
-
-            showLoadingIndicator("AI đang mở rộng ý tưởng...");
-            if(contextMenu) hideElement(contextMenu);
-
+            showLoadingIndicator("AI đang mở rộng ý tưởng..."); if(contextMenu) hideElement(contextMenu);
             try {
                 const result = await generativeModel.generateContent(prompt);
-                const response = result.response;
-                const expandedText = response.text().trim();
-
+                const response = result.response; const expandedText = response.text().trim();
                 if (expandedText && expandedText !== currentText) {
                     const nodeRef = doc(db, "nodes", targetNodeId);
-                    const existingStyle = targetNodeData.style || {};
-                    const { height: newCalculatedHeight } = calculateNodeHeight(expandedText, existingStyle);
-                    const updatedStyle = { ...existingStyle, height: newCalculatedHeight };
-                    await updateDoc(nodeRef, { text: expandedText, style: updatedStyle });
-                } else if (expandedText === currentText) {
-                    alert("AI không tìm thấy cách mở rộng thêm cho ý tưởng này.");
-                } else {
-                    alert("AI không thể mở rộng ý tưởng vào lúc này.");
-                }
+                    await updateDoc(nodeRef, { text: expandedText });
+                } else if (expandedText === currentText) { alert("AI không tìm thấy cách mở rộng thêm cho ý tưởng này."); }
+                else { alert("AI không thể mở rộng ý tưởng vào lúc này."); }
             } catch (error) {
                 console.error("Error calling Gemini API (expandNodeWithAI):", error);
                 let userMessage = "Lỗi khi AI mở rộng ý tưởng: " + error.message;
-                 if (error.message && error.message.includes("API key not valid")) { userMessage += "\nVui lòng kiểm tra lại thiết lập API Key trong Firebase Console cho Gemini API."; }
-                else if (error.message && (error.message.includes("429") || error.message.toLowerCase().includes("quota")) ) { userMessage = "Bạn đã gửi quá nhiều yêu cầu tới AI hoặc đã hết hạn ngạch. Vui lòng thử lại sau ít phút."; }
-                else if (error.message && error.message.toLowerCase().includes("billing")){ userMessage = "Có vấn đề với cài đặt thanh toán cho dự án Firebase của bạn. Vui lòng kiểm tra trong Google Cloud Console."; }
-                else if (error.message && error.message.toLowerCase().includes("model not found")){ userMessage = "Model AI không được tìm thấy. Vui lòng kiểm tra lại tên model đã cấu hình.";}
+                if (error.message?.includes("API key not valid")) { userMessage += "\nVui lòng kiểm tra lại thiết lập API Key trong Firebase Console cho Gemini API."; }
+                else if (error.message?.includes("429") || error.message?.toLowerCase().includes("quota")) { userMessage = "Bạn đã gửi quá nhiều yêu cầu tới AI hoặc đã hết hạn ngạch. Vui lòng thử lại sau ít phút."; }
+                else if (error.message?.toLowerCase().includes("billing")){ userMessage = "Có vấn đề với cài đặt thanh toán cho dự án Firebase của bạn. Vui lòng kiểm tra trong Google Cloud Console."; }
+                else if (error.message?.toLowerCase().includes("model not found")){ userMessage = "Model AI không được tìm thấy. Vui lòng kiểm tra lại tên model đã cấu hình.";}
                 alert(userMessage);
-            } finally {
-                hideLoadingIndicator();
-            }
+            } finally { hideLoadingIndicator(); }
         }
-
-        // --- AI LOGIC FOR GENERATING EXAMPLES ---
         async function generateExamplesWithAI(targetNodeKonva) {
-            if (!generativeModel || !targetNodeKonva || !currentMindMapId || !currentUser || !db) {
-                alert("Chức năng AI chưa sẵn sàng hoặc thiếu thông tin cần thiết.");
-                if(contextMenu) hideElement(contextMenu);
-                return;
-            }
-
+             if (!generativeModel || !targetNodeKonva || !currentMindMapId || !currentUser || !db) { alert("Chức năng AI chưa sẵn sàng."); if(contextMenu) hideElement(contextMenu); return; }
             const targetNodeId = targetNodeKonva.id();
             const targetNodeData = allNodesDataForCurrentMap.find(n => n.id === targetNodeId);
-
-            if (!targetNodeData) {
-                alert("Không tìm thấy dữ liệu cho nút đã chọn để tạo ví dụ.");
-                if(contextMenu) hideElement(contextMenu);
-                return;
-            }
-
+            if (!targetNodeData) { alert("Không tìm thấy dữ liệu cho nút đã chọn."); if(contextMenu) hideElement(contextMenu); return; }
             const currentText = targetNodeData.text;
             const prompt = `Cho chủ đề sau: "${currentText}", hãy tạo ra 2 hoặc 3 ví dụ cụ thể để minh họa cho chủ đề này. Mỗi ví dụ trên một dòng riêng biệt. Không dùng đánh số hay gạch đầu dòng. Các ví dụ nên ngắn gọn và dễ hiểu.`;
-
-            showLoadingIndicator("AI đang tạo ví dụ...");
-            if(contextMenu) hideElement(contextMenu);
-
+            showLoadingIndicator("AI đang tạo ví dụ..."); if(contextMenu) hideElement(contextMenu);
             try {
                 const result = await generativeModel.generateContent(prompt);
-                const response = result.response;
-                const examplesText = response.text().trim();
+                const response = result.response; const examplesText = response.text().trim();
                 const examples = examplesText.split('\n').map(ex => ex.trim()).filter(ex => ex.length > 0 && ex.length < 150);
-
                 if (examples.length > 0) {
                     const batch = writeBatch(db);
-                    let startX = targetNodeKonva.x();
-                    let startY = targetNodeKonva.y();
+                    let startX = targetNodeKonva.x(); let startY = targetNodeKonva.y();
                     const parentShape = targetNodeKonva.findOne('.nodeShape');
-                    const parentWidth = parentShape?.width() || (parentShape?.radiusX && parentShape.radiusX() * 2) || DEFAULT_NODE_STYLE.width;
-                    const parentHeight = parentShape?.height() || (parentShape?.radiusY && parentShape.radiusY() * 2) || DEFAULT_NODE_STYLE.minHeight;
-                    startX += parentWidth / 3;
-                    startY += parentHeight + 35;
+                    const parentWidth = parentShape?.width() || DEFAULT_NODE_STYLE.width;
+                    const parentHeight = parentShape?.height() || DEFAULT_NODE_STYLE.minHeight;
+                    startX += parentWidth / 3; startY += parentHeight + 35;
                     const yOffsetIncrement = (DEFAULT_NODE_STYLE.minHeight || 50) + 20;
-
                     examples.slice(0, 3).forEach((example, index) => {
                         const newNodeId = doc(collection(db, "nodes")).id;
-                        const exampleNodeStyle = {
-                            ...DEFAULT_NODE_STYLE,
-                            backgroundColor: "#E8F5E9", textColor: "#2E7D32", borderColor: "#A5D6A7",
-                            shape: "roundedRectangle", cornerRadius: 7, width: 160, minHeight: 40, fontSize: 13, icon: '💡'
-                        };
-                        const { height: newExampleNodeHeight } = calculateNodeHeight(example, exampleNodeStyle);
-                        exampleNodeStyle.height = newExampleNodeHeight;
-
+                        const exampleNodeStyle = { ...DEFAULT_NODE_STYLE, backgroundColor: "#E8F5E9", textColor: "#2E7D32", borderColor: "#A5D6A7", shape: "roundedRectangle", cornerRadius: 7, width: 160, minHeight: 40, fontSize: 13, icon: '💡' };
                         const newNodeData = {
                             mapId: currentMindMapId, parentId: targetNodeId, text: `Ví dụ: ${example}`,
                             position: { x: startX + (index * 10), y: startY + (index * yOffsetIncrement) },
@@ -1468,66 +1430,37 @@
             } catch (error) {
                 console.error("Error calling Gemini API (generateExamplesWithAI):", error);
                 let userMessage = "Lỗi khi AI tạo ví dụ: " + error.message;
-                 if (error.message && error.message.includes("API key not valid")) { userMessage += "\nVui lòng kiểm tra lại thiết lập API Key trong Firebase Console cho Gemini API."; }
-                else if (error.message && (error.message.includes("429") || error.message.toLowerCase().includes("quota")) ) { userMessage = "Bạn đã gửi quá nhiều yêu cầu tới AI hoặc đã hết hạn ngạch. Vui lòng thử lại sau ít phút."; }
-                else if (error.message && error.message.toLowerCase().includes("billing")){ userMessage = "Có vấn đề với cài đặt thanh toán cho dự án Firebase của bạn. Vui lòng kiểm tra trong Google Cloud Console."; }
-                else if (error.message && error.message.toLowerCase().includes("model not found")){ userMessage = "Model AI không được tìm thấy. Vui lòng kiểm tra lại tên model đã cấu hình.";}
+                if (error.message?.includes("API key not valid")) { userMessage += "\nVui lòng kiểm tra lại thiết lập API Key trong Firebase Console cho Gemini API."; }
+                else if (error.message?.includes("429") || error.message?.toLowerCase().includes("quota")) { userMessage = "Bạn đã gửi quá nhiều yêu cầu tới AI hoặc đã hết hạn ngạch. Vui lòng thử lại sau ít phút."; }
+                else if (error.message?.toLowerCase().includes("billing")){ userMessage = "Có vấn đề với cài đặt thanh toán cho dự án Firebase của bạn. Vui lòng kiểm tra trong Google Cloud Console."; }
+                else if (error.message?.toLowerCase().includes("model not found")){ userMessage = "Model AI không được tìm thấy. Vui lòng kiểm tra lại tên model đã cấu hình.";}
                 alert(userMessage);
             } finally { hideLoadingIndicator(); }
         }
-
-        // --- AI LOGIC FOR ASKING ABOUT A NODE ---
         async function askAIAboutNode(targetNodeKonva) {
-            if (!generativeModel || !targetNodeKonva || !currentMindMapId || !currentUser || !db) {
-                alert("Chức năng AI chưa sẵn sàng hoặc thiếu thông tin cần thiết.");
-                if(contextMenu) hideElement(contextMenu);
-                return;
-            }
-
+            if (!generativeModel || !targetNodeKonva || !currentMindMapId || !currentUser || !db) { alert("Chức năng AI chưa sẵn sàng."); if(contextMenu) hideElement(contextMenu); return; }
             const targetNodeId = targetNodeKonva.id();
             const targetNodeData = allNodesDataForCurrentMap.find(n => n.id === targetNodeId);
-
-            if (!targetNodeData) {
-                alert("Không tìm thấy dữ liệu cho nút đã chọn để đặt câu hỏi.");
-                if(contextMenu) hideElement(contextMenu);
-                return;
-            }
-
+            if (!targetNodeData) { alert("Không tìm thấy dữ liệu cho nút đã chọn."); if(contextMenu) hideElement(contextMenu); return; }
             const nodeTextContext = targetNodeData.text;
             const userQuestion = window.prompt(`Hỏi AI về nội dung của nút: "${nodeTextContext}"\nNhập câu hỏi của bạn:`, "");
-
-            if (!userQuestion || userQuestion.trim() === "") {
-                if(contextMenu) hideElement(contextMenu);
-                return; // Người dùng hủy hoặc không nhập gì
-            }
-
+            if (!userQuestion || userQuestion.trim() === "") { if(contextMenu) hideElement(contextMenu); return; }
             const prompt = `Nội dung của một nút trong sơ đồ tư duy là: "${nodeTextContext}".\n\nNgười dùng có câu hỏi sau về nút này: "${userQuestion.trim()}"\n\nHãy trả lời câu hỏi đó một cách ngắn gọn và súc tích, tập trung vào ngữ cảnh được cung cấp từ nút.`;
-
-            showLoadingIndicator("AI đang trả lời câu hỏi...");
-            if(contextMenu) hideElement(contextMenu);
-
+            showLoadingIndicator("AI đang trả lời câu hỏi..."); if(contextMenu) hideElement(contextMenu);
             try {
                 const result = await generativeModel.generateContent(prompt);
-                const response = result.response;
-                const aiAnswer = response.text().trim();
-
-                if (aiAnswer) {
-                    openAiResponseModal(`Hỏi AI về: "${nodeTextContext}"`, userQuestion.trim(), aiAnswer);
-                } else {
-                    openAiResponseModal(`Hỏi AI về: "${nodeTextContext}"`, userQuestion.trim(), "AI không thể đưa ra câu trả lời vào lúc này.");
-                }
-
+                const response = result.response; const aiAnswer = response.text().trim();
+                if (aiAnswer) { openAiResponseModal(`Hỏi AI về: "${nodeTextContext}"`, userQuestion.trim(), aiAnswer); }
+                else { openAiResponseModal(`Hỏi AI về: "${nodeTextContext}"`, userQuestion.trim(), "AI không thể đưa ra câu trả lời vào lúc này."); }
             } catch (error) {
                 console.error("Error calling Gemini API (askAIAboutNode):", error);
                 let userMessage = "Lỗi khi AI trả lời câu hỏi: " + error.message;
-                 if (error.message && error.message.includes("API key not valid")) { userMessage += "\nVui lòng kiểm tra lại thiết lập API Key trong Firebase Console cho Gemini API."; }
-                else if (error.message && (error.message.includes("429") || error.message.toLowerCase().includes("quota")) ) { userMessage = "Bạn đã gửi quá nhiều yêu cầu tới AI hoặc đã hết hạn ngạch. Vui lòng thử lại sau ít phút."; }
-                else if (error.message && error.message.toLowerCase().includes("billing")){ userMessage = "Có vấn đề với cài đặt thanh toán cho dự án Firebase của bạn. Vui lòng kiểm tra trong Google Cloud Console."; }
-                else if (error.message && error.message.toLowerCase().includes("model not found")){ userMessage = "Model AI không được tìm thấy. Vui lòng kiểm tra lại tên model đã cấu hình.";}
+                if (error.message?.includes("API key not valid")) { userMessage += "\nVui lòng kiểm tra lại thiết lập API Key trong Firebase Console cho Gemini API."; }
+                else if (error.message?.includes("429") || error.message?.toLowerCase().includes("quota")) { userMessage = "Bạn đã gửi quá nhiều yêu cầu tới AI hoặc đã hết hạn ngạch. Vui lòng thử lại sau ít phút."; }
+                else if (error.message?.toLowerCase().includes("billing")){ userMessage = "Có vấn đề với cài đặt thanh toán cho dự án Firebase của bạn. Vui lòng kiểm tra trong Google Cloud Console."; }
+                else if (error.message?.toLowerCase().includes("model not found")){ userMessage = "Model AI không được tìm thấy. Vui lòng kiểm tra lại tên model đã cấu hình.";}
                 openAiResponseModal("Lỗi AI", userQuestion.trim(), userMessage);
-            } finally {
-                hideLoadingIndicator();
-            }
+            } finally { hideLoadingIndicator(); }
         }
 
 
@@ -1547,11 +1480,27 @@
             ctxEditTextButton.addEventListener('click', () => {
                 let targetNode = rightClickedKonvaNode || selectedKonvaNode;
                 if (targetNode) {
-                    const textNode = targetNode.findOne('Text');
+                    const textNode = targetNode.findOne('.nodeTextContent');
                     const shapeNode = targetNode.findOne('.nodeShape');
                     if (textNode && shapeNode) {
                         editTextOnKonvaNode(targetNode, textNode, shapeNode.height());
                     }
+                }
+                if(contextMenu) hideElement(contextMenu);
+            });
+        }
+        if (ctxViewFullContentButton) {
+            ctxViewFullContentButton.addEventListener('click', () => {
+                const targetNode = rightClickedKonvaNode || selectedKonvaNode;
+                if (targetNode) {
+                    const fullText = targetNode.getAttr('fullTextData');
+                    if (fullText) {
+                        openNodeContentModal(fullText.substring(0,30)+"...", fullText);
+                    } else {
+                        alert("Không có nội dung đầy đủ để hiển thị.");
+                    }
+                } else {
+                    alert("Vui lòng chọn một nút để xem nội dung.");
                 }
                 if(contextMenu) hideElement(contextMenu);
             });
@@ -1609,8 +1558,6 @@
             const parentWidth = parentShape?.width() || (parentShape?.radiusX && parentShape.radiusX() * 2) || DEFAULT_NODE_STYLE.width;
             const parentHeight = parentShape?.height() || (parentShape?.radiusY && parentShape.radiusY() * 2) || DEFAULT_NODE_STYLE.minHeight;
             const defaultChildStyle = { ...DEFAULT_NODE_STYLE, backgroundColor: "#f9f9f9", textColor: "#333333", borderColor: "#cccccc", shape: "rectangle", cornerRadius: 3, icon: '' };
-            const { height: newChildNodeHeight } = calculateNodeHeight("Nút con mới", defaultChildStyle);
-            defaultChildStyle.height = newChildNodeHeight;
             const newNodeData = {
                 mapId: currentMindMapId, parentId: parentNode.id(), text: "Nút con mới",
                 position: { x: parentNode.x() + parentWidth / 4, y: parentNode.y() + parentHeight + 30 },
@@ -1631,7 +1578,7 @@
         async function deleteNodeLogic(nodeToDelete) {
             if (!nodeToDelete || !currentMindMapId || !db) return;
             const nodeId = nodeToDelete.id();
-            const konvaTextNode = nodeToDelete.findOne('Text');
+            const konvaTextNode = nodeToDelete.findOne('.nodeTextContent');
             const nodeText = konvaTextNode ? konvaTextNode.text() : "Không có tiêu đề";
             if (window.confirm(`Bạn có chắc muốn xóa nút "${nodeText}" và TẤT CẢ các nút con của nó không? Hành động này không thể hoàn tác.`)) {
                 try {
@@ -1668,7 +1615,7 @@
                 case 'Tab': if (selectedKonvaNode) { e.preventDefault(); addChildNodeLogic(selectedKonvaNode); } break;
                 case 'Enter':
                     if (selectedKonvaNode) {
-                        e.preventDefault(); const textNode = selectedKonvaNode.findOne('Text'); const shapeNode = selectedKonvaNode.findOne('.nodeShape');
+                        e.preventDefault(); const textNode = selectedKonvaNode.findOne('.nodeTextContent'); const shapeNode = selectedKonvaNode.findOne('.nodeShape');
                         if (textNode && shapeNode) { editTextOnKonvaNode(selectedKonvaNode, textNode, shapeNode.height()); }
                     } break;
                 case 'Delete': case 'Backspace': if (selectedKonvaNode) { e.preventDefault(); deleteNodeLogic(selectedKonvaNode); } break;
