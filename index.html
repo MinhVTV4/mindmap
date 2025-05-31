@@ -420,7 +420,8 @@
                             <input type="color" id="node-line-color" title="Màu đường nối từ nút này">
                         </div>
                          <div class="style-group">
-                            <label for="node-line-dash-select">Kiểu đường:</label> <select id="node-line-dash-select" title="Kiểu đường nối từ nút này">
+                            <label for="node-line-dash-select">Kiểu đường:</label> 
+                            <select id="node-line-dash-select" title="Kiểu đường nối từ nút này">
                                 <option value="solid">Liền</option>
                                 <option value="dashed">Đứt</option>
                                 <option value="dotted">Chấm</option>
@@ -519,7 +520,7 @@
             icon: '', 
             iconSize: 16, 
             iconSpacing: 5, 
-            lineColor: "#888888", lineWidth: 2, lineDash: [] // Mới: lineDash mặc định
+            lineColor: "#888888", lineWidth: 3, lineDash: [] // Tăng lineWidth mặc định
         };
 
 
@@ -533,7 +534,7 @@
         const nodeTextColorInput = document.getElementById('node-text-color');
         const nodeBorderColorInput = document.getElementById('node-border-color');
         const nodeLineColorInput = document.getElementById('node-line-color'); 
-        const nodeLineDashSelect = document.getElementById('node-line-dash-select'); // Mới
+        const nodeLineDashSelect = document.getElementById('node-line-dash-select'); 
         const nodeLineWidthInput = document.getElementById('node-line-width'); 
 
         // Context Menu Elements
@@ -769,15 +770,15 @@
         // Helper to convert lineDash array to string for select
         function lineDashArrayToString(dashArray) {
             if (!dashArray || dashArray.length === 0) return 'solid';
-            if (JSON.stringify(dashArray) === JSON.stringify([10, 5])) return 'dashed';
-            if (JSON.stringify(dashArray) === JSON.stringify([2, 5])) return 'dotted';
+            if (JSON.stringify(dashArray) === JSON.stringify([15, 8])) return 'dashed'; // Cập nhật giá trị
+            if (JSON.stringify(dashArray) === JSON.stringify([3, 8])) return 'dotted';   // Cập nhật giá trị
             return 'solid'; // Default
         }
 
         // Helper to convert string from select to lineDash array
         function stringToLineDashArray(dashString) {
-            if (dashString === 'dashed') return [10, 5];
-            if (dashString === 'dotted') return [2, 5];
+            if (dashString === 'dashed') return [15, 8]; // Cập nhật giá trị
+            if (dashString === 'dotted') return [3, 8];  // Cập nhật giá trị
             return []; // Solid
         }
 
@@ -796,7 +797,7 @@
             if(nodeTextColorInput) nodeTextColorInput.value = style.textColor || DEFAULT_NODE_STYLE.textColor;
             if(nodeBorderColorInput) nodeBorderColorInput.value = style.borderColor || DEFAULT_NODE_STYLE.borderColor; 
             if(nodeLineColorInput) nodeLineColorInput.value = style.lineColor || DEFAULT_NODE_STYLE.lineColor; 
-            if(nodeLineDashSelect) nodeLineDashSelect.value = lineDashArrayToString(style.lineDash || DEFAULT_NODE_STYLE.lineDash); // Mới
+            if(nodeLineDashSelect) nodeLineDashSelect.value = lineDashArrayToString(style.lineDash); // Bỏ || DEFAULT_NODE_STYLE.lineDash vì đã có trong style
             if(nodeLineWidthInput) nodeLineWidthInput.value = style.lineWidth || DEFAULT_NODE_STYLE.lineWidth; 
             if(nodeStylePanel) showElement(nodeStylePanel);
         }
@@ -809,7 +810,7 @@
             if (property === 'lineWidth' || property === 'fontSize') {
                 processedValue = parseInt(value, 10);
             } else if (property === 'lineDash') {
-                processedValue = stringToLineDashArray(value); // Chuyển đổi string từ select sang array
+                processedValue = stringToLineDashArray(value); 
             }
 
 
@@ -865,7 +866,7 @@
         if (nodeTextColorInput) nodeTextColorInput.addEventListener('input', (e) => handleNodeStyleChange('textColor', e.target.value));
         if (nodeBorderColorInput) nodeBorderColorInput.addEventListener('input', (e) => handleNodeStyleChange('borderColor', e.target.value));
         if (nodeLineColorInput) nodeLineColorInput.addEventListener('input', (e) => handleNodeStyleChange('lineColor', e.target.value)); 
-        if (nodeLineDashSelect) nodeLineDashSelect.addEventListener('change', (e) => handleNodeStyleChange('lineDash', e.target.value)); // Mới
+        if (nodeLineDashSelect) nodeLineDashSelect.addEventListener('change', (e) => handleNodeStyleChange('lineDash', e.target.value)); 
         if (nodeLineWidthInput) nodeLineWidthInput.addEventListener('input', (e) => handleNodeStyleChange('lineWidth', e.target.value)); 
 
 
@@ -912,7 +913,7 @@
                             iconSpacing: DEFAULT_NODE_STYLE.iconSpacing,
                             lineColor: DEFAULT_NODE_STYLE.lineColor, 
                             lineWidth: DEFAULT_NODE_STYLE.lineWidth,
-                            lineDash: DEFAULT_NODE_STYLE.lineDash // Mới
+                            lineDash: DEFAULT_NODE_STYLE.lineDash 
                         },
                         createdAt: serverTimestamp()
                     };
@@ -1179,7 +1180,7 @@
                         fill: style.textColor, 
                         x: textPadding,
                         listening: false,
-                        name: 'nodeIcon' // Thêm name cho icon
+                        name: 'nodeIcon' 
                     });
                     iconTextWidth = iconObject.width() + iconSpacing;
                 }
@@ -1195,7 +1196,7 @@
                     align: 'center'
                 });
                 const actualTextContentHeight = tempText.height();
-                const dynamicShapeHeight = Math.max(style.minHeight, actualTextContentHeight + 2 * textPadding, iconObject ? iconObject.height() + 2* textPadding : 0); // Đảm bảo nút đủ cao cho cả icon
+                const dynamicShapeHeight = Math.max(style.minHeight, actualTextContentHeight + 2 * textPadding, iconObject ? iconObject.height() + 2* textPadding : 0); 
 
 
                 const group = new Konva.Group({
@@ -1308,7 +1309,7 @@
                     const parentKonvaNode = konvaNodeObjects[nodeData.parentId];
                     const childKonvaNode = konvaNodeObjects[nodeData.id];
 
-                    const parentNodeFromData = nodesData.find(n=>n.id === nodeData.parentId);
+                    const parentNodeFromData = allNodesDataForCurrentMap.find(n=>n.id === nodeData.parentId); // Sử dụng allNodesDataForCurrentMap
                     // const childNodeFromData = nodeData; 
 
                     const parentRenderedShape = parentKonvaNode.findOne('.nodeShape');
@@ -1330,7 +1331,7 @@
                         ],
                         stroke: parentStyle.lineColor, 
                         strokeWidth: parentStyle.lineWidth, 
-                        dash: parentStyle.lineDash || [], // Áp dụng lineDash
+                        dash: parentStyle.lineDash, // Đã được đảm bảo là array từ DEFAULT_NODE_STYLE hoặc Firestore
                         lineCap: 'round',
                         lineJoin: 'round',
                         name: 'connectionLine'
@@ -1412,7 +1413,7 @@
                     ],
                     stroke: lineColor,
                     strokeWidth: lineWidth,
-                    dash: parentStyle.lineDash || [] // Áp dụng lineDash cho temp line
+                    dash: parentStyle.lineDash || [] 
                 });
                 selectedKonvaNode.add(tempCreationLine); 
                 currentKonvaLayer.batchDraw();
@@ -1480,7 +1481,7 @@
                             cornerRadius: 3,
                             lineColor: DEFAULT_NODE_STYLE.lineColor, 
                             lineWidth: DEFAULT_NODE_STYLE.lineWidth,
-                            lineDash: DEFAULT_NODE_STYLE.lineDash, // Mới
+                            lineDash: DEFAULT_NODE_STYLE.lineDash, 
                             shape: "rectangle",
                             fontSize: DEFAULT_NODE_STYLE.fontSize, 
                             fontFamily: DEFAULT_NODE_STYLE.fontFamily,
@@ -1604,7 +1605,7 @@
                     console.log("Node text and style.height updated in Firestore.");
                 } catch (e) { 
                     console.error("Error updating node text and height in Firestore:", e); 
-                    const originalKonvaTextNode = konvaGroup.findOne('Text'); // Lấy lại tham chiếu
+                    const originalKonvaTextNode = konvaGroup.findOne('Text'); 
                      if (originalKonvaTextNode) {
                         originalKonvaTextNode.text(textarea.value); 
                         originalKonvaTextNode.show();
