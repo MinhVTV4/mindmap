@@ -805,8 +805,7 @@
                             textColor: "#ffffff", 
                             borderColor: "#0e5aab", 
                             shape: "ellipse", 
-                            width: 150, height: 60,
-                            padding: 10, // Thêm padding mặc định
+                            width: 150, minHeight: 60, padding: 10, // Sử dụng minHeight
                             lineColor: "#888888", 
                             lineWidth: 2         
                         },
@@ -982,7 +981,7 @@
                         }
                         selectedKonvaNode = rightClickedKonvaNode;
                         selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(3);
-                        addCreationHandle(selectedKonvaNode);
+                        addCreationHandle(selectedKonvaNode); // Sẽ cần truyền chiều cao động ở đây
                         const nodeData = allNodesDataForCurrentMap.find(n => n.id === selectedKonvaNode.id());
                         if (nodeData) updateNodeStylePanel(nodeData);
                         currentKonvaLayer.batchDraw();
@@ -1052,6 +1051,14 @@
             if (!currentKonvaLayer) return;
             currentKonvaLayer.destroyChildren(); 
             const konvaNodeObjects = {};
+             const defaultNodeStyle = { // Di chuyển ra ngoài vòng lặp
+                backgroundColor: "#e0e0e0", textColor: "#000000", borderColor: "#555555", 
+                shape: "rectangle", 
+                width: 150, minHeight: 50, padding: 10, 
+                cornerRadius: 5, fontSize: 14, fontFamily: 'Arial',
+                lineColor: "#888888", lineWidth: 2 
+            };
+
 
             nodesData.forEach(nodeData => {
                 if (!nodeData.position || typeof nodeData.position.x !== 'number' || typeof nodeData.position.y !== 'number') {
@@ -1059,14 +1066,19 @@
                     return; 
                 }
 
-                const defaultNodeStyle = {
-                    backgroundColor: "#e0e0e0", textColor: "#000000", borderColor: "#555555", 
-                    shape: "rectangle", 
-                    width: 150, height: 50, cornerRadius: 5, fontSize: 14, fontFamily: 'Arial',
-                    padding: 10, // Thêm padding mặc định vào defaultNodeStyle
-                    lineColor: "#888888", lineWidth: 2 
-                };
                 const style = { ...defaultNodeStyle, ...(nodeData.style || {}) };
+                const textPadding = style.padding;
+
+                const tempText = new Konva.Text({
+                    text: nodeData.text,
+                    fontSize: style.fontSize,
+                    fontFamily: style.fontFamily,
+                    width: style.width - 2 * textPadding, 
+                    align: 'center'
+                });
+                const actualTextContentHeight = tempText.height();
+                const dynamicShapeHeight = Math.max(style.minHeight, actualTextContentHeight + 2 * textPadding);
+
 
                 const group = new Konva.Group({
                     x: nodeData.position.x,
@@ -1079,10 +1091,10 @@
                 let shape;
                 if (style.shape === 'ellipse') {
                     shape = new Konva.Ellipse({
-                        x: style.width / 2, // Đặt tâm của elip vào (width/2, height/2) của group
-                        y: style.height / 2,
+                        x: style.width / 2, 
+                        y: dynamicShapeHeight / 2,
                         radiusX: style.width / 2,
-                        radiusY: style.height / 2,
+                        radiusY: dynamicShapeHeight / 2, 
                         fill: style.backgroundColor,
                         stroke: style.borderColor, 
                         strokeWidth: 1, 
@@ -1090,9 +1102,8 @@
                     });
                 } else if (style.shape === 'roundedRectangle') {
                      shape = new Konva.Rect({
-                        // x, y của Rect là 0,0 so với group
                         width: style.width,
-                        height: style.height,
+                        height: dynamicShapeHeight, 
                         fill: style.backgroundColor,
                         stroke: style.borderColor, 
                         strokeWidth: 1, 
@@ -1102,9 +1113,8 @@
                 }
                 else { 
                     shape = new Konva.Rect({
-                        // x, y của Rect là 0,0 so với group
                         width: style.width,
-                        height: style.height,
+                        height: dynamicShapeHeight, 
                         fill: style.backgroundColor,
                         stroke: style.borderColor, 
                         strokeWidth: 1, 
@@ -1113,25 +1123,21 @@
                     });
                 }
                 group.add(shape);
+                shape.moveToBottom(); 
 
-                const textPadding = style.padding;
-                const text = new Konva.Text({
+                const textToRender = new Konva.Text({
                     text: nodeData.text,
                     fontSize: style.fontSize,
                     fontFamily: style.fontFamily,
                     fill: style.textColor,
-                    width: style.width - 2 * textPadding, // Chiều rộng cho nội dung text
-                    x: textPadding, // Vị trí x của text box bên trong group
-                    // height: style.height - 2 * textPadding, // Chiều cao cho nội dung text (Konva sẽ tự tính nếu bỏ)
+                    width: style.width - 2 * textPadding,
+                    x: textPadding,
+                    padding: 0, 
                     align: 'center',
                     listening: false
                 });
-                // Để Konva tự tính chiều cao của text dựa trên width và content
-                // Sau đó căn y thủ công
-                const textHeight = text.height(); // Lấy chiều cao thực tế của text sau khi đã có width
-                text.y((style.height - textHeight) / 2);
-
-                group.add(text);
+                textToRender.y((dynamicShapeHeight - textToRender.height()) / 2); 
+                group.add(textToRender);
 
 
                 group.on('dragend', async function() {
@@ -1151,7 +1157,7 @@
                     }
                     selectedKonvaNode = this;
                     this.findOne('.nodeShape')?.strokeWidth(3);
-                    addCreationHandle(this); 
+                    addCreationHandle(this, dynamicShapeHeight); 
                     
                     const clickedNodeData = allNodesDataForCurrentMap.find(n => n.id === this.id());
                     if(clickedNodeData) updateNodeStylePanel(clickedNodeData);
@@ -1161,7 +1167,7 @@
                 });
 
                 group.on('dblclick dbltap', function() {
-                    editTextOnKonvaNode(this, text);
+                    editTextOnKonvaNode(this, textToRender, dynamicShapeHeight); 
                     if(contextMenu) hideElement(contextMenu); 
                 });
 
@@ -1170,7 +1176,7 @@
 
                 if (selectedKonvaNode && selectedKonvaNode.id() === nodeData.id) {
                     shape.strokeWidth(3);
-                    addCreationHandle(group);
+                    addCreationHandle(group, dynamicShapeHeight); 
                 }
             });
 
@@ -1180,18 +1186,24 @@
                     const childKonvaNode = konvaNodeObjects[nodeData.id];
 
                     const parentNodeFromData = nodesData.find(n=>n.id === nodeData.parentId);
+                    // const childNodeFromData = nodeData; // Không cần thiết vì nodeData đã là của child
 
-                    const defaultParentStyle = { width: 150, height: 50, lineColor: "#888888", lineWidth: 2 };
-                    const parentStyle = { ...defaultParentStyle, ...(parentNodeFromData?.style || {}) };
+                    const parentRenderedShape = parentKonvaNode.findOne('.nodeShape');
+                    const childRenderedShape = childKonvaNode.findOne('.nodeShape');
+
+                    const parentActualHeight = parentRenderedShape ? parentRenderedShape.height() : (parentNodeFromData?.style?.height || defaultNodeStyle.minHeight);
+                    const childActualHeight = childRenderedShape ? childRenderedShape.height() : (nodeData.style?.height || defaultNodeStyle.minHeight);
                     
-                    const defaultChildStyle = { width: 150, height: 50 };
-                    const childStyle = { ...defaultChildStyle, ...(nodeData.style || {}) };
+                    const parentActualWidth = parentRenderedShape ? parentRenderedShape.width() : (parentNodeFromData?.style?.width || defaultNodeStyle.width);
+                    const childActualWidth = childRenderedShape ? childRenderedShape.width() : (nodeData.style?.width || defaultNodeStyle.width);
 
 
+                    const parentStyle = { ...defaultNodeStyle, ...(parentNodeFromData?.style || {}) };
+                    
                     const line = new Konva.Line({
                         points: [
-                            parentKonvaNode.x() + parentStyle.width / 2, parentKonvaNode.y() + parentStyle.height / 2,
-                            childKonvaNode.x() + childStyle.width / 2, childKonvaNode.y() + childStyle.height / 2
+                            parentKonvaNode.x() + parentActualWidth / 2, parentKonvaNode.y() + parentActualHeight / 2,
+                            childKonvaNode.x() + childActualWidth / 2, childKonvaNode.y() + childActualHeight / 2
                         ],
                         stroke: parentStyle.lineColor, 
                         strokeWidth: parentStyle.lineWidth, 
@@ -1211,21 +1223,21 @@
         const HANDLE_FILL = 'rgba(0,180,0,0.7)';
         const HANDLE_STROKE = 'rgba(0,100,0,0.9)';
 
-        function addCreationHandle(parentNodeGroup) {
+        function addCreationHandle(parentNodeGroup, parentCurrentHeight) { 
             if (!parentNodeGroup || parentNodeGroup.findOne('.creationHandle')) return; 
 
             const parentShape = parentNodeGroup.findOne('.nodeShape');
             if (!parentShape) return;
             
-            // Lấy kích thước thực của shape để đặt handle
             const shapeWidth = parentShape.width(); 
-            const shapeHeight = parentShape.height();
+            // parentCurrentHeight là chiều cao thực tế của shape, đã tính toán dựa trên text
+
             let handleX = shapeWidth / 2;
-            let handleY = shapeHeight;
+            let handleY = parentCurrentHeight; 
 
             if (parentShape.getClassName() === 'Ellipse') {
-                handleX = shapeWidth; // Ellipse radiusX là width/2, x là tâm.
-                handleY = shapeHeight / 2 + parentShape.radiusY(); // Cạnh dưới của Ellipse
+                handleX = parentShape.x(); 
+                handleY = parentShape.y() + parentShape.radiusY(); 
             }
 
 
@@ -1260,10 +1272,10 @@
                 
                 const currentParentShape = selectedKonvaNode.findOne('.nodeShape');
                 let startX = currentParentShape.width() / 2;
-                let startY = currentParentShape.height() / 2;
+                let startY = currentParentShape.height() / 2; 
                 if (currentParentShape.getClassName() === 'Ellipse') {
-                    startX = currentParentShape.x(); // Tâm của Ellipse
-                    startY = currentParentShape.y(); // Tâm của Ellipse
+                    startX = currentParentShape.x(); 
+                    startY = currentParentShape.y(); 
                 }
 
 
@@ -1309,10 +1321,10 @@
                 
                 const currentParentShapeForReset = selectedKonvaNode.findOne('.nodeShape');
                 let resetHandleX = currentParentShapeForReset.width() / 2;
-                let resetHandleY = currentParentShapeForReset.height();
+                let resetHandleY = currentParentShapeForReset.height(); 
                 if (currentParentShapeForReset.getClassName() === 'Ellipse') {
-                    resetHandleX = currentParentShapeForReset.x(); // Tâm Ellipse
-                    resetHandleY = currentParentShapeForReset.y() + currentParentShapeForReset.radiusY(); // Cạnh dưới
+                    resetHandleX = currentParentShapeForReset.x(); 
+                    resetHandleY = currentParentShapeForReset.y() + currentParentShapeForReset.radiusY(); 
                 }
 
 
@@ -1323,23 +1335,25 @@
 
                 if (currentMindMapId && db && selectedKonvaNode) {
                     const defaultChildWidth = 120;
-                    const defaultChildHeight = 40;
+                    const defaultChildMinHeight = 40; 
+                    const defaultChildPadding = 10;
+
                     const newNodeData = {
                         mapId: currentMindMapId,
                         parentId: selectedKonvaNode.id(),
                         text: "Nút mới (kéo)",
                         position: { 
                             x: newNodeAbsX - defaultChildWidth / 2,
-                            y: newNodeAbsY - defaultChildHeight / 2
+                            y: newNodeAbsY - defaultChildMinHeight / 2 
                         },
                         style: { 
                             backgroundColor: "#f9f9f9", 
                             textColor: "#333333", 
                             borderColor: "#cccccc", 
                             width: defaultChildWidth, 
-                            height: defaultChildHeight, 
+                            minHeight: defaultChildMinHeight, 
+                            padding: defaultChildPadding,
                             cornerRadius: 3,
-                            padding: 10,
                             lineColor: "#888888", 
                             lineWidth: 2,
                             shape: "rectangle" 
@@ -1367,20 +1381,24 @@
         }
 
 
-        function editTextOnKonvaNode(konvaGroup, konvaTextNode) {
+        function editTextOnKonvaNode(konvaGroup, konvaTextNode, currentShapeHeight) { 
             if (!currentKonvaStage || !currentKonvaLayer || isEditingText) return;
             isEditingText = true; 
             konvaTextNode.hide();
             currentKonvaLayer.draw(); 
 
-            const textPosition = konvaTextNode.getAbsolutePosition(); // Lấy vị trí tuyệt đối của Konva.Text
+            const textAbsPos = konvaTextNode.getAbsolutePosition(); 
             const stageBox = currentKonvaStage.container().getBoundingClientRect(); 
             let textareaBeingRemoved = false; 
 
-            const areaPosition = {
-                x: stageBox.left + textPosition.x,
-                y: stageBox.top + textPosition.y
+            const areaPosition = { 
+                x: stageBox.left + textAbsPos.x,
+                y: stageBox.top + textAbsPos.y
             };
+            
+            const nodeStyle = allNodesDataForCurrentMap.find(n => n.id === konvaGroup.id())?.style || {};
+            const textPadding = nodeStyle.padding !== undefined ? nodeStyle.padding : 10;
+
 
             const textarea = document.createElement('textarea');
             document.body.appendChild(textarea);
@@ -1389,12 +1407,11 @@
             textarea.style.position = 'absolute';
             textarea.style.top = areaPosition.y + 'px';
             textarea.style.left = areaPosition.x + 'px';
-            // Kích thước textarea nên là kích thước của nội dung text (width của Konva.Text đã trừ padding)
             textarea.style.width = konvaTextNode.width() * currentKonvaStage.scaleX() + 'px'; 
             textarea.style.height = konvaTextNode.height() * currentKonvaStage.scaleY() + 'px';
             textarea.style.fontSize = konvaTextNode.fontSize() * currentKonvaStage.scaleY() + 'px'; 
             textarea.style.border = '1px solid #999';
-            textarea.style.padding = '0px'; // Textarea không cần padding riêng, vì Konva.Text đã xử lý
+            textarea.style.padding = '0px'; 
             textarea.style.margin = '0px';
             textarea.style.overflow = 'hidden';
             textarea.style.background = 'white';
@@ -1419,18 +1436,41 @@
                 if (textarea.parentNode) { 
                     textarea.parentNode.removeChild(textarea);
                 }
-                konvaTextNode.text(newText);
+                konvaTextNode.text(newText); 
+                
+                const tempTextForCalc = new Konva.Text({ 
+                    text: newText,
+                    fontSize: konvaTextNode.fontSize(),
+                    fontFamily: konvaTextNode.fontFamily(),
+                    width: konvaGroup.findOne('.nodeShape').width() - 2 * textPadding,
+                    align: 'center'
+                });
+                const newTextContentHeight = tempTextForCalc.height();
+                const newFinalShapeHeight = Math.max(nodeStyle.minHeight || 50, newTextContentHeight + 2 * textPadding);
+
+                konvaTextNode.y((newFinalShapeHeight - newTextContentHeight) / 2);
+                const shape = konvaGroup.findOne('.nodeShape');
+                shape.height(newFinalShapeHeight);
+                if (shape.getClassName() === 'Ellipse') {
+                    shape.radiusY(newFinalShapeHeight / 2);
+                    shape.y(newFinalShapeHeight / 2); 
+                }
+                
                 konvaTextNode.show();
-                // Sau khi text thay đổi, chiều cao của nó có thể thay đổi, cần căn giữa lại
-                konvaTextNode.y((konvaGroup.findOne('.nodeShape').height() - konvaTextNode.height()) / 2);
                 currentKonvaLayer.batchDraw();
                 window.removeEventListener('click', handleOutsideClick); 
                 isEditingText = false; 
 
                 if(!db) return;
                 try {
-                    await updateDoc(doc(db, "nodes", konvaGroup.id()), { text: newText });
-                } catch (e) { console.error("Error updating node text in Firestore:", e); }
+                    const nodeRef = doc(db, "nodes", konvaGroup.id());
+                    const nodeSnap = await getDoc(nodeRef);
+                    if (nodeSnap.exists()) {
+                        const existingStyle = nodeSnap.data().style || {};
+                        const updatedStyle = { ...existingStyle, height: newFinalShapeHeight }; // Lưu chiều cao mới
+                        await updateDoc(nodeRef, { text: newText, style: updatedStyle });
+                    }
+                } catch (e) { console.error("Error updating node text and height in Firestore:", e); }
             }
 
             function removeTextareaWithoutSaving() {
@@ -1483,8 +1523,9 @@
             ctxEditTextButton.addEventListener('click', () => {
                 if (rightClickedKonvaNode) {
                     const textNode = rightClickedKonvaNode.findOne('Text');
-                    if (textNode) {
-                        editTextOnKonvaNode(rightClickedKonvaNode, textNode);
+                    const shapeNode = rightClickedKonvaNode.findOne('.nodeShape');
+                    if (textNode && shapeNode) {
+                        editTextOnKonvaNode(rightClickedKonvaNode, textNode, shapeNode.height());
                     }
                 }
                 if(contextMenu) hideElement(contextMenu);
@@ -1526,7 +1567,8 @@
                 },
                 style: { 
                     backgroundColor: "#f9f9f9", textColor: "#333333", borderColor: "#cccccc", 
-                    width: 120, height: 40, cornerRadius: 3, padding: 10,
+                    width: 120, minHeight: 40, padding: 10, 
+                    cornerRadius: 3,
                     lineColor: "#888888", lineWidth: 2,
                     shape: "rectangle" 
                 },
@@ -1634,8 +1676,9 @@
                     if (selectedKonvaNode) {
                         e.preventDefault();
                         const textNode = selectedKonvaNode.findOne('Text');
-                        if (textNode) {
-                            editTextOnKonvaNode(selectedKonvaNode, textNode);
+                        const shapeNode = selectedKonvaNode.findOne('.nodeShape');
+                        if (textNode && shapeNode) {
+                            editTextOnKonvaNode(selectedKonvaNode, textNode, shapeNode.height());
                         }
                     }
                     break;
