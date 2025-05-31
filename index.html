@@ -3,38 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sơ đồ tư duy MVP - Firebase</title>
+    <title>Sơ đồ tư duy MVP - Firebase AI</title>
     <script src="https://unpkg.com/konva@9.3.6/konva.min.js"></script>
     <style>
-        html, body { 
+        html, body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
             padding: 0;
             background-color: #f0f2f5;
             color: #1c1e21;
-            height: 100%; 
-            overflow: hidden; 
+            height: 100%;
+            overflow: hidden;
         }
         #app-root {
             display: flex;
             flex-direction: column;
             height: 100%;
         }
-        .container { 
+        .container {
             width: 100%;
-            padding: 0; 
+            padding: 0;
             background-color: #fff;
-            box-shadow: none; 
-            flex-grow: 1; 
-            display: flex; 
+            box-shadow: none;
+            flex-grow: 1;
+            display: flex;
             flex-direction: column;
         }
         /* --- AUTH SECTION --- */
-        #auth-section { 
+        #auth-section {
             padding: 20px;
-            max-width: 450px; 
-            margin: auto; 
-            flex-grow: 0; 
+            max-width: 450px;
+            margin: auto;
+            flex-grow: 0;
         }
         .form-container {
             max-width: 400px;
@@ -56,14 +56,14 @@
             border-radius: 6px;
             font-size: 16px;
         }
-        input[type="number"] { 
-            width: 50px; 
-            padding: 6px; 
-            margin-left: 3px; 
-            margin-right: 10px; 
+        input[type="number"] {
+            width: 50px;
+            padding: 6px;
+            margin-left: 3px;
+            margin-right: 10px;
             border: 1px solid #dddfe2;
             border-radius: 4px;
-            font-size: 13px; 
+            font-size: 13px;
             text-align: center;
         }
         select { /* Style cho select dropdown */
@@ -76,15 +76,15 @@
             background-color: white;
         }
         button {
-            padding: 8px 12px; 
-            font-size: 14px; 
+            padding: 8px 12px;
+            font-size: 14px;
             font-weight: bold;
             background-color: #1877f2;
             color: white;
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            margin-right: 6px; 
+            margin-right: 6px;
             transition: background-color 0.3s;
         }
         button:hover {
@@ -125,47 +125,47 @@
         #main-app-section {
             display: flex;
             flex-direction: column;
-            height: 100%; 
-            padding: 8px; 
-            box-sizing: border-box; 
+            height: 100%;
+            padding: 8px;
+            box-sizing: border-box;
         }
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-bottom: 8px; 
-            margin-bottom: 8px; 
+            padding-bottom: 8px;
+            margin-bottom: 8px;
             border-bottom: 1px solid #dddfe2;
-            flex-shrink: 0; 
+            flex-shrink: 0;
         }
         header h1 {
             color: #1c1e21;
-            font-size: 18px; 
+            font-size: 18px;
             margin: 0;
         }
         #user-info span {
-            margin-right: 8px; 
-            font-size: 0.85em; 
+            margin-right: 8px;
+            font-size: 0.85em;
         }
-        #mindmap-management-view { 
+        #mindmap-management-view {
              display: flex;
              flex-direction: column;
         }
         #mindmap-management, #canvas-view {
-            margin-bottom: 8px; 
+            margin-bottom: 8px;
         }
         #mindmap-list-container{
             flex-grow: 1;
-            overflow-y: auto; 
+            overflow-y: auto;
         }
         #mindmap-list {
             list-style: none;
             padding: 0;
         }
         #mindmap-list li {
-            padding: 8px; 
+            padding: 8px;
             border: 1px solid #dddfe2;
-            margin-bottom: 4px; 
+            margin-bottom: 4px;
             cursor: pointer;
             border-radius: 6px;
             display: flex;
@@ -178,110 +178,121 @@
         }
 
         #canvas-view {
-            flex-grow: 1; 
+            flex-grow: 1;
             display: flex;
             flex-direction: column;
-            overflow: hidden; 
+            overflow: hidden;
         }
         #canvas-toolbar {
-            display: flex; 
-            align-items: center; 
-            flex-wrap: wrap; 
-            padding: 6px 5px; 
-            margin-bottom: 5px; 
-            border-bottom: 1px solid #ccd0d5; 
-            flex-shrink: 0; 
-        }
-        #canvas-toolbar .toolbar-section { 
             display: flex;
             align-items: center;
-            margin-right: 10px; 
-            margin-bottom: 5px; 
+            flex-wrap: wrap;
+            padding: 6px 5px;
+            margin-bottom: 5px;
+            border-bottom: 1px solid #ccd0d5;
+            flex-shrink: 0;
+        }
+        #canvas-toolbar .toolbar-section {
+            display: flex;
+            align-items: center;
+            margin-right: 15px;
+            margin-bottom: 5px;
         }
         #canvas-toolbar .toolbar-section:last-child {
             margin-right: 0;
         }
         #canvas-toolbar h2 {
-            margin: 0 10px 0 0; 
-            font-size: 16px; 
-            font-weight: 500; 
-            white-space: nowrap; 
+            margin: 0 10px 0 0;
+            font-size: 16px;
+            font-weight: 500;
+            white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis; 
-            max-width: 150px; 
+            text-overflow: ellipsis;
+            max-width: 150px;
         }
-        #back-to-maps-list-button { 
-            padding: 6px 8px; 
-            font-size: 18px; 
+        #back-to-maps-list-button {
+            padding: 6px 8px;
+            font-size: 18px;
             line-height: 1;
-        }
-         #ai-suggestion-button { 
-            background-color: #ffc107; 
-            color: #212529;
-        }
-        #ai-suggestion-button:hover {
-            background-color: #e0a800;
         }
         #konva-container {
             width: 100%;
-            flex-grow: 1; 
-            background-color: #f7f7f7; 
-            border: 1px solid #ccd0d5; 
+            flex-grow: 1;
+            background-color: #f7f7f7;
+            border: 1px solid #ccd0d5;
             border-radius: 6px;
-            position: relative; 
-            overflow: hidden; 
+            position: relative;
+            overflow: hidden;
         }
         .hidden {
             display: none !important;
         }
-        .loading-indicator {
+        .loading-indicator { /* Chung cho các loading indicator */
             text-align: center;
             padding: 20px;
             font-style: italic;
+            color: #555;
         }
+        /* AI Loading Indicator */
+        #ai-loading-indicator {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000; /* Đảm bảo nó ở trên cùng */
+            font-size: 1.2em;
+            text-shadow: 1px 1px 2px black;
+        }
+
         /* Node Style Panel */
         #node-style-panel {
-            padding: 5px; 
+            padding: 5px;
             background-color: #f9f9f9;
             border: 1px solid #e0e0e0;
             border-radius: 4px;
             box-sizing: border-box;
-            display: flex; 
+            display: flex;
             align-items: center;
-            flex-wrap: wrap; 
+            flex-wrap: wrap;
         }
-        #node-style-panel h5 { 
-            margin: 0 5px 0 0; 
-            font-size: 0.85em; 
+        #node-style-panel h5 {
+            margin: 0 5px 0 0;
+            font-size: 0.85em;
             color: #606770;
             white-space: nowrap;
         }
         #node-style-panel label {
-            margin-right: 2px; 
-            font-size: 0.8em; 
+            margin-right: 2px;
+            font-size: 0.8em;
             vertical-align: middle;
             white-space: nowrap;
         }
         #node-style-panel input[type="color"] {
-            width: 22px; 
+            width: 22px;
             height: 22px;
             padding: 0;
             border: 1px solid #ccc;
-            border-radius: 3px; 
+            border-radius: 3px;
             vertical-align: middle;
-            margin-right: 5px; 
+            margin-right: 5px;
         }
-        #node-style-panel input[type="number"], #node-style-panel select { 
-            width: auto; 
+        #node-style-panel input[type="number"], #node-style-panel select {
+            width: auto;
             min-width: 60px;
-            padding: 4px; 
-            font-size: 0.8em; 
+            padding: 4px;
+            font-size: 0.8em;
         }
-        .style-group { 
-            margin-bottom: 0; 
-            display: flex; 
+        .style-group {
+            margin-bottom: 0;
+            display: flex;
             align-items: center;
-            margin-right: 8px; 
+            margin-right: 8px;
         }
         .style-group:last-child {
             margin-right: 0;
@@ -366,9 +377,8 @@
                         <h2 id="current-mindmap-title-display"></h2>
                     </div>
                     <div class="toolbar-section">
-                        <button id="add-child-node-button" title="Thêm nút con (Click)">Thêm Nút</button> 
+                        <button id="add-child-node-button" title="Thêm nút con (Click)">Thêm Nút</button>
                         <button id="delete-node-button" class="danger" title="Xóa nút đã chọn (Delete/Backspace)">Xóa Nút</button>
-                        <button id="ai-suggestion-button" title="Gợi ý AI (khi chọn nút)">💡 Gợi ý</button> 
                     </div>
                     <div class="toolbar-section">
                         <span style="font-size:0.9em; margin-right: 3px;">Zoom:</span>
@@ -401,7 +411,7 @@
                             <input type="number" id="node-font-size-input" min="8" max="72" title="Cỡ chữ nút">
                         </div>
                         <div class="style-group">
-                            <label for="node-icon-select">Icon:</label> 
+                            <label for="node-icon-select">Icon:</label>
                             <select id="node-icon-select" title="Biểu tượng nút">
                                 <option value="">Không có</option>
                                 <option value="⭐">⭐ Ngôi sao</option>
@@ -428,7 +438,7 @@
                             <input type="color" id="node-line-color" title="Màu đường nối từ nút này">
                         </div>
                          <div class="style-group">
-                            <label for="node-line-dash-select">Kiểu đường:</label> 
+                            <label for="node-line-dash-select">Kiểu đường:</label>
                             <select id="node-line-dash-select" title="Kiểu đường nối từ nút này">
                                 <option value="solid">Liền</option>
                                 <option value="dashed">Đứt</option>
@@ -450,10 +460,11 @@
             <ul>
                 <li id="ctx-add-child">Thêm nút con (Tab)</li>
                 <li id="ctx-edit-text">Sửa văn bản (Enter)</li>
-                <li id="ctx-ai-suggest">💡 Gợi ý AI</li> 
-                <li id="ctx-delete-node">Xóa nút & con (Delete)</li>
+                <li id="ctx-suggest-children">✨ Gợi ý nút con (AI)</li> <li id="ctx-delete-node">Xóa nút & con (Delete)</li>
             </ul>
         </div>
+
+        <div id="ai-loading-indicator" class="hidden">Đang lấy gợi ý từ AI...</div>
     </div>
 
     <script type="module">
@@ -471,7 +482,7 @@
             collection,
             addDoc,
             doc,
-            getDoc, 
+            getDoc,
             getDocs,
             updateDoc,
             deleteDoc,
@@ -479,12 +490,14 @@
             where,
             serverTimestamp,
             onSnapshot,
-            writeBatch 
+            writeBatch
         } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
-        import { getGenerativeModel } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-ai-vertex.js"; 
+        // THÊM IMPORT CHO FIREBASE AI LOGIC SDK
+        import { getAI, getGenerativeModel, GoogleAIBackend } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-ai.js";
 
 
         // --- FIREBASE CONFIGURATION ---
+        // Giữ nguyên firebaseConfig của bạn
         const firebaseConfig = {
             apiKey: "AIzaSyDLVuv2RGAJWUjhan-5oNCkGBwQZAN60aY",
             authDomain: "vocab-91599.firebaseapp.com",
@@ -498,33 +511,24 @@
         let app;
         let auth;
         let db;
-        let genAIModel; 
+        let ai; // Biến cho Firebase AI Logic service
+        let generativeModel; // Biến cho Gemini model instance
 
         try {
-            console.log("Attempting Firebase initialization...");
             app = initializeApp(firebaseConfig);
-            console.log("Firebase App initialized:", app);
             auth = getAuth(app);
-            console.log("Firebase Auth initialized:", auth);
             db = getFirestore(app);
-            console.log("Firestore initialized:", db);
-            console.log("Firebase initialized successfully!");
 
-            if (app) { 
-                 try {
-                    genAIModel = getGenerativeModel(app, { model: "gemini-1.5-flash-latest" }); 
-                    console.log("Generative AI Model initialized with gemini-1.5-flash-latest.");
-                 } catch (aiError) {
-                    console.error("AI Model initialization error:", aiError);
-                    // Không alert ở đây để tránh làm gián đoạn nếu chỉ AI model lỗi
-                 }
-            } else {
-                console.error("Firebase app not initialized, cannot initialize AI Model.");
-            }
+            // Khởi tạo Firebase AI Logic service và Gemini model
+            ai = getAI(app, { backend: new GoogleAIBackend() }); // Sử dụng Gemini Developer API backend
+            // Model name có thể là "gemini-1.5-flash-latest", "gemini-pro", "gemini-2.0-flash", etc.
+            // Kiểm tra tài liệu Firebase/Google AI để có tên model mới nhất và phù hợp.
+            generativeModel = getGenerativeModel(ai, { model: "gemini-1.5-flash-latest" });
 
+            console.log("Firebase initialized successfully with AI Logic SDK!");
         } catch (error) {
-            console.error("Firebase or AI Model initialization error:", error);
-            alert("Lỗi nghiêm trọng: Không thể khởi tạo Firebase hoặc AI Model. Ứng dụng có thể không hoạt động. Chi tiết: " + error.message);
+            console.error("Firebase initialization error:", error);
+            alert("Lỗi nghiêm trọng: Không thể khởi tạo Firebase hoặc AI SDK. Ứng dụng có thể không hoạt động. Chi tiết: " + error.message);
         }
 
 
@@ -533,46 +537,46 @@
         let currentMindMapId = null;
         let currentKonvaStage = null;
         let currentKonvaLayer = null;
-        let selectedKonvaNode = null; 
-        let mindmapNodesUnsubscribe = null; 
-        let allNodesDataForCurrentMap = []; 
-        let mindmapDataUnsubscribe = null; 
-        let tempCreationLine = null; 
-        let rightClickedKonvaNode = null; 
-        let isEditingText = false; 
-        const DEFAULT_NODE_STYLE = { 
-            backgroundColor: "#e0e0e0", textColor: "#000000", borderColor: "#555555", 
-            shape: "rectangle", 
-            width: 150, minHeight: 50, padding: 10, 
-            cornerRadius: 5, 
-            fontSize: 14, fontFamily: 'Arial', 
-            icon: '', 
-            iconSize: 16, 
-            iconSpacing: 5, 
-            lineColor: "#888888", lineWidth: 3, lineDash: [] 
+        let selectedKonvaNode = null;
+        let mindmapNodesUnsubscribe = null;
+        let allNodesDataForCurrentMap = [];
+        let mindmapDataUnsubscribe = null;
+        let tempCreationLine = null;
+        let rightClickedKonvaNode = null;
+        let isEditingText = false;
+        const DEFAULT_NODE_STYLE = {
+            backgroundColor: "#e0e0e0", textColor: "#000000", borderColor: "#555555",
+            shape: "rectangle",
+            width: 150, minHeight: 50, padding: 10,
+            cornerRadius: 5,
+            fontSize: 14, fontFamily: 'Arial',
+            icon: '',
+            iconSize: 16,
+            iconSpacing: 5,
+            lineColor: "#888888", lineWidth: 3, lineDash: []
         };
 
 
         // --- DOM ELEMENTS ---
         const nodeStylePanel = document.getElementById('node-style-panel');
-        const nodeShapeSelect = document.getElementById('node-shape-select'); 
-        const nodeFontFamilySelect = document.getElementById('node-font-family-select'); 
-        const nodeFontSizeInput = document.getElementById('node-font-size-input'); 
-        const nodeIconSelect = document.getElementById('node-icon-select'); 
+        const nodeShapeSelect = document.getElementById('node-shape-select');
+        const nodeFontFamilySelect = document.getElementById('node-font-family-select');
+        const nodeFontSizeInput = document.getElementById('node-font-size-input');
+        const nodeIconSelect = document.getElementById('node-icon-select');
         const nodeBgColorInput = document.getElementById('node-bg-color');
         const nodeTextColorInput = document.getElementById('node-text-color');
         const nodeBorderColorInput = document.getElementById('node-border-color');
-        const nodeLineColorInput = document.getElementById('node-line-color'); 
-        const nodeLineDashSelect = document.getElementById('node-line-dash-select'); 
-        const nodeLineWidthInput = document.getElementById('node-line-width'); 
-        const aiSuggestionButton = document.getElementById('ai-suggestion-button'); 
+        const nodeLineColorInput = document.getElementById('node-line-color');
+        const nodeLineDashSelect = document.getElementById('node-line-dash-select');
+        const nodeLineWidthInput = document.getElementById('node-line-width');
 
         // Context Menu Elements
         const contextMenu = document.getElementById('context-menu');
         const ctxAddChildButton = document.getElementById('ctx-add-child');
         const ctxEditTextButton = document.getElementById('ctx-edit-text');
-        const ctxAiSuggestButton = document.getElementById('ctx-ai-suggest'); 
+        const ctxSuggestChildrenButton = document.getElementById('ctx-suggest-children'); // DOM element cho nút AI
         const ctxDeleteNodeButton = document.getElementById('ctx-delete-node');
+        const aiLoadingIndicator = document.getElementById('ai-loading-indicator');
 
 
         // Auth
@@ -631,120 +635,21 @@
                 hideElement(el);
             }
         }
-
-        // --- AI SUGGESTION LOGIC ---
-        async function handleAISuggestion() {
-            console.log("handleAISuggestion called"); 
-            if (!selectedKonvaNode) {
-                alert("Vui lòng chọn một nút để nhận gợi ý AI.");
-                return;
+        // Hàm hiển thị/ẩn loading indicator cho AI
+        function showLoadingIndicator(message) {
+            if (aiLoadingIndicator) {
+                aiLoadingIndicator.textContent = message || "Đang xử lý...";
+                showElement(aiLoadingIndicator);
             }
-            if (!genAIModel) { 
-                alert("Mô hình AI chưa sẵn sàng. Vui lòng thử lại sau hoặc kiểm tra console lỗi.");
-                console.error("genAIModel is not initialized for AI suggestion.");
-                return;
-            }
-
-            const selectedNodeTextObj = selectedKonvaNode.findOne('Text');
-            const selectedNodeText = selectedNodeTextObj ? selectedNodeTextObj.text() : '';
-
-            if (!selectedNodeText || selectedNodeText.trim() === "") {
-                alert("Nút được chọn không có nội dung để tạo gợi ý.");
-                return;
-            }
-
-            if(aiSuggestionButton) {
-                aiSuggestionButton.disabled = true;
-                aiSuggestionButton.textContent = "Đang nghĩ...";
-            }
-
-
-            try {
-                const prompt = `Với chủ đề "${selectedNodeText}", hãy gợi ý 3 ý tưởng con ngắn gọn để phát triển thêm, mỗi ý tưởng khoảng 2-5 từ. Trả lời chỉ bằng danh sách các ý tưởng, mỗi ý tưởng trên một dòng, bắt đầu bằng dấu gạch đầu dòng "- ". Ví dụ: - Ý tưởng A\n- Ý tưởng B\n- Ý tưởng C`;
-                console.log("Sending prompt to AI:", prompt);
-
-                const result = await genAIModel.generateContent(prompt);
-                const response = result.response;
-                const suggestionsText = response.text();
-                
-                console.log("AI Suggestions Raw:", suggestionsText);
-
-                const ideas = suggestionsText.split('\n')
-                                      .map(line => line.replace(/^- /,'').trim())
-                                      .filter(idea => idea.length > 0);
-
-                if (ideas.length > 0) {
-                    let userChoiceMessage = "AI gợi ý các ý tưởng sau:\n";
-                    ideas.forEach((idea, index) => {
-                        userChoiceMessage += `${index + 1}. ${idea}\n`;
-                    });
-                    userChoiceMessage += "\nNhập số thứ tự của các ý tưởng bạn muốn thêm làm nút con, cách nhau bởi dấu phẩy (ví dụ: 1,3). Nhấn Cancel để bỏ qua.";
-                    
-                    const chosenIndicesStr = prompt(userChoiceMessage);
-                    if (chosenIndicesStr) {
-                        const chosenIndices = chosenIndicesStr.split(',')
-                                                      .map(numStr => parseInt(numStr.trim(), 10) -1)
-                                                      .filter(index => index >= 0 && index < ideas.length);
-                        
-                        let ideasAdded = 0;
-                        for (const index of chosenIndices) {
-                            if (ideas[index]) { 
-                                await addChildNodeLogic(selectedKonvaNode, ideas[index]); 
-                                ideasAdded++;
-                            }
-                        }
-                        if(ideasAdded > 0) alert(`Đã thêm ${ideasAdded} nút con từ gợi ý AI.`);
-                    }
-                } else {
-                    alert("AI không đưa ra được gợi ý nào phù hợp vào lúc này.");
-                }
-
-            } catch (error) {
-                console.error("Error getting AI suggestions:", error);
-                alert("Đã có lỗi xảy ra khi nhận gợi ý từ AI: " + error.message);
-            } finally {
-                if(aiSuggestionButton) {
-                    aiSuggestionButton.disabled = false;
-                    aiSuggestionButton.textContent = "💡 Gợi ý";
-                }
+        }
+        function hideLoadingIndicator() {
+            if (aiLoadingIndicator) {
+                hideElement(aiLoadingIndicator);
             }
         }
 
-        if (aiSuggestionButton) {
-            console.log("Attaching listener to AI Suggestion Button");
-            aiSuggestionButton.addEventListener('click', handleAISuggestion);
-        } else {
-            console.error("AI Suggestion Button not found!");
-        }
 
-        if (ctxAiSuggestButton) {
-             console.log("Attaching listener to Context AI Suggestion Button");
-            ctxAiSuggestButton.addEventListener('click', () => {
-                if (rightClickedKonvaNode) {
-                    if (selectedKonvaNode !== rightClickedKonvaNode) {
-                        if (selectedKonvaNode) {
-                             selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1);
-                             removeCreationHandle(selectedKonvaNode);
-                        }
-                        selectedKonvaNode = rightClickedKonvaNode;
-                        selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(3);
-                        const nodeData = allNodesDataForCurrentMap.find(n => n.id === selectedKonvaNode.id());
-                        if (nodeData) updateNodeStylePanel(nodeData);
-                        const shapeNode = selectedKonvaNode.findOne('.nodeShape');
-                        const dynamicHeight = shapeNode ? shapeNode.height() : DEFAULT_NODE_STYLE.minHeight;
-                        addCreationHandle(selectedKonvaNode, dynamicHeight);
-                        currentKonvaLayer.batchDraw();
-                    }
-                    handleAISuggestion();
-                }
-                if(contextMenu) hideElement(contextMenu);
-            });
-        } else {
-            console.error("Context AI Suggestion Button not found!");
-        }
-
-
-        // --- AUTHENTICATION LOGIC ---
+        // --- AUTHENTICATION LOGIC --- (Giữ nguyên)
         if (showRegisterLink) {
             showRegisterLink.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -764,61 +669,47 @@
         }
 
         if (registerButton) {
-            console.log("Register button found, attaching listener.");
             registerButton.addEventListener('click', async () => {
-                console.log("Register button clicked"); 
                 if (!auth) {
                      displayAuthError(registerErrorMsg, "Lỗi: Dịch vụ xác thực chưa sẵn sàng.");
-                     console.error("Register attempt failed: Firebase Auth service not initialized.");
                      return;
                 }
                 const email = registerEmailInput.value;
                 const password = registerPasswordInput.value;
                 clearAuthError(registerErrorMsg);
-                if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY_HERE") { 
+                if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY_HERE") {
                     displayAuthError(registerErrorMsg, "Lỗi cấu hình Firebase: API Key không hợp lệ. Vui lòng kiểm tra lại firebaseConfig.");
-                     console.error("Register attempt failed: Invalid API Key in firebaseConfig.");
                     return;
                 }
-                console.log("Attempting registration for:", email); 
                 try {
                     await createUserWithEmailAndPassword(auth, email, password);
-                    console.log("createUserWithEmailAndPassword call succeeded."); 
                 } catch (error) {
-                    console.error("Register error caught:", error);
+                    console.error("Register error:", error);
                     displayAuthError(registerErrorMsg, "Lỗi đăng ký: " + error.code + " - " + error.message);
                 }
             });
-        } else {
-            console.error("Register button not found!");
         }
 
-
         if (loginButton) {
-            console.log("Login button found, attaching listener.");
             loginButton.addEventListener('click', async () => {
-                console.log("Login button clicked"); 
                 if (!auth) {
                      displayAuthError(loginErrorMsg, "Lỗi: Dịch vụ xác thực chưa sẵn sàng.");
-                     console.error("Login attempt failed: Firebase Auth service not initialized.");
                      return;
                 }
                 const email = loginEmailInput.value;
                 const password = loginPasswordInput.value;
                 clearAuthError(loginErrorMsg);
-                // API Key check is already done by Firebase itself, this specific check might be redundant
-                // if (firebaseConfig.apiKey === "YOUR_API_KEY_HERE") { ... } 
-                console.log("Attempting login for:", email); 
+                if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY_HERE") {
+                    displayAuthError(loginErrorMsg, "Lỗi cấu hình Firebase: API Key không hợp lệ. Vui lòng kiểm tra lại firebaseConfig.");
+                    return;
+                }
                 try {
                     await signInWithEmailAndPassword(auth, email, password);
-                    console.log("signInWithEmailAndPassword call succeeded."); 
-                } catch (error) { 
-                    console.error("Login error caught:", error);
+                } catch (error) {
+                    console.error("Login error:", error);
                     displayAuthError(loginErrorMsg, "Lỗi đăng nhập: " + error.code + " - " + error.message);
                 }
             });
-        } else {
-             console.error("Login button not found!");
         }
 
         if (logoutButton) {
@@ -828,18 +719,16 @@
                     await signOut(auth);
                     currentMindMapId = null;
                     if (mindmapNodesUnsubscribe) mindmapNodesUnsubscribe();
-                    if (mindmapDataUnsubscribe) mindmapDataUnsubscribe(); 
-                    window.removeEventListener('keydown', handleGlobalKeyDown); 
+                    if (mindmapDataUnsubscribe) mindmapDataUnsubscribe();
+                    window.removeEventListener('keydown', handleGlobalKeyDown);
                 } catch (error) {
                     console.error("Logout error:", error);
                 }
             });
         }
 
-        if (auth) { 
-            console.log("Auth service initialized, attaching onAuthStateChanged listener.");
+        if (auth) {
             onAuthStateChanged(auth, (user) => {
-                console.log("onAuthStateChanged triggered. User:", user ? user.email : null);
                 if (user) {
                     currentUser = user;
                     if(userEmailDisplay) userEmailDisplay.textContent = `Chào, ${user.email}`;
@@ -853,54 +742,52 @@
                     showElement(authSection);
                     hideElement(mainAppSection);
                     hideElement(canvasView);
-                    if(nodeStylePanel) hideElement(nodeStylePanel); 
-                    if(contextMenu) hideElement(contextMenu); 
+                    if(nodeStylePanel) hideElement(nodeStylePanel);
+                    if(contextMenu) hideElement(contextMenu);
                     if(mindmapListUl) mindmapListUl.innerHTML = '';
-                    window.removeEventListener('keydown', handleGlobalKeyDown); 
+                    window.removeEventListener('keydown', handleGlobalKeyDown);
                 }
             });
-        } else {
-            console.error("Auth service not initialized, cannot attach onAuthStateChanged listener.");
         }
 
 
-        // --- UI VIEW MANAGEMENT ---
+        // --- UI VIEW MANAGEMENT --- (Giữ nguyên)
         function showMindmapManagementView() {
             if(mainAppTitle) mainAppTitle.textContent = "Bảng điều khiển";
             showElement(mindmapManagementView);
             hideElement(canvasView);
-            if(nodeStylePanel) hideElement(nodeStylePanel); 
+            if(nodeStylePanel) hideElement(nodeStylePanel);
             if(contextMenu) hideElement(contextMenu);
-            currentMindMapId = null; 
+            currentMindMapId = null;
             selectedKonvaNode = null;
             rightClickedKonvaNode = null;
             if (mindmapNodesUnsubscribe) {
-                mindmapNodesUnsubscribe(); 
+                mindmapNodesUnsubscribe();
                 mindmapNodesUnsubscribe = null;
             }
-            if (mindmapDataUnsubscribe) { 
+            if (mindmapDataUnsubscribe) {
                 mindmapDataUnsubscribe();
                 mindmapDataUnsubscribe = null;
             }
             if (currentKonvaStage) {
-                currentKonvaStage.destroyChildren(); 
+                currentKonvaStage.destroyChildren();
                 currentKonvaLayer = null;
             }
-            window.removeEventListener('keydown', handleGlobalKeyDown); 
+            window.removeEventListener('keydown', handleGlobalKeyDown);
         }
 
-        async function showCanvasView(mapId, mapTitle) { 
+        async function showCanvasView(mapId, mapTitle) {
             if(mainAppTitle) mainAppTitle.textContent = "Sơ đồ tư duy";
             hideElement(mindmapManagementView);
             showElement(canvasView);
             if(currentMindmapTitleDisplay) currentMindmapTitleDisplay.textContent = mapTitle;
             currentMindMapId = mapId;
-            
-            initKonvaStage(); 
-            
+
+            initKonvaStage();
+
             if (db && currentMindMapId) {
                 const mapDocRef = doc(db, "mindmaps", currentMindMapId);
-                if (mindmapDataUnsubscribe) mindmapDataUnsubscribe(); 
+                if (mindmapDataUnsubscribe) mindmapDataUnsubscribe();
                 mindmapDataUnsubscribe = onSnapshot(mapDocRef, (docSnap) => {
                     if (docSnap.exists()) {
                         const mapData = docSnap.data();
@@ -916,48 +803,57 @@
                     console.error("Error listening to mindmap data:", error);
                 });
             }
-            
+
             loadAndListenNodesForCurrentMap();
-            hideElement(nodeStylePanel); 
+            hideElement(nodeStylePanel);
             hideElement(contextMenu);
-            window.addEventListener('keydown', handleGlobalKeyDown); 
+            window.addEventListener('keydown', handleGlobalKeyDown);
         }
 
         if (backToMapsListButton) {
             backToMapsListButton.addEventListener('click', showMindmapManagementView);
         }
 
-        // --- NODE STYLE PANEL LOGIC ---
+        // --- NODE STYLE PANEL LOGIC --- (Giữ nguyên)
+        function lineDashArrayToString(dashArray) {
+            if (!dashArray || dashArray.length === 0) return 'solid';
+            if (JSON.stringify(dashArray) === JSON.stringify([15, 8])) return 'dashed';
+            if (JSON.stringify(dashArray) === JSON.stringify([3, 8])) return 'dotted';
+            return 'solid';
+        }
+        function stringToLineDashArray(dashString) {
+            if (dashString === 'dashed') return [15, 8];
+            if (dashString === 'dotted') return [3, 8];
+            return [];
+        }
         function updateNodeStylePanel(nodeData) {
             if (!nodeData || !nodeData.style) {
                 if(nodeStylePanel) hideElement(nodeStylePanel);
                 return;
             }
             const style = nodeData.style;
-            if(nodeShapeSelect) nodeShapeSelect.value = style.shape || DEFAULT_NODE_STYLE.shape; 
-            if(nodeFontFamilySelect) nodeFontFamilySelect.value = style.fontFamily || DEFAULT_NODE_STYLE.fontFamily; 
-            if(nodeFontSizeInput) nodeFontSizeInput.value = style.fontSize || DEFAULT_NODE_STYLE.fontSize; 
-            if(nodeIconSelect) nodeIconSelect.value = style.icon || ''; 
+            if(nodeShapeSelect) nodeShapeSelect.value = style.shape || DEFAULT_NODE_STYLE.shape;
+            if(nodeFontFamilySelect) nodeFontFamilySelect.value = style.fontFamily || DEFAULT_NODE_STYLE.fontFamily;
+            if(nodeFontSizeInput) nodeFontSizeInput.value = style.fontSize || DEFAULT_NODE_STYLE.fontSize;
+            if(nodeIconSelect) nodeIconSelect.value = style.icon || '';
             if(nodeBgColorInput) nodeBgColorInput.value = style.backgroundColor || DEFAULT_NODE_STYLE.backgroundColor;
             if(nodeTextColorInput) nodeTextColorInput.value = style.textColor || DEFAULT_NODE_STYLE.textColor;
-            if(nodeBorderColorInput) nodeBorderColorInput.value = style.borderColor || DEFAULT_NODE_STYLE.borderColor; 
-            if(nodeLineColorInput) nodeLineColorInput.value = style.lineColor || DEFAULT_NODE_STYLE.lineColor; 
-            if(nodeLineDashSelect) nodeLineDashSelect.value = lineDashArrayToString(style.lineDash); 
-            if(nodeLineWidthInput) nodeLineWidthInput.value = style.lineWidth || DEFAULT_NODE_STYLE.lineWidth; 
+            if(nodeBorderColorInput) nodeBorderColorInput.value = style.borderColor || DEFAULT_NODE_STYLE.borderColor;
+            if(nodeLineColorInput) nodeLineColorInput.value = style.lineColor || DEFAULT_NODE_STYLE.lineColor;
+            if(nodeLineDashSelect) nodeLineDashSelect.value = lineDashArrayToString(style.lineDash);
+            if(nodeLineWidthInput) nodeLineWidthInput.value = style.lineWidth || DEFAULT_NODE_STYLE.lineWidth;
             if(nodeStylePanel) showElement(nodeStylePanel);
         }
-
         async function handleNodeStyleChange(property, value) {
-            if (!selectedKonvaNode || !db) return; 
+            if (!selectedKonvaNode || !db) return;
             const nodeId = selectedKonvaNode.id();
-            
+
             let processedValue = value;
             if (property === 'lineWidth' || property === 'fontSize') {
                 processedValue = parseInt(value, 10);
             } else if (property === 'lineDash') {
-                processedValue = stringToLineDashArray(value); 
+                processedValue = stringToLineDashArray(value);
             }
-
 
             try {
                 const nodeRef = doc(db, "nodes", nodeId);
@@ -966,34 +862,32 @@
                     const existingData = nodeSnap.data();
                     const existingStyle = existingData.style || {};
                     const updatedStyle = { ...existingStyle, [property]: processedValue };
-                    
+
                     if (property === 'shape') {
                         if (processedValue === 'ellipse') {
                         } else if (processedValue === 'rectangle' && !updatedStyle.cornerRadius) {
-                            updatedStyle.cornerRadius = 0; 
+                            updatedStyle.cornerRadius = 0;
                         } else if (processedValue === 'roundedRectangle' && (!updatedStyle.cornerRadius || updatedStyle.cornerRadius === 0) ) {
-                             updatedStyle.cornerRadius = 5; 
+                             updatedStyle.cornerRadius = 5;
                         }
                     }
-                    
-                    if (property === 'fontFamily' || property === 'fontSize' || property === 'text' || property === 'icon') { 
+
+                    if (property === 'fontFamily' || property === 'fontSize' || property === 'text' || property === 'icon') {
                         let iconWidthForCalc = 0;
                         if (updatedStyle.icon && updatedStyle.icon !== '') {
                             const tempIconForStyleCalc = new Konva.Text({ text: updatedStyle.icon, fontSize: updatedStyle.iconSize || DEFAULT_NODE_STYLE.iconSize, fontFamily: updatedStyle.fontFamily || DEFAULT_NODE_STYLE.fontFamily });
                             iconWidthForCalc = tempIconForStyleCalc.width() + (updatedStyle.iconSpacing || DEFAULT_NODE_STYLE.iconSpacing);
                         }
                         const tempTextForCalc = new Konva.Text({
-                            text: (property === 'text') ? processedValue : (existingData.text || ''), 
+                            text: (property === 'text') ? processedValue : (existingData.text || ''),
                             fontSize: (property === 'fontSize') ? processedValue : (updatedStyle.fontSize || DEFAULT_NODE_STYLE.fontSize),
                             fontFamily: (property === 'fontFamily') ? processedValue : (updatedStyle.fontFamily || DEFAULT_NODE_STYLE.fontFamily),
-                            width: (updatedStyle.width || DEFAULT_NODE_STYLE.width) - 2 * (updatedStyle.padding || DEFAULT_NODE_STYLE.padding) - iconWidthForCalc, 
+                            width: (updatedStyle.width || DEFAULT_NODE_STYLE.width) - 2 * (updatedStyle.padding || DEFAULT_NODE_STYLE.padding) - iconWidthForCalc,
                             align: 'center'
                         });
                         const newTextContentHeight = tempTextForCalc.height();
                         updatedStyle.height = Math.max(updatedStyle.minHeight || DEFAULT_NODE_STYLE.minHeight, newTextContentHeight + 2 * (updatedStyle.padding || DEFAULT_NODE_STYLE.padding));
                     }
-
-
                     await updateDoc(nodeRef, { style: updatedStyle });
                 } else {
                     console.warn("Node not found for style update:", nodeId);
@@ -1002,20 +896,19 @@
                 console.error(`Error updating node style (${property}):`, e);
             }
         }
-
-        if (nodeShapeSelect) nodeShapeSelect.addEventListener('change', (e) => handleNodeStyleChange('shape', e.target.value)); 
-        if (nodeFontFamilySelect) nodeFontFamilySelect.addEventListener('change', (e) => handleNodeStyleChange('fontFamily', e.target.value)); 
-        if (nodeFontSizeInput) nodeFontSizeInput.addEventListener('input', (e) => handleNodeStyleChange('fontSize', e.target.value)); 
-        if (nodeIconSelect) nodeIconSelect.addEventListener('change', (e) => handleNodeStyleChange('icon', e.target.value)); 
+        if (nodeShapeSelect) nodeShapeSelect.addEventListener('change', (e) => handleNodeStyleChange('shape', e.target.value));
+        if (nodeFontFamilySelect) nodeFontFamilySelect.addEventListener('change', (e) => handleNodeStyleChange('fontFamily', e.target.value));
+        if (nodeFontSizeInput) nodeFontSizeInput.addEventListener('input', (e) => handleNodeStyleChange('fontSize', e.target.value));
+        if (nodeIconSelect) nodeIconSelect.addEventListener('change', (e) => handleNodeStyleChange('icon', e.target.value));
         if (nodeBgColorInput) nodeBgColorInput.addEventListener('input', (e) => handleNodeStyleChange('backgroundColor', e.target.value));
         if (nodeTextColorInput) nodeTextColorInput.addEventListener('input', (e) => handleNodeStyleChange('textColor', e.target.value));
         if (nodeBorderColorInput) nodeBorderColorInput.addEventListener('input', (e) => handleNodeStyleChange('borderColor', e.target.value));
-        if (nodeLineColorInput) nodeLineColorInput.addEventListener('input', (e) => handleNodeStyleChange('lineColor', e.target.value)); 
-        if (nodeLineDashSelect) nodeLineDashSelect.addEventListener('change', (e) => handleNodeStyleChange('lineDash', e.target.value)); 
-        if (nodeLineWidthInput) nodeLineWidthInput.addEventListener('input', (e) => handleNodeStyleChange('lineWidth', e.target.value)); 
+        if (nodeLineColorInput) nodeLineColorInput.addEventListener('input', (e) => handleNodeStyleChange('lineColor', e.target.value));
+        if (nodeLineDashSelect) nodeLineDashSelect.addEventListener('change', (e) => handleNodeStyleChange('lineDash', e.target.value));
+        if (nodeLineWidthInput) nodeLineWidthInput.addEventListener('input', (e) => handleNodeStyleChange('lineWidth', e.target.value));
 
 
-        // --- FIRESTORE SERVICE LOGIC (Mind Maps) ---
+        // --- FIRESTORE SERVICE LOGIC (Mind Maps) --- (Giữ nguyên)
         if (createMindmapButton) {
             createMindmapButton.addEventListener('click', async () => {
                 if (!db) { alert("Lỗi: Dịch vụ cơ sở dữ liệu chưa sẵn sàng."); return; }
@@ -1035,7 +928,7 @@
                         title: title,
                         createdAt: serverTimestamp(),
                         lastModified: serverTimestamp(),
-                        canvasState: { scaleX: 1, scaleY: 1, x: 0, y: 0 } 
+                        canvasState: { scaleX: 1, scaleY: 1, x: 0, y: 0 }
                     };
                     const mindMapDocRef = await addDoc(collection(db, "mindmaps"), mindMapData);
                     console.log("Mind map created with ID: ", mindMapDocRef.id);
@@ -1045,20 +938,20 @@
                         parentId: null,
                         text: "Ý tưởng trung tâm",
                         position: { x: (konvaContainer?.clientWidth || 800) / 2 - 75, y: 50 },
-                        style: { 
-                            backgroundColor: "#1877f2", 
-                            textColor: "#ffffff", 
-                            borderColor: "#0e5aab", 
-                            shape: "ellipse", 
-                            width: 150, minHeight: 60, padding: 10, 
-                            fontSize: DEFAULT_NODE_STYLE.fontSize, 
-                            fontFamily: DEFAULT_NODE_STYLE.fontFamily, 
+                        style: {
+                            backgroundColor: "#1877f2",
+                            textColor: "#ffffff",
+                            borderColor: "#0e5aab",
+                            shape: "ellipse",
+                            width: 150, minHeight: 60, padding: 10,
+                            fontSize: DEFAULT_NODE_STYLE.fontSize,
+                            fontFamily: DEFAULT_NODE_STYLE.fontFamily,
                             icon: '',
                             iconSize: DEFAULT_NODE_STYLE.iconSize,
                             iconSpacing: DEFAULT_NODE_STYLE.iconSpacing,
-                            lineColor: DEFAULT_NODE_STYLE.lineColor, 
+                            lineColor: DEFAULT_NODE_STYLE.lineColor,
                             lineWidth: DEFAULT_NODE_STYLE.lineWidth,
-                            lineDash: DEFAULT_NODE_STYLE.lineDash 
+                            lineDash: DEFAULT_NODE_STYLE.lineDash
                         },
                         createdAt: serverTimestamp()
                     };
@@ -1073,7 +966,6 @@
                 }
             });
         }
-
         async function loadUserMindMaps() {
             if (!currentUser || !db) return;
             showElement(mindmapListLoading);
@@ -1089,7 +981,7 @@
                     if (querySnapshot.empty) {
                         if(mindmapListUl) mindmapListUl.innerHTML = '<li>Bạn chưa có sơ đồ nào. Hãy tạo một cái mới!</li>';
                     }
-                    querySnapshot.forEach((docSnap) => { 
+                    querySnapshot.forEach((docSnap) => {
                         const map = { id: docSnap.id, ...docSnap.data() };
                         const li = document.createElement('li');
                         li.textContent = map.title;
@@ -1103,7 +995,8 @@
                         deleteButton.style.padding = '5px 8px';
                         deleteButton.onclick = async (e) => {
                             e.stopPropagation();
-                            if (confirm(`Bạn có chắc muốn xóa sơ đồ "${map.title}" và tất cả các nút của nó?`)) {
+                            // Thay thế confirm bằng một modal tùy chỉnh nếu muốn UI đẹp hơn
+                            if (window.confirm(`Bạn có chắc muốn xóa sơ đồ "${map.title}" và tất cả các nút của nó?`)) {
                                 await deleteMindMap(map.id);
                             }
                         };
@@ -1127,7 +1020,6 @@
                 hideElement(mindmapListLoading);
             }
         }
-
         async function deleteMindMap(mapId) {
             if (!mapId || !db) return;
             try {
@@ -1149,11 +1041,11 @@
             }
         }
 
-        // --- FIRESTORE SERVICE LOGIC (Nodes) & KONVA INTEGRATION ---
+        // --- FIRESTORE SERVICE LOGIC (Nodes) & KONVA INTEGRATION --- (Giữ nguyên phần lớn)
         function initKonvaStage() {
             if (currentKonvaStage) {
-                currentKonvaStage.off('dragstart dragmove dragend click tap wheel contextmenu'); 
-                currentKonvaStage.destroy(); 
+                currentKonvaStage.off('dragstart dragmove dragend click tap wheel contextmenu');
+                currentKonvaStage.destroy();
                 currentKonvaStage = null;
             }
              if (currentKonvaLayer) {
@@ -1174,19 +1066,19 @@
             });
             currentKonvaLayer = new Konva.Layer();
             currentKonvaStage.add(currentKonvaLayer);
-            selectedKonvaNode = null; 
-            
+            selectedKonvaNode = null;
+
             currentKonvaStage.on('dragend', saveCanvasState);
-            currentKonvaStage.on('wheel', (e) => { 
+            currentKonvaStage.on('wheel', (e) => {
                 e.evt.preventDefault();
                 const oldScale = currentKonvaStage.scaleX();
                 const pointer = currentKonvaStage.getPointerPosition();
-                if (!pointer) return; 
+                if (!pointer) return;
                 const mousePointTo = {
                     x: (pointer.x - currentKonvaStage.x()) / oldScale,
                     y: (pointer.y - currentKonvaStage.y()) / oldScale,
                 };
-                const direction = e.evt.deltaY > 0 ? -1 : 1; 
+                const direction = e.evt.deltaY > 0 ? -1 : 1;
                 const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
 
                 currentKonvaStage.scale({ x: newScale, y: newScale });
@@ -1202,55 +1094,53 @@
 
 
             currentKonvaStage.on('click tap', function(e) {
-                if (e.target === currentKonvaStage) { 
+                if (e.target === currentKonvaStage) {
                     if (selectedKonvaNode) {
                         selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1);
-                        removeCreationHandle(selectedKonvaNode); 
+                        removeCreationHandle(selectedKonvaNode);
                         selectedKonvaNode = null;
-                        if(nodeStylePanel) hideElement(nodeStylePanel); 
+                        if(nodeStylePanel) hideElement(nodeStylePanel);
                         currentKonvaLayer.batchDraw();
                     }
-                    if(contextMenu) hideElement(contextMenu); 
+                    if(contextMenu) hideElement(contextMenu);
                 }
             });
 
             currentKonvaStage.on('contextmenu', function(e) {
-                e.evt.preventDefault(); 
-                
+                e.evt.preventDefault();
+
                 let targetNodeGroup = e.target;
                 while (targetNodeGroup && targetNodeGroup !== currentKonvaStage && !targetNodeGroup.hasName('mindmapNodeGroup')) {
                     targetNodeGroup = targetNodeGroup.getParent();
                 }
 
                 if (targetNodeGroup && targetNodeGroup.hasName('mindmapNodeGroup')) {
-                    rightClickedKonvaNode = targetNodeGroup; 
-                    
+                    rightClickedKonvaNode = targetNodeGroup;
+
                     if (!selectedKonvaNode || selectedKonvaNode.id() !== rightClickedKonvaNode.id()) {
-                        if (selectedKonvaNode) { 
+                        if (selectedKonvaNode) {
                             selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1);
                             removeCreationHandle(selectedKonvaNode);
                         }
                         selectedKonvaNode = rightClickedKonvaNode;
                         selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(3);
-                        const shapeNodeForHandle = selectedKonvaNode.findOne('.nodeShape');
-                        addCreationHandle(selectedKonvaNode, shapeNodeForHandle ? shapeNodeForHandle.height() : DEFAULT_NODE_STYLE.minHeight); 
+                        addCreationHandle(selectedKonvaNode);
                         const nodeData = allNodesDataForCurrentMap.find(n => n.id === selectedKonvaNode.id());
                         if (nodeData) updateNodeStylePanel(nodeData);
                         currentKonvaLayer.batchDraw();
                     }
 
-                    if(contextMenu) { 
+                    if(contextMenu) {
                         contextMenu.style.top = e.evt.pageY + 'px';
                         contextMenu.style.left = e.evt.pageX + 'px';
                         showElement(contextMenu);
                     }
                 } else {
-                    rightClickedKonvaNode = null; 
+                    rightClickedKonvaNode = null;
                     if(contextMenu) hideElement(contextMenu);
                 }
             });
         }
-
         async function saveCanvasState() {
             if (!currentMindMapId || !currentKonvaStage || !db) return;
             const canvasState = {
@@ -1262,13 +1152,11 @@
             try {
                 const mapDocRef = doc(db, "mindmaps", currentMindMapId);
                 await updateDoc(mapDocRef, { canvasState: canvasState, lastModified: serverTimestamp() });
-                console.log("Canvas state saved for map:", currentMindMapId);
+                // console.log("Canvas state saved for map:", currentMindMapId); // Bớt log để đỡ nhiễu
             } catch (error) {
                 console.error("Error saving canvas state:", error);
             }
         }
-
-
         function loadAndListenNodesForCurrentMap() {
             if (!currentMindMapId || !currentKonvaLayer || !db) {
                 console.warn("Cannot load nodes: missing mapId, Konva layer, or DB service.");
@@ -1278,7 +1166,7 @@
             showElement(konvaContainerLoading);
             currentKonvaLayer.destroyChildren();
             currentKonvaLayer.draw();
-            allNodesDataForCurrentMap = []; 
+            allNodesDataForCurrentMap = [];
 
             const q = query(collection(db, "nodes"), where("mapId", "==", currentMindMapId));
 
@@ -1286,10 +1174,10 @@
 
             mindmapNodesUnsubscribe = onSnapshot(q, (querySnapshot) => {
                 const nodesFromDb = [];
-                querySnapshot.forEach((docSnap) => {  
+                querySnapshot.forEach((docSnap) => {
                     nodesFromDb.push({ id: docSnap.id, ...docSnap.data() });
                 });
-                allNodesDataForCurrentMap = nodesFromDb; 
+                allNodesDataForCurrentMap = nodesFromDb;
                 renderNodesAndLines(allNodesDataForCurrentMap);
                 hideElement(konvaContainerLoading);
             }, (error) => {
@@ -1298,20 +1186,18 @@
                 hideElement(konvaContainerLoading);
             });
         }
-
         function renderNodesAndLines(nodesData) {
             if (!currentKonvaLayer) return;
-            currentKonvaLayer.destroyChildren(); 
+            currentKonvaLayer.destroyChildren();
             const konvaNodeObjects = {};
-            // const DEFAULT_NODE_STYLE đã được định nghĩa ở global
 
             nodesData.forEach(nodeData => {
                 if (!nodeData.position || typeof nodeData.position.x !== 'number' || typeof nodeData.position.y !== 'number') {
                     console.warn("Node data missing valid position, skipping:", nodeData);
-                    return; 
+                    return;
                 }
 
-                const style = { ...DEFAULT_NODE_STYLE, ...(nodeData.style || {}) }; 
+                const style = { ...DEFAULT_NODE_STYLE, ...(nodeData.style || {}) };
                 const textPadding = style.padding;
                 const iconSize = style.iconSize;
                 const iconSpacing = style.iconSpacing;
@@ -1322,94 +1208,75 @@
                     iconObject = new Konva.Text({
                         text: style.icon,
                         fontSize: iconSize,
-                        fontFamily: style.fontFamily, 
-                        fill: style.textColor, 
+                        fontFamily: style.fontFamily,
+                        fill: style.textColor,
                         x: textPadding,
                         listening: false,
-                        name: 'nodeIcon' 
+                        name: 'nodeIcon'
                     });
-                    const tempLayer = new Konva.Layer();
-                    tempLayer.add(iconObject);
                     iconTextWidth = iconObject.width() + iconSpacing;
-                    tempLayer.destroy(); 
                 }
-
 
                 const mainTextWidth = style.width - 2 * textPadding - iconTextWidth;
 
-                const tempText = new Konva.Text({ 
+                const tempText = new Konva.Text({
                     text: nodeData.text,
                     fontSize: style.fontSize,
                     fontFamily: style.fontFamily,
-                    width: mainTextWidth > 0 ? mainTextWidth : 1, 
+                    width: mainTextWidth > 0 ? mainTextWidth : 0,
                     align: 'center'
                 });
                 const actualTextContentHeight = tempText.height();
-                
-                let minHeightForNode = style.minHeight;
-                if (iconObject) { 
-                    const tempIconForHeight = new Konva.Text({text: style.icon, fontSize: iconSize, fontFamily: style.fontFamily});
-                    minHeightForNode = Math.max(style.minHeight, tempIconForHeight.height() + 2 * textPadding);
-                }
-                const dynamicShapeHeight = Math.max(minHeightForNode, actualTextContentHeight + 2 * textPadding);
+                const dynamicShapeHeight = Math.max(style.minHeight, actualTextContentHeight + 2 * textPadding, iconObject ? iconObject.height() + 2* textPadding : 0);
 
 
                 const group = new Konva.Group({
                     x: nodeData.position.x,
                     y: nodeData.position.y,
-                    draggable: true, 
+                    draggable: true,
                     id: nodeData.id,
-                    name: 'mindmapNodeGroup' 
+                    name: 'mindmapNodeGroup'
                 });
 
                 let shape;
                 if (style.shape === 'ellipse') {
                     shape = new Konva.Ellipse({
-                        x: style.width / 2, 
+                        x: style.width / 2,
                         y: dynamicShapeHeight / 2,
                         radiusX: style.width / 2,
-                        radiusY: dynamicShapeHeight / 2, 
+                        radiusY: dynamicShapeHeight / 2,
                         fill: style.backgroundColor,
-                        stroke: style.borderColor, 
-                        strokeWidth: 1, 
-                        name: 'nodeShape' 
+                        stroke: style.borderColor,
+                        strokeWidth: 1,
+                        name: 'nodeShape'
                     });
                 } else if (style.shape === 'roundedRectangle') {
                      shape = new Konva.Rect({
                         width: style.width,
-                        height: dynamicShapeHeight, 
+                        height: dynamicShapeHeight,
                         fill: style.backgroundColor,
-                        stroke: style.borderColor, 
-                        strokeWidth: 1, 
-                        cornerRadius: style.cornerRadius || 10, 
-                        name: 'nodeShape' 
+                        stroke: style.borderColor,
+                        strokeWidth: 1,
+                        cornerRadius: style.cornerRadius || 10,
+                        name: 'nodeShape'
                     });
                 }
-                else { 
+                else {
                     shape = new Konva.Rect({
                         width: style.width,
-                        height: dynamicShapeHeight, 
+                        height: dynamicShapeHeight,
                         fill: style.backgroundColor,
-                        stroke: style.borderColor, 
-                        strokeWidth: 1, 
-                        cornerRadius: 0, 
-                        name: 'nodeShape' 
+                        stroke: style.borderColor,
+                        strokeWidth: 1,
+                        cornerRadius: 0,
+                        name: 'nodeShape'
                     });
                 }
                 group.add(shape);
-                shape.moveToBottom(); 
+                shape.moveToBottom();
 
-                if (iconObject) { 
-                    iconObject = new Konva.Text({ // Tạo lại để add vào group thật
-                        text: style.icon,
-                        fontSize: iconSize,
-                        fontFamily: style.fontFamily,
-                        fill: style.textColor,
-                        x: textPadding,
-                        y: (dynamicShapeHeight - iconSize) / 2, 
-                        listening: false,
-                        name: 'nodeIcon'
-                    });
+                if (iconObject) {
+                    iconObject.y((dynamicShapeHeight - iconObject.height()) / 2);
                     group.add(iconObject);
                 }
 
@@ -1418,13 +1285,13 @@
                     fontSize: style.fontSize,
                     fontFamily: style.fontFamily,
                     fill: style.textColor,
-                    width: mainTextWidth > 0 ? mainTextWidth : 1, 
-                    x: textPadding + iconTextWidth, 
-                    padding: 0, 
+                    width: mainTextWidth > 0 ? mainTextWidth : 0,
+                    x: textPadding + iconTextWidth,
+                    padding: 0,
                     align: 'center',
                     listening: false
                 });
-                textToRender.y((dynamicShapeHeight - textToRender.height()) / 2); 
+                textToRender.y((dynamicShapeHeight - textToRender.height()) / 2);
                 group.add(textToRender);
 
 
@@ -1438,25 +1305,25 @@
                 });
 
                 group.on('click tap', function(e) {
-                    e.evt.cancelBubble = true; 
+                    e.evt.cancelBubble = true;
                     if (selectedKonvaNode && selectedKonvaNode !== this) {
                         selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1);
-                        removeCreationHandle(selectedKonvaNode); 
+                        removeCreationHandle(selectedKonvaNode);
                     }
                     selectedKonvaNode = this;
                     this.findOne('.nodeShape')?.strokeWidth(3);
-                    addCreationHandle(this, dynamicShapeHeight); 
-                    
+                    addCreationHandle(this, dynamicShapeHeight);
+
                     const clickedNodeData = allNodesDataForCurrentMap.find(n => n.id === this.id());
                     if(clickedNodeData) updateNodeStylePanel(clickedNodeData);
 
                     currentKonvaLayer.batchDraw();
-                    if(contextMenu) hideElement(contextMenu); 
+                    if(contextMenu) hideElement(contextMenu);
                 });
 
                 group.on('dblclick dbltap', function() {
-                    editTextOnKonvaNode(this, textToRender, dynamicShapeHeight); 
-                    if(contextMenu) hideElement(contextMenu); 
+                    editTextOnKonvaNode(this, textToRender, dynamicShapeHeight);
+                    if(contextMenu) hideElement(contextMenu);
                 });
 
                 konvaNodeObjects[nodeData.id] = group;
@@ -1464,7 +1331,7 @@
 
                 if (selectedKonvaNode && selectedKonvaNode.id() === nodeData.id) {
                     shape.strokeWidth(3);
-                    addCreationHandle(group, dynamicShapeHeight); 
+                    addCreationHandle(group, dynamicShapeHeight);
                 }
             });
 
@@ -1473,28 +1340,28 @@
                     const parentKonvaNode = konvaNodeObjects[nodeData.parentId];
                     const childKonvaNode = konvaNodeObjects[nodeData.id];
 
-                    const parentNodeFromData = allNodesDataForCurrentMap.find(n=>n.id === nodeData.parentId); 
+                    const parentNodeFromData = allNodesDataForCurrentMap.find(n=>n.id === nodeData.parentId);
 
                     const parentRenderedShape = parentKonvaNode.findOne('.nodeShape');
                     const childRenderedShape = childKonvaNode.findOne('.nodeShape');
 
                     const parentActualHeight = parentRenderedShape ? parentRenderedShape.height() : (parentNodeFromData?.style?.height || DEFAULT_NODE_STYLE.minHeight);
                     const childActualHeight = childRenderedShape ? childRenderedShape.height() : (nodeData.style?.height || DEFAULT_NODE_STYLE.minHeight);
-                    
+
                     const parentActualWidth = parentRenderedShape ? parentRenderedShape.width() : (parentNodeFromData?.style?.width || DEFAULT_NODE_STYLE.width);
                     const childActualWidth = childRenderedShape ? childRenderedShape.width() : (nodeData.style?.width || DEFAULT_NODE_STYLE.width);
 
 
                     const parentStyle = { ...DEFAULT_NODE_STYLE, ...(parentNodeFromData?.style || {}) };
-                    
+
                     const line = new Konva.Line({
                         points: [
                             parentKonvaNode.x() + parentActualWidth / 2, parentKonvaNode.y() + parentActualHeight / 2,
                             childKonvaNode.x() + childActualWidth / 2, childKonvaNode.y() + childActualHeight / 2
                         ],
-                        stroke: parentStyle.lineColor, 
-                        strokeWidth: parentStyle.lineWidth, 
-                        dash: parentStyle.lineDash, 
+                        stroke: parentStyle.lineColor,
+                        strokeWidth: parentStyle.lineWidth,
+                        dash: parentStyle.lineDash,
                         lineCap: 'round',
                         lineJoin: 'round',
                         name: 'connectionLine'
@@ -1505,38 +1372,38 @@
             });
             currentKonvaLayer.batchDraw();
         }
-        
-        // --- Creation Handle Logic ---
+
+        // --- Creation Handle Logic --- (Giữ nguyên)
         const HANDLE_RADIUS = 8;
         const HANDLE_FILL = 'rgba(0,180,0,0.7)';
         const HANDLE_STROKE = 'rgba(0,100,0,0.9)';
 
-        function addCreationHandle(parentNodeGroup, parentCurrentHeight) { 
-            if (!parentNodeGroup || parentNodeGroup.findOne('.creationHandle')) return; 
+        function addCreationHandle(parentNodeGroup, parentCurrentHeight) {
+            if (!parentNodeGroup || parentNodeGroup.findOne('.creationHandle')) return;
 
             const parentShape = parentNodeGroup.findOne('.nodeShape');
             if (!parentShape) return;
-            
-            const shapeWidth = parentShape.width(); 
-            // parentCurrentHeight là chiều cao thực tế của shape, đã tính toán dựa trên text
+
+            const shapeWidth = parentShape.width();
+            const actualHeight = parentCurrentHeight || parentShape.height(); // Sử dụng parentCurrentHeight nếu được truyền vào
 
             let handleX = shapeWidth / 2;
-            let handleY = parentCurrentHeight; 
+            let handleY = actualHeight;
 
             if (parentShape.getClassName() === 'Ellipse') {
-                handleX = parentShape.x(); 
-                handleY = parentShape.y() + parentShape.radiusY(); 
+                handleX = parentShape.x();
+                handleY = parentShape.y() + parentShape.radiusY();
             }
 
 
             const handle = new Konva.Circle({
-                x: handleX, 
-                y: handleY,    
+                x: handleX,
+                y: handleY,
                 radius: HANDLE_RADIUS,
                 fill: HANDLE_FILL,
                 stroke: HANDLE_STROKE,
                 strokeWidth: 1,
-                draggable: true, 
+                draggable: true,
                 name: 'creationHandle',
                 dragBoundFunc: function(pos) {
                     const parentAbsPos = parentNodeGroup.getAbsolutePosition();
@@ -1548,37 +1415,37 @@
             });
 
             parentNodeGroup.add(handle);
-            parentNodeGroup.creationHandle = handle; 
+            parentNodeGroup.creationHandle = handle;
 
             handle.on('dragstart', function(e) {
-                e.evt.cancelBubble = true; 
+                e.evt.cancelBubble = true;
                 if (!currentKonvaLayer || !selectedKonvaNode) return;
 
                 const parentStyle = allNodesDataForCurrentMap.find(n => n.id === selectedKonvaNode.id())?.style || {};
-                const lineColor = parentStyle.lineColor || '#007bff'; 
+                const lineColor = parentStyle.lineColor || '#007bff';
                 const lineWidth = parentStyle.lineWidth || 2;
-                
+
                 const currentParentShape = selectedKonvaNode.findOne('.nodeShape');
                 let startX = currentParentShape.width() / 2;
-                let startY = currentParentShape.height() / 2; 
+                let startY = currentParentShape.height() / 2;
                 if (currentParentShape.getClassName() === 'Ellipse') {
-                    startX = currentParentShape.x(); 
-                    startY = currentParentShape.y(); 
+                    startX = currentParentShape.x();
+                    startY = currentParentShape.y();
                 }
 
 
                 tempCreationLine = new Konva.Line({
                     points: [
-                        startX, 
+                        startX,
                         startY,
-                        this.x(), 
+                        this.x(),
                         this.y()
                     ],
                     stroke: lineColor,
                     strokeWidth: lineWidth,
-                    dash: parentStyle.lineDash || [] 
+                    dash: parentStyle.lineDash || []
                 });
-                selectedKonvaNode.add(tempCreationLine); 
+                selectedKonvaNode.add(tempCreationLine);
                 currentKonvaLayer.batchDraw();
             });
 
@@ -1599,56 +1466,56 @@
                     tempCreationLine.destroy();
                     tempCreationLine = null;
                 }
-                
+
                 const handleFinalRelativeX = this.x();
                 const handleFinalRelativeY = this.y();
 
                 const parentAbsPos = selectedKonvaNode.getAbsolutePosition();
                 const newNodeAbsX = parentAbsPos.x + handleFinalRelativeX;
                 const newNodeAbsY = parentAbsPos.y + handleFinalRelativeY;
-                
+
                 const currentParentShapeForReset = selectedKonvaNode.findOne('.nodeShape');
                 let resetHandleX = currentParentShapeForReset.width() / 2;
-                let resetHandleY = currentParentShapeForReset.height(); 
+                let resetHandleY = currentParentShapeForReset.height();
                 if (currentParentShapeForReset.getClassName() === 'Ellipse') {
-                    resetHandleX = currentParentShapeForReset.x(); 
-                    resetHandleY = currentParentShapeForReset.y() + currentParentShapeForReset.radiusY(); 
+                    resetHandleX = currentParentShapeForReset.x();
+                    resetHandleY = currentParentShapeForReset.y() + currentParentShapeForReset.radiusY();
                 }
 
 
-                this.position({ 
-                    x: resetHandleX, 
-                    y: resetHandleY 
+                this.position({
+                    x: resetHandleX,
+                    y: resetHandleY
                 });
 
                 if (currentMindMapId && db && selectedKonvaNode) {
                     const defaultChildWidth = 120;
-                    const defaultChildMinHeight = 40; 
+                    const defaultChildMinHeight = 40;
                     const defaultChildPadding = 10;
 
                     const newNodeData = {
                         mapId: currentMindMapId,
                         parentId: selectedKonvaNode.id(),
                         text: "Nút mới (kéo)",
-                        position: { 
+                        position: {
                             x: newNodeAbsX - defaultChildWidth / 2,
-                            y: newNodeAbsY - defaultChildMinHeight / 2 
+                            y: newNodeAbsY - defaultChildMinHeight / 2
                         },
-                        style: { 
-                            backgroundColor: "#f9f9f9", 
-                            textColor: "#333333", 
-                            borderColor: "#cccccc", 
-                            width: defaultChildWidth, 
-                            minHeight: defaultChildMinHeight, 
+                        style: {
+                            backgroundColor: "#f9f9f9",
+                            textColor: "#333333",
+                            borderColor: "#cccccc",
+                            width: defaultChildWidth,
+                            minHeight: defaultChildMinHeight,
                             padding: defaultChildPadding,
                             cornerRadius: 3,
-                            lineColor: DEFAULT_NODE_STYLE.lineColor, 
+                            lineColor: DEFAULT_NODE_STYLE.lineColor,
                             lineWidth: DEFAULT_NODE_STYLE.lineWidth,
-                            lineDash: DEFAULT_NODE_STYLE.lineDash, 
+                            lineDash: DEFAULT_NODE_STYLE.lineDash,
                             shape: "rectangle",
-                            fontSize: DEFAULT_NODE_STYLE.fontSize, 
+                            fontSize: DEFAULT_NODE_STYLE.fontSize,
                             fontFamily: DEFAULT_NODE_STYLE.fontFamily,
-                            icon: '' 
+                            icon: ''
                         },
                         createdAt: serverTimestamp()
                     };
@@ -1663,7 +1530,6 @@
             });
             currentKonvaLayer.batchDraw();
         }
-
         function removeCreationHandle(parentNodeGroup) {
             if (parentNodeGroup && parentNodeGroup.creationHandle) {
                 parentNodeGroup.creationHandle.destroy();
@@ -1672,28 +1538,24 @@
             }
         }
 
-
-        function editTextOnKonvaNode(konvaGroup, konvaTextNode, currentShapeHeight) { 
+        // --- Edit Text Logic --- (Giữ nguyên)
+        function editTextOnKonvaNode(konvaGroup, konvaTextNode, currentShapeHeight) {
             if (!currentKonvaStage || !currentKonvaLayer || isEditingText) return;
-            isEditingText = true; 
+            isEditingText = true;
             konvaTextNode.hide();
             const iconNode = konvaGroup.findOne('.nodeIcon');
             if (iconNode) iconNode.hide();
 
-            currentKonvaLayer.draw(); 
+            currentKonvaLayer.draw();
 
-            const textAbsPos = konvaTextNode.getAbsolutePosition(); 
-            const stageBox = currentKonvaStage.container().getBoundingClientRect(); 
-            let textareaBeingRemoved = false; 
+            const textAbsPos = konvaTextNode.getAbsolutePosition();
+            const stageBox = currentKonvaStage.container().getBoundingClientRect();
+            let textareaBeingRemoved = false;
 
-            const areaPosition = { 
+            const areaPosition = {
                 x: stageBox.left + textAbsPos.x,
                 y: stageBox.top + textAbsPos.y
             };
-            
-            // const nodeStyle = allNodesDataForCurrentMap.find(n => n.id === konvaGroup.id())?.style || {};
-            // const textPadding = nodeStyle.padding !== undefined ? nodeStyle.padding : DEFAULT_NODE_STYLE.padding;
-
 
             const textarea = document.createElement('textarea');
             document.body.appendChild(textarea);
@@ -1702,11 +1564,11 @@
             textarea.style.position = 'absolute';
             textarea.style.top = areaPosition.y + 'px';
             textarea.style.left = areaPosition.x + 'px';
-            textarea.style.width = konvaTextNode.width() * currentKonvaStage.scaleX() + 'px'; 
+            textarea.style.width = konvaTextNode.width() * currentKonvaStage.scaleX() + 'px';
             textarea.style.height = konvaTextNode.height() * currentKonvaStage.scaleY() + 'px';
-            textarea.style.fontSize = konvaTextNode.fontSize() * currentKonvaStage.scaleY() + 'px'; 
+            textarea.style.fontSize = konvaTextNode.fontSize() * currentKonvaStage.scaleY() + 'px';
             textarea.style.border = '1px solid #999';
-            textarea.style.padding = '0px'; 
+            textarea.style.padding = '0px';
             textarea.style.margin = '0px';
             textarea.style.overflow = 'hidden';
             textarea.style.background = 'white';
@@ -1714,9 +1576,9 @@
             textarea.style.resize = 'none';
             textarea.style.textAlign = konvaTextNode.align();
             textarea.style.fontFamily = konvaTextNode.fontFamily();
-            textarea.style.display = 'flex'; 
-            textarea.style.alignItems = 'center'; 
-            textarea.style.justifyContent = 'center'; 
+            textarea.style.display = 'flex';
+            textarea.style.alignItems = 'center';
+            textarea.style.justifyContent = 'center';
 
 
             textarea.focus();
@@ -1724,17 +1586,17 @@
 
 
             async function saveAndRemoveTextarea() {
-                if (textareaBeingRemoved) return; 
-                textareaBeingRemoved = true; 
+                if (textareaBeingRemoved) return;
+                textareaBeingRemoved = true;
 
                 const newText = textarea.value;
-                if (textarea.parentNode) { 
+                if (textarea.parentNode) {
                     textarea.parentNode.removeChild(textarea);
                 }
-                
+
                 const nodeRef = doc(db, "nodes", konvaGroup.id());
                 const nodeSnap = await getDoc(nodeRef);
-                let currentStyleForCalc = DEFAULT_NODE_STYLE; 
+                let currentStyleForCalc = DEFAULT_NODE_STYLE;
                 if (nodeSnap.exists() && nodeSnap.data().style) {
                     currentStyleForCalc = {...DEFAULT_NODE_STYLE, ...nodeSnap.data().style};
                 }
@@ -1745,7 +1607,7 @@
                     iconWidthForCalc = tempIconForCalc.width() + currentStyleForCalc.iconSpacing;
                 }
 
-                const tempTextForHeightCalc = new Konva.Text({ 
+                const tempTextForHeightCalc = new Konva.Text({
                     text: newText,
                     fontSize: currentStyleForCalc.fontSize,
                     fontFamily: currentStyleForCalc.fontFamily,
@@ -1754,23 +1616,22 @@
                 });
                 const newTextContentHeight = tempTextForHeightCalc.height();
                 const newFinalShapeHeight = Math.max(currentStyleForCalc.minHeight, newTextContentHeight + 2 * currentStyleForCalc.padding, currentStyleForCalc.icon ? (currentStyleForCalc.iconSize || DEFAULT_NODE_STYLE.iconSize) + 2 * currentStyleForCalc.padding : 0);
-                
-                window.removeEventListener('click', handleOutsideClick); 
-                isEditingText = false; 
+
+                window.removeEventListener('click', handleOutsideClick);
+                isEditingText = false;
 
                 if(!db) return;
                 try {
-                    const updatedNodeData = { 
-                        text: newText, 
-                        style: { ...currentStyleForCalc, height: newFinalShapeHeight } 
+                    const updatedNodeData = {
+                        text: newText,
+                        style: { ...currentStyleForCalc, height: newFinalShapeHeight }
                     };
                     await updateDoc(nodeRef, updatedNodeData);
-                    console.log("Node text and style.height updated in Firestore.");
-                } catch (e) { 
-                    console.error("Error updating node text and height in Firestore:", e); 
-                    const originalKonvaTextNode = konvaGroup.findOne('Text'); 
+                } catch (e) {
+                    console.error("Error updating node text and height in Firestore:", e);
+                    const originalKonvaTextNode = konvaGroup.findOne('Text');
                      if (originalKonvaTextNode) {
-                        originalKonvaTextNode.text(textarea.value); 
+                        originalKonvaTextNode.text(textarea.value);
                         originalKonvaTextNode.show();
                          const originalIconNode = konvaGroup.findOne('.nodeIcon');
                         if (originalIconNode) originalIconNode.show();
@@ -1785,7 +1646,7 @@
                  if (textarea.parentNode) {
                     textarea.parentNode.removeChild(textarea);
                 }
-                const originalKonvaTextNode = konvaGroup.findOne('Text'); 
+                const originalKonvaTextNode = konvaGroup.findOne('Text');
                 if (originalKonvaTextNode) {
                     originalKonvaTextNode.show();
                 }
@@ -1793,7 +1654,7 @@
                 if (originalIconNode) originalIconNode.show();
                 currentKonvaLayer.batchDraw();
                 window.removeEventListener('click', handleOutsideClick);
-                isEditingText = false; 
+                isEditingText = false;
             }
 
             textarea.addEventListener('keydown', function (e) {
@@ -1817,6 +1678,106 @@
             }, 0);
         }
 
+
+        // --- AI LOGIC FOR SUGGESTING CHILD NODES ---
+        async function suggestChildNodesWithAI(parentNodeKonva) {
+            if (!generativeModel || !parentNodeKonva || !currentMindMapId || !currentUser || !db) {
+                alert("Chức năng AI chưa sẵn sàng hoặc thiếu thông tin cần thiết (model, node, mapId, user, db).");
+                if(contextMenu) hideElement(contextMenu);
+                return;
+            }
+
+            const parentNodeId = parentNodeKonva.id();
+            const parentNodeData = allNodesDataForCurrentMap.find(n => n.id === parentNodeId);
+
+            if (!parentNodeData) {
+                alert("Không tìm thấy dữ liệu cho nút cha đã chọn.");
+                if(contextMenu) hideElement(contextMenu);
+                return;
+            }
+
+            const parentText = parentNodeData.text;
+            // Prompt có thể cần được tinh chỉnh thêm để có kết quả tốt hơn
+            const prompt = `Cho một nút sơ đồ tư duy với nội dung là "${parentText}", hãy gợi ý 3 ý tưởng ngắn gọn (khoảng 2-5 từ mỗi ý tưởng) cho các nút con liên quan trực tiếp. Mỗi ý tưởng trên một dòng riêng biệt. Không sử dụng đánh số, gạch đầu dòng hay bất kỳ ký tự đặc biệt nào ở đầu dòng.`;
+
+            showLoadingIndicator("AI đang tạo gợi ý...");
+            if(contextMenu) hideElement(contextMenu); // Ẩn context menu khi AI đang chạy
+
+            try {
+                const result = await generativeModel.generateContent(prompt);
+                const response = result.response;
+                const suggestionsText = response.text(); // API trả về text()
+                const suggestions = suggestionsText.split('\n').map(s => s.trim()).filter(s => s.length > 0 && s.length < 50); // Lọc và giới hạn độ dài
+
+                if (suggestions.length > 0) {
+                    const batch = writeBatch(db);
+
+                    let startX = parentNodeKonva.x();
+                    let startY = parentNodeKonva.y();
+                    const parentShape = parentNodeKonva.findOne('.nodeShape');
+                    const parentWidth = parentShape?.width() || (parentShape?.radiusX && parentShape.radiusX() * 2) || DEFAULT_NODE_STYLE.width;
+                    const parentHeight = parentShape?.height() || (parentShape?.radiusY && parentShape.radiusY() * 2) || DEFAULT_NODE_STYLE.minHeight;
+
+                    // Cố gắng xếp các node con mới bên dưới nút cha
+                    startX += parentWidth / 4; // Hơi lệch sang phải
+                    startY += parentHeight + 30; // Bên dưới nút cha, cách 30px
+
+                    const yOffsetIncrement = (DEFAULT_NODE_STYLE.minHeight || 50) + 20; // Khoảng cách giữa các node con mới
+
+                    suggestions.slice(0, 5).forEach((suggestion, index) => { // Giới hạn tối đa 5 node gợi ý
+                        const newNodeId = doc(collection(db, "nodes")).id;
+                        const newNodeData = {
+                            // id: newNodeId, // Firestore tự tạo ID khi dùng addDoc hoặc set với ref mới
+                            mapId: currentMindMapId,
+                            parentId: parentNodeId,
+                            text: suggestion,
+                            position: {
+                                x: startX,
+                                y: startY + (index * yOffsetIncrement)
+                            },
+                            style: {
+                                ...DEFAULT_NODE_STYLE, // Kế thừa style mặc định
+                                backgroundColor: "#E3F2FD", // Màu nền nhẹ nhàng cho node AI gợi ý
+                                textColor: "#0D47A1",
+                                borderColor: "#90CAF9",
+                                shape: "roundedRectangle",
+                                cornerRadius: 8,
+                                width: 130, // Kích thước nhỏ hơn một chút
+                                minHeight: 40,
+                                fontSize: 13,
+                            },
+                            createdAt: serverTimestamp()
+                        };
+                        const nodeRef = doc(db, "nodes", newNodeId);
+                        batch.set(nodeRef, newNodeData);
+                    });
+
+                    await batch.commit();
+                    // Không cần alert ở đây vì onSnapshot sẽ tự cập nhật UI
+                    // console.log(`AI suggested and added ${suggestions.length} child nodes.`);
+                } else {
+                    alert("AI không thể đưa ra gợi ý nào phù hợp vào lúc này.");
+                }
+
+            } catch (error) {
+                console.error("Error calling Gemini API or updating Firestore:", error);
+                let userMessage = "Lỗi khi AI gợi ý: " + error.message;
+                if (error.message && error.message.includes("API key not valid")) {
+                     userMessage += "\nVui lòng kiểm tra lại thiết lập API Key trong Firebase Console cho Gemini API.";
+                } else if (error.message && (error.message.includes("429") || error.message.toLowerCase().includes("quota")) ) {
+                    userMessage = "Bạn đã gửi quá nhiều yêu cầu tới AI hoặc đã hết hạn ngạch. Vui lòng thử lại sau ít phút.";
+                } else if (error.message && error.message.toLowerCase().includes("billing")){
+                    userMessage = "Có vấn đề với cài đặt thanh toán cho dự án Firebase của bạn. Vui lòng kiểm tra trong Google Cloud Console.";
+                } else if (error.message && error.message.toLowerCase().includes("model not found")){
+                    userMessage = "Model AI không được tìm thấy. Vui lòng kiểm tra lại tên model đã cấu hình.";
+                }
+                alert(userMessage);
+            } finally {
+                hideLoadingIndicator();
+            }
+        }
+
+
         // --- CONTEXT MENU ACTIONS ---
         if (ctxAddChildButton) {
             ctxAddChildButton.addEventListener('click', async () => {
@@ -1829,7 +1790,6 @@
                 if(contextMenu) hideElement(contextMenu);
             });
         }
-
         if (ctxEditTextButton) {
             ctxEditTextButton.addEventListener('click', () => {
                 if (rightClickedKonvaNode) {
@@ -1842,7 +1802,24 @@
                 if(contextMenu) hideElement(contextMenu);
             });
         }
+        // Gắn sự kiện cho nút "Gợi ý nút con (AI)"
+        if (ctxSuggestChildrenButton) {
+            ctxSuggestChildrenButton.addEventListener('click', async () => {
+                let targetNodeForAI = null;
+                if (rightClickedKonvaNode) { // Ưu tiên node được click chuột phải
+                    targetNodeForAI = rightClickedKonvaNode;
+                } else if (selectedKonvaNode) { // Nếu không có, dùng node đang được chọn
+                    targetNodeForAI = selectedKonvaNode;
+                }
 
+                if (targetNodeForAI) {
+                    await suggestChildNodesWithAI(targetNodeForAI);
+                } else {
+                    alert("Vui lòng chọn một nút cha để AI có thể gợi ý nút con.");
+                     if(contextMenu) hideElement(contextMenu);
+                }
+            });
+        }
         if (ctxDeleteNodeButton) {
             ctxDeleteNodeButton.addEventListener('click', async () => {
                 if (!rightClickedKonvaNode || !currentMindMapId || !db) {
@@ -1850,7 +1827,7 @@
                      if(contextMenu) hideElement(contextMenu);
                      return;
                 }
-                await deleteNodeLogic(rightClickedKonvaNode); 
+                await deleteNodeLogic(rightClickedKonvaNode);
                 if(contextMenu) hideElement(contextMenu);
             });
         }
@@ -1860,8 +1837,9 @@
             }
         });
 
-        // --- TOOLBAR BUTTON ACTIONS (Dùng lại logic nếu có thể) ---
-        async function addChildNodeLogic(parentNode, nodeText = "Nút con mới") { 
+
+        // --- TOOLBAR BUTTON ACTIONS (Dùng lại logic nếu có thể) --- (Giữ nguyên)
+        async function addChildNodeLogic(parentNode) {
             if (!parentNode || !currentMindMapId || !db) return;
 
             const parentShape = parentNode.findOne('.nodeShape');
@@ -1871,22 +1849,22 @@
             const newNodeData = {
                 mapId: currentMindMapId,
                 parentId: parentNode.id(),
-                text: nodeText, 
+                text: "Nút con mới",
                 position: {
-                    x: parentNode.x() + parentWidth / 4, 
-                    y: parentNode.y() + parentHeight + 30 
+                    x: parentNode.x() + parentWidth / 4,
+                    y: parentNode.y() + parentHeight + 30
                 },
-                style: { 
-                    backgroundColor: "#f9f9f9", textColor: "#333333", borderColor: "#cccccc", 
-                    width: 120, minHeight: 40, padding: 10, 
+                style: {
+                    backgroundColor: "#f9f9f9", textColor: "#333333", borderColor: "#cccccc",
+                    width: 120, minHeight: 40, padding: 10,
                     cornerRadius: 3,
-                    lineColor: DEFAULT_NODE_STYLE.lineColor, 
+                    lineColor: DEFAULT_NODE_STYLE.lineColor,
                     lineWidth: DEFAULT_NODE_STYLE.lineWidth,
-                    lineDash: DEFAULT_NODE_STYLE.lineDash, 
+                    lineDash: DEFAULT_NODE_STYLE.lineDash,
                     shape: "rectangle",
-                    fontSize: DEFAULT_NODE_STYLE.fontSize, 
+                    fontSize: DEFAULT_NODE_STYLE.fontSize,
                     fontFamily: DEFAULT_NODE_STYLE.fontFamily,
-                    icon: '' 
+                    icon: ''
                 },
                 createdAt: serverTimestamp()
             };
@@ -1897,7 +1875,6 @@
                 alert("Lỗi khi thêm nút con: " + e.message);
             }
         }
-        
         function findAllDescendantNodeIds(parentNodeId, allNodes) {
             let descendantIds = [];
             const directChildren = allNodes.filter(node => node.parentId === parentNodeId);
@@ -1907,18 +1884,18 @@
             }
             return descendantIds;
         }
-
         async function deleteNodeLogic(nodeToDelete) {
             if (!nodeToDelete || !currentMindMapId || !db) return;
             const nodeId = nodeToDelete.id();
-            const konvaTextNode = nodeToDelete.findOne('Text'); 
-            const nodeText = konvaTextNode ? konvaTextNode.text() : "Không có tiêu đề"; 
+            const konvaTextNode = nodeToDelete.findOne('Text');
+            const nodeText = konvaTextNode ? konvaTextNode.text() : "Không có tiêu đề";
 
-            if (confirm(`Bạn có chắc muốn xóa nút "${nodeText}" và TẤT CẢ các nút con của nó không? Hành động này không thể hoàn tác.`)) {
+            // Thay thế confirm bằng một modal tùy chỉnh nếu muốn UI đẹp hơn
+            if (window.confirm(`Bạn có chắc muốn xóa nút "${nodeText}" và TẤT CẢ các nút con của nó không? Hành động này không thể hoàn tác.`)) {
                 try {
                     const descendantIds = findAllDescendantNodeIds(nodeId, allNodesDataForCurrentMap);
                     const allIdsToDelete = [nodeId, ...descendantIds];
-                    
+
                     const batch = writeBatch(db);
                     allIdsToDelete.forEach(id => {
                         batch.delete(doc(db, "nodes", id));
@@ -1933,16 +1910,14 @@
                     if (rightClickedKonvaNode && allIdsToDelete.includes(rightClickedKonvaNode.id())) {
                         rightClickedKonvaNode = null;
                     }
-                    alert("Nút và các nút con đã được xóa.");
+                    // alert("Nút và các nút con đã được xóa."); // onSnapshot sẽ cập nhật UI
                 } catch (e) {
                     console.error("Error deleting node and descendants:", e);
                     alert("Lỗi khi xóa nút: " + e.message);
                 }
             }
         }
-
-
-        if (addChildNodeButton) { 
+        if (addChildNodeButton) {
             addChildNodeButton.addEventListener('click', async () => {
                 if (!selectedKonvaNode) {
                     alert("Vui lòng chọn một nút cha để thêm nút con.");
@@ -1951,7 +1926,6 @@
                 await addChildNodeLogic(selectedKonvaNode);
             });
         }
-
         if (deleteNodeButton) {
             deleteNodeButton.addEventListener('click', async () => {
                 if (!selectedKonvaNode) {
@@ -1962,24 +1936,21 @@
             });
         }
 
-        // --- KEYBOARD SHORTCUTS ---
+        // --- KEYBOARD SHORTCUTS --- (Giữ nguyên)
         const KEYBOARD_MOVE_STEP = 10;
-
         function handleGlobalKeyDown(e) {
-            if (isEditingText) return; 
+            if (isEditingText) return;
 
-            if (contextMenu && !contextMenu.classList.contains('hidden')) { 
+            if (contextMenu && !contextMenu.classList.contains('hidden')) {
                 if (e.key === 'Escape') {
                     hideElement(contextMenu);
                 }
-                return; 
+                return;
             }
 
-
-            if (!selectedKonvaNode && !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) { 
+            if (!selectedKonvaNode && !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
                 if (e.key === 'Tab' || e.key === 'Enter' || e.key === 'Delete' || e.key === 'Backspace') return;
             }
-
 
             switch (e.key) {
                 case 'Tab':
@@ -2002,7 +1973,7 @@
                 case 'Backspace':
                     if (selectedKonvaNode) {
                         e.preventDefault();
-                        deleteNodeLogic(selectedKonvaNode); 
+                        deleteNodeLogic(selectedKonvaNode);
                     }
                     break;
                 case 'ArrowUp':
@@ -2010,36 +1981,36 @@
                 case 'ArrowLeft':
                 case 'ArrowRight':
                     e.preventDefault();
-                    if (selectedKonvaNode) { 
+                    if (selectedKonvaNode) {
                         let newX = selectedKonvaNode.x();
                         let newY = selectedKonvaNode.y();
                         if (e.key === 'ArrowUp') newY -= KEYBOARD_MOVE_STEP;
                         else if (e.key === 'ArrowDown') newY += KEYBOARD_MOVE_STEP;
                         else if (e.key === 'ArrowLeft') newX -= KEYBOARD_MOVE_STEP;
                         else if (e.key === 'ArrowRight') newX += KEYBOARD_MOVE_STEP;
-                        
+
                         selectedKonvaNode.position({ x: newX, y: newY });
                         currentKonvaLayer.batchDraw();
                         if (db) {
                             updateDoc(doc(db, "nodes", selectedKonvaNode.id()), { position: { x: newX, y: newY } })
                                 .catch(err => console.error("Error updating node position via keyboard:", err));
                         }
-                    } else if (currentKonvaStage) { 
+                    } else if (currentKonvaStage) {
                         let stageX = currentKonvaStage.x();
                         let stageY = currentKonvaStage.y();
-                         if (e.key === 'ArrowUp') stageY += KEYBOARD_MOVE_STEP * 2; 
+                         if (e.key === 'ArrowUp') stageY += KEYBOARD_MOVE_STEP * 2;
                         else if (e.key === 'ArrowDown') stageY -= KEYBOARD_MOVE_STEP * 2;
                         else if (e.key === 'ArrowLeft') stageX += KEYBOARD_MOVE_STEP * 2;
                         else if (e.key === 'ArrowRight') stageX -= KEYBOARD_MOVE_STEP * 2;
                         currentKonvaStage.position({x: stageX, y: stageY });
                         currentKonvaStage.batchDraw();
-                        saveCanvasState(); 
+                        saveCanvasState();
                     }
                     break;
             }
         }
 
-
+        // --- ZOOM CONTROLS --- (Giữ nguyên)
         const scaleBy = 1.1;
         if(zoomInButton) {
             zoomInButton.addEventListener('click', () => {
@@ -2047,7 +2018,7 @@
                 const oldScale = currentKonvaStage.scaleX();
                 currentKonvaStage.scale({ x: oldScale * scaleBy, y: oldScale * scaleBy });
                 currentKonvaStage.batchDraw();
-                saveCanvasState(); 
+                saveCanvasState();
             });
         }
         if(zoomOutButton) {
@@ -2056,7 +2027,7 @@
                 const oldScale = currentKonvaStage.scaleX();
                 currentKonvaStage.scale({ x: oldScale / scaleBy, y: oldScale / scaleBy });
                 currentKonvaStage.batchDraw();
-                saveCanvasState(); 
+                saveCanvasState();
             });
         }
         if(resetZoomButton) {
@@ -2065,7 +2036,7 @@
                 currentKonvaStage.scale({ x: 1, y: 1 });
                 currentKonvaStage.position({ x: 0, y: 0 });
                 currentKonvaStage.batchDraw();
-                saveCanvasState(); 
+                saveCanvasState();
             });
         }
 
