@@ -57,25 +57,25 @@
             font-size: 16px;
         }
         input[type="number"] { 
-            width: 50px; /* Giảm chiều rộng */
-            padding: 6px; /* Giảm padding */
-            margin-left: 3px; /* Giảm margin */
-            margin-right: 10px; /* Giảm margin */
+            width: 50px; 
+            padding: 6px; 
+            margin-left: 3px; 
+            margin-right: 10px; 
             border: 1px solid #dddfe2;
             border-radius: 4px;
-            font-size: 13px; /* Giảm font */
+            font-size: 13px; 
             text-align: center;
         }
         button {
-            padding: 8px 12px; /* Giảm padding nút chung */
-            font-size: 14px; /* Giảm font nút chung */
+            padding: 8px 12px; 
+            font-size: 14px; 
             font-weight: bold;
             background-color: #1877f2;
             color: white;
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            margin-right: 6px; /* Giảm margin */
+            margin-right: 6px; 
             transition: background-color 0.3s;
         }
         button:hover {
@@ -117,7 +117,7 @@
             display: flex;
             flex-direction: column;
             height: 100%; 
-            padding: 8px; /* Giảm padding */
+            padding: 8px; 
             box-sizing: border-box; 
         }
         header {
@@ -135,8 +135,8 @@
             margin: 0;
         }
         #user-info span {
-            margin-right: 8px; /* Giảm margin */
-            font-size: 0.85em; /* Giảm font */
+            margin-right: 8px; 
+            font-size: 0.85em; 
         }
         #mindmap-management-view { 
              display: flex;
@@ -175,34 +175,35 @@
             overflow: hidden; 
         }
         #canvas-toolbar {
-            display: flex; /* Sử dụng flexbox cho toolbar */
-            align-items: center; /* Căn giữa các item theo chiều dọc */
-            flex-wrap: wrap; /* Cho phép xuống dòng nếu không đủ chỗ */
+            display: flex; 
+            align-items: center; 
+            flex-wrap: wrap; 
             padding: 6px 5px; 
             margin-bottom: 5px; 
             border-bottom: 1px solid #ccd0d5; 
             flex-shrink: 0; 
         }
-        #canvas-toolbar .toolbar-group { /* Nhóm các nút điều khiển */
+        #canvas-toolbar .toolbar-section { /* Thay .toolbar-group thành .toolbar-section */
             display: flex;
             align-items: center;
-            margin-right: 10px; /* Khoảng cách giữa các nhóm */
+            margin-right: 15px; /* Tăng khoảng cách giữa các section */
+            margin-bottom: 5px; /* Thêm margin bottom cho trường hợp wrap */
         }
-        #canvas-toolbar .toolbar-group:last-child {
+        #canvas-toolbar .toolbar-section:last-child {
             margin-right: 0;
         }
         #canvas-toolbar h2 {
-            margin: 0 10px 0 0; /* Bỏ margin bottom, thêm margin right */
+            margin: 0 10px 0 0; 
             font-size: 16px; 
-            font-weight: 500; /* Giảm độ đậm */
-            white-space: nowrap; /* Không xuống dòng tiêu đề */
+            font-weight: 500; 
+            white-space: nowrap; 
             overflow: hidden;
-            text-overflow: ellipsis; /* Hiển thị ... nếu quá dài */
-            max-width: 200px; /* Giới hạn chiều rộng tiêu đề */
+            text-overflow: ellipsis; 
+            max-width: 150px; /* Giảm max-width nếu cần */
         }
-        #back-to-maps-list-button { /* Style cho nút icon */
-            padding: 6px 8px; /* Giảm padding cho nút icon */
-            font-size: 18px; /* Kích thước icon */
+        #back-to-maps-list-button { 
+            padding: 6px 8px; 
+            font-size: 18px; 
             line-height: 1;
         }
         #konva-container {
@@ -224,42 +225,51 @@
         }
         /* Node Style Panel */
         #node-style-panel {
-            margin-top: 5px; 
-            padding: 8px; 
+            /* margin-top: 5px; Bỏ margin-top vì giờ nó là một toolbar-section */
+            padding: 5px; /* Giảm padding */
             background-color: #f9f9f9;
             border: 1px solid #e0e0e0;
             border-radius: 4px;
-            width: 100%; /* Cho panel style chiếm toàn bộ chiều rộng còn lại */
+            /* width: 100%;  Bỏ width 100% để nó co lại theo nội dung */
             box-sizing: border-box;
+            display: flex; /* Cho các group style nằm trên cùng dòng */
+            align-items: center;
+            flex-wrap: wrap; /* Cho phép style group xuống dòng nếu không đủ chỗ */
         }
         #node-style-panel h5 { 
-            margin: 3px 0; 
-            font-size: 0.9em; 
+            margin: 0 5px 0 0; /* Chỉ margin right */
+            font-size: 0.85em; 
             color: #606770;
+            white-space: nowrap;
         }
         #node-style-panel label {
-            margin-right: 3px; 
-            font-size: 0.85em; 
+            margin-right: 2px; /* Giảm margin */
+            font-size: 0.8em; /* Giảm font */
             vertical-align: middle;
+            white-space: nowrap;
         }
         #node-style-panel input[type="color"] {
-            width: 24px; 
-            height: 24px;
+            width: 22px; /* Giảm nữa */
+            height: 22px;
             padding: 0;
             border: 1px solid #ccc;
-            border-radius: 4px;
+            border-radius: 3px; /* Giảm border radius */
             vertical-align: middle;
-            margin-right: 8px; 
+            margin-right: 5px; 
         }
         #node-style-panel input[type="number"] {
-            width: 50px; 
-            padding: 5px; 
-            font-size: 0.85em; 
+            width: 40px; 
+            padding: 4px; 
+            font-size: 0.8em; 
         }
         .style-group { 
-            margin-bottom: 5px; 
-            display: inline-block; /* Cho các group style nằm trên cùng dòng */
-            margin-right: 10px;
+            margin-bottom: 0; /* Bỏ margin bottom */
+            display: flex; /* Sử dụng flex để các item trong group nằm trên 1 dòng */
+            align-items: center;
+            margin-right: 8px; /* Khoảng cách giữa các style group (Nền, Chữ, Viền và Màu đường, Độ dày) */
+        }
+        .style-group:last-child {
+            margin-right: 0;
         }
         /* Context Menu */
         #context-menu {
@@ -332,7 +342,7 @@
 
             <div id="canvas-view" class="hidden">
                 <div id="canvas-toolbar">
-                    <div class="toolbar-group">
+                    <div class="toolbar-section">
                         <button id="back-to-maps-list-button" class="secondary" title="Quay lại danh sách">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left-short" viewBox="0 0 16 16">
                                 <path fill-rule="evenodd" d="M12 8a.5.5 0 0 1-.5.5H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5a.5.5 0 0 1 .5.5z"/>
@@ -340,33 +350,36 @@
                         </button>
                         <h2 id="current-mindmap-title-display"></h2>
                     </div>
-                    <div class="toolbar-group">
+                    <div class="toolbar-section">
                         <button id="add-child-node-button" title="Thêm nút con (Click)">Thêm Nút</button> 
                         <button id="delete-node-button" class="danger" title="Xóa nút đã chọn">Xóa Nút</button>
                     </div>
-                    <div class="toolbar-group">
-                        <span style="font-size:0.9em;">Zoom:</span>
+                    <div class="toolbar-section">
+                        <span style="font-size:0.9em; margin-right: 3px;">Zoom:</span>
                         <button id="zoom-in-button" class="secondary" title="Phóng to">+</button>
                         <button id="zoom-out-button" class="secondary" title="Thu nhỏ">-</button>
                         <button id="reset-zoom-button" class="secondary" title="Reset zoom">Reset</button>
                     </div>
-                    
-                    <div id="node-style-panel" class="hidden">
-                        <h5>Kiểu Nút:</h5>
+                     <div id="node-style-panel" class="toolbar-section hidden">
                         <div class="style-group">
                             <label for="node-bg-color">Nền:</label>
                             <input type="color" id="node-bg-color" title="Màu nền nút">
+                        </div>
+                        <div class="style-group">
                             <label for="node-text-color">Chữ:</label>
                             <input type="color" id="node-text-color" title="Màu chữ nút">
-                            <label for="node-border-color">Viền:</label>
+                        </div>
+                        <div class="style-group">
+                             <label for="node-border-color">Viền:</label>
                             <input type="color" id="node-border-color" title="Màu viền nút">
                         </div>
-                        <h5>Kiểu Đường nối (từ nút này):</h5>
                         <div class="style-group">
-                            <label for="node-line-color">Màu đường:</label>
+                            <label for="node-line-color">Đường:</label>
                             <input type="color" id="node-line-color" title="Màu đường nối từ nút này">
-                            <label for="node-line-width">Độ dày:</label>
-                            <input type="number" id="node-line-width" min="1" max="10" value="2" title="Độ dày đường nối từ nút này">
+                        </div>
+                        <div class="style-group">
+                            <label for="node-line-width">Dày:</label>
+                            <input type="number" id="node-line-width" min="1" max="10" title="Độ dày đường nối từ nút này">
                         </div>
                     </div>
                 </div>
