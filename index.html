@@ -195,7 +195,7 @@
         #canvas-toolbar .toolbar-section { 
             display: flex;
             align-items: center;
-            margin-right: 15px; 
+            margin-right: 10px; /* Giảm khoảng cách giữa các section */
             margin-bottom: 5px; 
         }
         #canvas-toolbar .toolbar-section:last-child {
@@ -214,6 +214,13 @@
             padding: 6px 8px; 
             font-size: 18px; 
             line-height: 1;
+        }
+         #ai-suggestion-button { /* Style cho nút AI */
+            background-color: #ffc107; /* Màu vàng amber */
+            color: #212529;
+        }
+        #ai-suggestion-button:hover {
+            background-color: #e0a800;
         }
         #konva-container {
             width: 100%;
@@ -361,7 +368,7 @@
                     <div class="toolbar-section">
                         <button id="add-child-node-button" title="Thêm nút con (Click)">Thêm Nút</button> 
                         <button id="delete-node-button" class="danger" title="Xóa nút đã chọn (Delete/Backspace)">Xóa Nút</button>
-                    </div>
+                        <button id="ai-suggestion-button" title="Gợi ý AI (khi chọn nút)">💡 Gợi ý</button> </div>
                     <div class="toolbar-section">
                         <span style="font-size:0.9em; margin-right: 3px;">Zoom:</span>
                         <button id="zoom-in-button" class="secondary" title="Phóng to">+</button>
@@ -442,7 +449,7 @@
             <ul>
                 <li id="ctx-add-child">Thêm nút con (Tab)</li>
                 <li id="ctx-edit-text">Sửa văn bản (Enter)</li>
-                <li id="ctx-delete-node">Xóa nút & con (Delete)</li>
+                <li id="ctx-ai-suggest">💡 Gợi ý AI</li> <li id="ctx-delete-node">Xóa nút & con (Delete)</li>
             </ul>
         </div>
     </div>
@@ -472,6 +479,9 @@
             onSnapshot,
             writeBatch 
         } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+        // Mới: Import các hàm cần thiết cho Firebase AI Logic (Gemini)
+        import { getGenerativeModel, GoogleAIProvider } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-ai-vertex.js"; // Hoặc firebase-ai.js nếu dùng Gemini Developer API
+
 
         // --- FIREBASE CONFIGURATION ---
         const firebaseConfig = {
@@ -487,15 +497,25 @@
         let app;
         let auth;
         let db;
+        let genAIModel; // Biến toàn cục cho mô hình AI
 
         try {
             app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
             console.log("Firebase initialized successfully!");
+
+            // Khởi tạo mô hình AI (sử dụng gemini-1.5-flash-latest như một lựa chọn tốt)
+            // Nếu bạn đã cấu hình Vertex AI backend trong Firebase Console:
+            genAIModel = getGenerativeModel(app, { model: "gemini-1.5-flash-latest" }); 
+            // Nếu bạn muốn sử dụng Gemini Developer API trực tiếp (ít khuyến khích hơn cho web vì API key):
+            // const ai = getAI(app, { provider: new GoogleAIProvider("YOUR_GEMINI_API_KEY_IF_NEEDED") });
+            // genAIModel = getGenerativeModel(ai, { model: "gemini-1.5-flash-latest" });
+            console.log("Generative AI Model initialized.");
+
         } catch (error) {
-            console.error("Firebase initialization error:", error);
-            alert("Lỗi nghiêm trọng: Không thể khởi tạo Firebase. Ứng dụng có thể không hoạt động. Chi tiết: " + error.message);
+            console.error("Firebase or AI Model initialization error:", error);
+            alert("Lỗi nghiêm trọng: Không thể khởi tạo Firebase hoặc AI Model. Ứng dụng có thể không hoạt động. Chi tiết: " + error.message);
         }
 
 
@@ -520,7 +540,7 @@
             icon: '', 
             iconSize: 16, 
             iconSpacing: 5, 
-            lineColor: "#888888", lineWidth: 3, lineDash: [] // Tăng lineWidth mặc định
+            lineColor: "#888888", lineWidth: 3, lineDash: [] 
         };
 
 
@@ -536,11 +556,13 @@
         const nodeLineColorInput = document.getElementById('node-line-color'); 
         const nodeLineDashSelect = document.getElementById('node-line-dash-select'); 
         const nodeLineWidthInput = document.getElementById('node-line-width'); 
+        const aiSuggestionButton = document.getElementById('ai-suggestion-button'); // Mới
 
         // Context Menu Elements
         const contextMenu = document.getElementById('context-menu');
         const ctxAddChildButton = document.getElementById('ctx-add-child');
         const ctxEditTextButton = document.getElementById('ctx-edit-text');
+        const ctxAiSuggestButton = document.getElementById('ctx-ai-suggest'); // Mới
         const ctxDeleteNodeButton = document.getElementById('ctx-delete-node');
 
 
@@ -600,6 +622,94 @@
                 hideElement(el);
             }
         }
+
+        // --- AI SUGGESTION LOGIC ---
+        async function handleAISuggestion() {
+            if (!selectedKonvaNode) {
+                alert("Vui lòng chọn một nút để nhận gợi ý AI.");
+                return;
+            }
+            if (!genAIModel) {
+                alert("Mô hình AI chưa sẵn sàng. Vui lòng thử lại sau.");
+                return;
+            }
+
+            const selectedNodeText = selectedKonvaNode.findOne('Text')?.text();
+            if (!selectedNodeText || selectedNodeText.trim() === "") {
+                alert("Nút được chọn không có nội dung để tạo gợi ý.");
+                return;
+            }
+
+            aiSuggestionButton.disabled = true;
+            aiSuggestionButton.textContent = "Đang nghĩ...";
+
+            try {
+                const prompt = `Với chủ đề "${selectedNodeText}", hãy gợi ý 3 ý tưởng con ngắn gọn để phát triển thêm. Mỗi ý tưởng trên một dòng, bắt đầu bằng dấu gạch đầu dòng "- ".`;
+                console.log("Sending prompt to AI:", prompt);
+
+                const result = await genAIModel.generateContent(prompt);
+                const response = result.response;
+                const suggestionsText = response.text();
+                
+                console.log("AI Suggestions Raw:", suggestionsText);
+
+                // Xử lý suggestionsText để lấy ra các ý tưởng (ví dụ: tách theo dòng, loại bỏ dấu "- ")
+                const ideas = suggestionsText.split('\n')
+                                      .map(line => line.replace(/^- /,'').trim())
+                                      .filter(idea => idea.length > 0);
+
+                if (ideas.length > 0) {
+                    let userChoiceMessage = "AI gợi ý các ý tưởng sau:\n";
+                    ideas.forEach((idea, index) => {
+                        userChoiceMessage += `${index + 1}. ${idea}\n`;
+                    });
+                    userChoiceMessage += "\nNhập số thứ tự của các ý tưởng bạn muốn thêm làm nút con, cách nhau bởi dấu phẩy (ví dụ: 1,3):";
+                    
+                    const chosenIndicesStr = prompt(userChoiceMessage);
+                    if (chosenIndicesStr) {
+                        const chosenIndices = chosenIndicesStr.split(',')
+                                                      .map(numStr => parseInt(numStr.trim(), 10) -1)
+                                                      .filter(index => index >= 0 && index < ideas.length);
+                        
+                        for (const index of chosenIndices) {
+                            await addChildNodeLogic(selectedKonvaNode, ideas[index]); // Truyền text gợi ý
+                        }
+                        alert("Đã thêm các nút con từ gợi ý AI.");
+                    }
+                } else {
+                    alert("AI không đưa ra được gợi ý nào vào lúc này.");
+                }
+
+            } catch (error) {
+                console.error("Error getting AI suggestions:", error);
+                alert("Đã có lỗi xảy ra khi nhận gợi ý từ AI: " + error.message);
+            } finally {
+                aiSuggestionButton.disabled = false;
+                aiSuggestionButton.textContent = "💡 Gợi ý";
+            }
+        }
+
+        if (aiSuggestionButton) aiSuggestionButton.addEventListener('click', handleAISuggestion);
+        if (ctxAiSuggestButton) ctxAiSuggestButton.addEventListener('click', () => {
+            if (rightClickedKonvaNode) {
+                // Đảm bảo rightClickedKonvaNode được chọn làm selectedKonvaNode
+                if (selectedKonvaNode !== rightClickedKonvaNode) {
+                    if (selectedKonvaNode) {
+                         selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1);
+                         removeCreationHandle(selectedKonvaNode);
+                    }
+                    selectedKonvaNode = rightClickedKonvaNode;
+                    selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(3);
+                    const nodeData = allNodesDataForCurrentMap.find(n => n.id === selectedKonvaNode.id());
+                    if (nodeData) updateNodeStylePanel(nodeData);
+                    addCreationHandle(selectedKonvaNode, selectedKonvaNode.findOne('.nodeShape')?.height() || DEFAULT_NODE_STYLE.minHeight);
+                    currentKonvaLayer.batchDraw();
+                }
+                handleAISuggestion();
+            }
+            if(contextMenu) hideElement(contextMenu);
+        });
+
 
         // --- AUTHENTICATION LOGIC ---
         if (showRegisterLink) {
@@ -767,22 +877,6 @@
         }
 
         // --- NODE STYLE PANEL LOGIC ---
-        // Helper to convert lineDash array to string for select
-        function lineDashArrayToString(dashArray) {
-            if (!dashArray || dashArray.length === 0) return 'solid';
-            if (JSON.stringify(dashArray) === JSON.stringify([15, 8])) return 'dashed'; // Cập nhật giá trị
-            if (JSON.stringify(dashArray) === JSON.stringify([3, 8])) return 'dotted';   // Cập nhật giá trị
-            return 'solid'; // Default
-        }
-
-        // Helper to convert string from select to lineDash array
-        function stringToLineDashArray(dashString) {
-            if (dashString === 'dashed') return [15, 8]; // Cập nhật giá trị
-            if (dashString === 'dotted') return [3, 8];  // Cập nhật giá trị
-            return []; // Solid
-        }
-
-
         function updateNodeStylePanel(nodeData) {
             if (!nodeData || !nodeData.style) {
                 if(nodeStylePanel) hideElement(nodeStylePanel);
@@ -797,7 +891,7 @@
             if(nodeTextColorInput) nodeTextColorInput.value = style.textColor || DEFAULT_NODE_STYLE.textColor;
             if(nodeBorderColorInput) nodeBorderColorInput.value = style.borderColor || DEFAULT_NODE_STYLE.borderColor; 
             if(nodeLineColorInput) nodeLineColorInput.value = style.lineColor || DEFAULT_NODE_STYLE.lineColor; 
-            if(nodeLineDashSelect) nodeLineDashSelect.value = lineDashArrayToString(style.lineDash); // Bỏ || DEFAULT_NODE_STYLE.lineDash vì đã có trong style
+            if(nodeLineDashSelect) nodeLineDashSelect.value = lineDashArrayToString(style.lineDash); 
             if(nodeLineWidthInput) nodeLineWidthInput.value = style.lineWidth || DEFAULT_NODE_STYLE.lineWidth; 
             if(nodeStylePanel) showElement(nodeStylePanel);
         }
@@ -1309,7 +1403,7 @@
                     const parentKonvaNode = konvaNodeObjects[nodeData.parentId];
                     const childKonvaNode = konvaNodeObjects[nodeData.id];
 
-                    const parentNodeFromData = allNodesDataForCurrentMap.find(n=>n.id === nodeData.parentId); // Sử dụng allNodesDataForCurrentMap
+                    const parentNodeFromData = allNodesDataForCurrentMap.find(n=>n.id === nodeData.parentId); 
                     // const childNodeFromData = nodeData; 
 
                     const parentRenderedShape = parentKonvaNode.findOne('.nodeShape');
@@ -1331,7 +1425,7 @@
                         ],
                         stroke: parentStyle.lineColor, 
                         strokeWidth: parentStyle.lineWidth, 
-                        dash: parentStyle.lineDash, // Đã được đảm bảo là array từ DEFAULT_NODE_STYLE hoặc Firestore
+                        dash: parentStyle.lineDash, 
                         lineCap: 'round',
                         lineJoin: 'round',
                         name: 'connectionLine'
@@ -1698,7 +1792,7 @@
         });
 
         // --- TOOLBAR BUTTON ACTIONS (Dùng lại logic nếu có thể) ---
-        async function addChildNodeLogic(parentNode) {
+        async function addChildNodeLogic(parentNode, nodeText = "Nút con mới") { // Thêm tham số nodeText
             if (!parentNode || !currentMindMapId || !db) return;
 
             const parentShape = parentNode.findOne('.nodeShape');
@@ -1708,7 +1802,7 @@
             const newNodeData = {
                 mapId: currentMindMapId,
                 parentId: parentNode.id(),
-                text: "Nút con mới",
+                text: nodeText, // Sử dụng text được truyền vào
                 position: {
                     x: parentNode.x() + parentWidth / 4, 
                     y: parentNode.y() + parentHeight + 30 
