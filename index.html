@@ -390,7 +390,7 @@
             <ul>
                 <li id="ctx-add-child">Thêm nút con (Tab)</li>
                 <li id="ctx-edit-text">Sửa văn bản (Enter)</li>
-                <li id="ctx-delete-node">Xóa nút (Delete)</li>
+                <li id="ctx-delete-node">Xóa nút & con (Delete)</li>
             </ul>
         </div>
     </div>
@@ -418,7 +418,7 @@
             where,
             serverTimestamp,
             onSnapshot,
-            writeBatch
+            writeBatch // Đảm bảo writeBatch được import
         } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
 
         // --- FIREBASE CONFIGURATION ---
@@ -458,7 +458,7 @@
         let mindmapDataUnsubscribe = null; 
         let tempCreationLine = null; 
         let rightClickedKonvaNode = null; 
-        let isEditingText = false; // Cờ để kiểm tra đang sửa text hay không
+        let isEditingText = false; 
 
         // --- DOM ELEMENTS ---
         const nodeStylePanel = document.getElementById('node-style-panel');
@@ -603,7 +603,7 @@
                     currentMindMapId = null;
                     if (mindmapNodesUnsubscribe) mindmapNodesUnsubscribe();
                     if (mindmapDataUnsubscribe) mindmapDataUnsubscribe(); 
-                    window.removeEventListener('keydown', handleGlobalKeyDown); // Gỡ listener phím tắt khi logout
+                    window.removeEventListener('keydown', handleGlobalKeyDown); 
                 } catch (error) {
                     console.error("Logout error:", error);
                 }
@@ -628,7 +628,7 @@
                     if(nodeStylePanel) hideElement(nodeStylePanel); 
                     if(contextMenu) hideElement(contextMenu); 
                     if(mindmapListUl) mindmapListUl.innerHTML = '';
-                    window.removeEventListener('keydown', handleGlobalKeyDown); // Gỡ listener phím tắt khi logout
+                    window.removeEventListener('keydown', handleGlobalKeyDown); 
                 }
             });
         }
@@ -656,7 +656,7 @@
                 currentKonvaStage.destroyChildren(); 
                 currentKonvaLayer = null;
             }
-            window.removeEventListener('keydown', handleGlobalKeyDown); // Gỡ listener khi không ở canvas view
+            window.removeEventListener('keydown', handleGlobalKeyDown); 
         }
 
         async function showCanvasView(mapId, mapTitle) { 
@@ -690,7 +690,7 @@
             loadAndListenNodesForCurrentMap();
             hideElement(nodeStylePanel); 
             hideElement(contextMenu);
-            window.addEventListener('keydown', handleGlobalKeyDown); // Gắn listener phím tắt khi vào canvas view
+            window.addEventListener('keydown', handleGlobalKeyDown); 
         }
 
         if (backToMapsListButton) {
@@ -1283,7 +1283,7 @@
 
         function editTextOnKonvaNode(konvaGroup, konvaTextNode) {
             if (!currentKonvaStage || !currentKonvaLayer || isEditingText) return;
-            isEditingText = true; // Đặt cờ
+            isEditingText = true; 
             konvaTextNode.hide();
             currentKonvaLayer.draw(); 
 
@@ -1336,7 +1336,7 @@
                 konvaTextNode.show();
                 currentKonvaLayer.batchDraw();
                 window.removeEventListener('click', handleOutsideClick); 
-                isEditingText = false; // Reset cờ
+                isEditingText = false; 
 
                 if(!db) return;
                 try {
@@ -1353,7 +1353,7 @@
                 konvaTextNode.show();
                 currentKonvaLayer.batchDraw();
                 window.removeEventListener('click', handleOutsideClick);
-                isEditingText = false; // Reset cờ
+                isEditingText = false; 
             }
 
             textarea.addEventListener('keydown', function (e) {
@@ -1385,7 +1385,6 @@
                     if(contextMenu) hideElement(contextMenu);
                     return;
                 }
-                // Gọi hàm dùng chung để thêm nút con
                 await addChildNodeLogic(rightClickedKonvaNode);
                 if(contextMenu) hideElement(contextMenu);
             });
@@ -1410,8 +1409,7 @@
                      if(contextMenu) hideElement(contextMenu);
                      return;
                 }
-                // Gọi hàm dùng chung để xóa nút
-                await deleteNodeLogic(rightClickedKonvaNode);
+                await deleteNodeLogic(rightClickedKonvaNode); // Sử dụng logic xóa đệ quy
                 if(contextMenu) hideElement(contextMenu);
             });
         }
@@ -1452,26 +1450,46 @@
             }
         }
         
+        // Hàm tìm tất cả ID của nút con cháu
+        function findAllDescendantNodeIds(parentNodeId, allNodes) {
+            let descendantIds = [];
+            const directChildren = allNodes.filter(node => node.parentId === parentNodeId);
+            for (const child of directChildren) {
+                descendantIds.push(child.id);
+                descendantIds = descendantIds.concat(findAllDescendantNodeIds(child.id, allNodes));
+            }
+            return descendantIds;
+        }
+
         async function deleteNodeLogic(nodeToDelete) {
             if (!nodeToDelete || !currentMindMapId || !db) return;
             const nodeId = nodeToDelete.id();
             const konvaTextNode = nodeToDelete.findOne('Text'); 
             const nodeText = konvaTextNode ? konvaTextNode.text() : "Không có tiêu đề"; 
 
-            if (confirm(`Bạn có chắc muốn xóa nút "${nodeText}"? (Chỉ xóa nút này)`)) {
+            if (confirm(`Bạn có chắc muốn xóa nút "${nodeText}" và TẤT CẢ các nút con của nó không? Hành động này không thể hoàn tác.`)) {
                 try {
-                     await deleteDoc(doc(db, "nodes", nodeId));
-                     console.log(`Node ${nodeId} deleted.`);
-                    if (selectedKonvaNode && selectedKonvaNode.id() === nodeId) {
+                    const descendantIds = findAllDescendantNodeIds(nodeId, allNodesDataForCurrentMap);
+                    const allIdsToDelete = [nodeId, ...descendantIds];
+                    
+                    const batch = writeBatch(db);
+                    allIdsToDelete.forEach(id => {
+                        batch.delete(doc(db, "nodes", id));
+                    });
+                    await batch.commit();
+
+                    console.log(`Node ${nodeId} and its descendants deleted.`);
+                    if (selectedKonvaNode && allIdsToDelete.includes(selectedKonvaNode.id())) {
                         selectedKonvaNode = null;
                         if(nodeStylePanel) hideElement(nodeStylePanel);
                     }
-                    if (rightClickedKonvaNode && rightClickedKonvaNode.id() === nodeId) {
+                    if (rightClickedKonvaNode && allIdsToDelete.includes(rightClickedKonvaNode.id())) {
                         rightClickedKonvaNode = null;
                     }
+                    alert("Nút và các nút con đã được xóa.");
                     // onSnapshot sẽ tự động cập nhật canvas
                 } catch (e) {
-                    console.error("Error deleting node:", e);
+                    console.error("Error deleting node and descendants:", e);
                     alert("Lỗi khi xóa nút: " + e.message);
                 }
             }
@@ -1502,19 +1520,17 @@
         const KEYBOARD_MOVE_STEP = 10;
 
         function handleGlobalKeyDown(e) {
-            if (isEditingText) return; // Không xử lý phím tắt khi đang sửa text
+            if (isEditingText) return; 
 
-            // Nếu context menu đang hiển thị, chỉ cho phép Escape để đóng nó
             if (!contextMenu.classList.contains('hidden')) {
                 if (e.key === 'Escape') {
                     hideElement(contextMenu);
                 }
-                return; // Không xử lý các phím tắt khác khi context menu mở
+                return; 
             }
 
 
-            if (!selectedKonvaNode && !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) { // Cho phép di chuyển stage ngay cả khi không có node nào được chọn
-                 // Chỉ xử lý phím tắt liên quan đến node nếu có node được chọn
+            if (!selectedKonvaNode && !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) { 
                 if (e.key === 'Tab' || e.key === 'Enter' || e.key === 'Delete' || e.key === 'Backspace') return;
             }
 
@@ -1539,7 +1555,7 @@
                 case 'Backspace':
                     if (selectedKonvaNode) {
                         e.preventDefault();
-                        deleteNodeLogic(selectedKonvaNode);
+                        deleteNodeLogic(selectedKonvaNode); // Gọi logic xóa đệ quy
                     }
                     break;
                 case 'ArrowUp':
@@ -1547,7 +1563,7 @@
                 case 'ArrowLeft':
                 case 'ArrowRight':
                     e.preventDefault();
-                    if (selectedKonvaNode) { // Di chuyển node được chọn
+                    if (selectedKonvaNode) { 
                         let newX = selectedKonvaNode.x();
                         let newY = selectedKonvaNode.y();
                         if (e.key === 'ArrowUp') newY -= KEYBOARD_MOVE_STEP;
@@ -1557,21 +1573,20 @@
                         
                         selectedKonvaNode.position({ x: newX, y: newY });
                         currentKonvaLayer.batchDraw();
-                        // Lưu vị trí mới vào Firestore (có thể debounce nếu muốn)
                         if (db) {
                             updateDoc(doc(db, "nodes", selectedKonvaNode.id()), { position: { x: newX, y: newY } })
                                 .catch(err => console.error("Error updating node position via keyboard:", err));
                         }
-                    } else if (currentKonvaStage) { // Di chuyển (pan) stage nếu không có node nào được chọn
+                    } else if (currentKonvaStage) { 
                         let stageX = currentKonvaStage.x();
                         let stageY = currentKonvaStage.y();
-                         if (e.key === 'ArrowUp') stageY += KEYBOARD_MOVE_STEP * 2; // Pan nhanh hơn
+                         if (e.key === 'ArrowUp') stageY += KEYBOARD_MOVE_STEP * 2; 
                         else if (e.key === 'ArrowDown') stageY -= KEYBOARD_MOVE_STEP * 2;
                         else if (e.key === 'ArrowLeft') stageX += KEYBOARD_MOVE_STEP * 2;
                         else if (e.key === 'ArrowRight') stageX -= KEYBOARD_MOVE_STEP * 2;
                         currentKonvaStage.position({x: stageX, y: stageY });
                         currentKonvaStage.batchDraw();
-                        saveCanvasState(); // Lưu trạng thái pan
+                        saveCanvasState(); 
                     }
                     break;
             }
