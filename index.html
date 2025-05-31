@@ -416,6 +416,7 @@
             lineColor: "#888888", lineWidth: 3, lineDash: []
         };
         const MAX_DISPLAY_LINES_IN_NODE = 4;
+        let contextMenuJustOpened = false; // Flag to manage context menu vs modal conflict
 
         // --- DOM ELEMENTS ---
         const nodeStylePanel = document.getElementById('node-style-panel');
@@ -515,6 +516,11 @@
             }
         }
 
+        function hideContextMenu() { // Helper to hide context menu and reset flag
+            if(contextMenu) hideElement(contextMenu);
+            contextMenuJustOpened = false;
+        }
+
         function openAiResponseModal(title, userQuestion, aiAnswer) {
             if (aiResponseModalOverlay && aiResponseModalTitle && aiResponseModalBody) {
                 aiResponseModalTitle.textContent = title || "Phản hồi từ AI";
@@ -526,7 +532,7 @@
                 contentHTML += `<p><strong>AI trả lời:</strong></p><div style="background-color: #f9f9f9; padding: 10px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; font-size: 0.9em;">${formattedAiAnswer}</div>`;
                 aiResponseModalBody.innerHTML = contentHTML;
                 showElement(aiResponseModalOverlay);
-                if (currentKonvaStage) { // Disable stage interaction
+                if (currentKonvaStage && currentKonvaStage.listening()) {
                     currentKonvaStage.listening(false);
                     currentKonvaStage.draggable(false);
                 }
@@ -535,7 +541,7 @@
         function closeAiResponseModal() {
             if (aiResponseModalOverlay) {
                 hideElement(aiResponseModalOverlay);
-                 if (currentKonvaStage) { // Re-enable stage interaction
+                 if (currentKonvaStage && !currentKonvaStage.listening()) {
                     currentKonvaStage.listening(true);
                     currentKonvaStage.draggable(true);
                 }
@@ -558,7 +564,7 @@
                 const formattedContent = fullContent.replace(/\n/g, '<br>');
                 nodeContentModalBody.innerHTML = `<div contenteditable="false" style="white-space: pre-wrap;">${formattedContent}</div>`;
                 showElement(nodeContentModalOverlay);
-                if (currentKonvaStage) { // Disable stage interaction
+                if (currentKonvaStage && currentKonvaStage.listening()) {
                     currentKonvaStage.listening(false);
                     currentKonvaStage.draggable(false);
                 }
@@ -567,7 +573,7 @@
         function closeNodeContentModal() {
             if (nodeContentModalOverlay) {
                 hideElement(nodeContentModalOverlay);
-                 if (currentKonvaStage) { // Re-enable stage interaction
+                 if (currentKonvaStage && !currentKonvaStage.listening()) {
                     currentKonvaStage.listening(true);
                     currentKonvaStage.draggable(true);
                 }
@@ -674,7 +680,7 @@
                     hideElement(mainAppSection);
                     hideElement(canvasView);
                     if(nodeStylePanel) hideElement(nodeStylePanel);
-                    if(contextMenu) hideElement(contextMenu);
+                    hideContextMenu(); // Hide context menu on logout
                     if(mindmapListUl) mindmapListUl.innerHTML = '';
                     window.removeEventListener('keydown', handleGlobalKeyDown);
                 }
@@ -688,7 +694,7 @@
             showElement(mindmapManagementView);
             hideElement(canvasView);
             if(nodeStylePanel) hideElement(nodeStylePanel);
-            if(contextMenu) hideElement(contextMenu);
+            hideContextMenu();
             currentMindMapId = null;
             selectedKonvaNode = null;
             rightClickedKonvaNode = null;
@@ -733,7 +739,7 @@
             }
             loadAndListenNodesForCurrentMap();
             hideElement(nodeStylePanel);
-            hideElement(contextMenu);
+            hideContextMenu();
             window.addEventListener('keydown', handleGlobalKeyDown);
         }
         if (backToMapsListButton) {
@@ -930,11 +936,12 @@
             currentKonvaStage.on('click tap', function(e) {
                 if (e.target === currentKonvaStage) {
                     if (selectedKonvaNode) { selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1); removeCreationHandle(selectedKonvaNode); selectedKonvaNode = null; if(nodeStylePanel) hideElement(nodeStylePanel); currentKonvaLayer.batchDraw(); }
-                    if(contextMenu) hideElement(contextMenu);
+                    hideContextMenu();
                 }
             });
             currentKonvaStage.on('contextmenu', function(e) {
-                e.evt.preventDefault(); let targetNodeGroup = e.target;
+                e.evt.preventDefault();
+                let targetNodeGroup = e.target;
                 while (targetNodeGroup && targetNodeGroup !== currentKonvaStage && !targetNodeGroup.hasName('mindmapNodeGroup')) { targetNodeGroup = targetNodeGroup.getParent(); }
                 if (targetNodeGroup && targetNodeGroup.hasName('mindmapNodeGroup')) {
                     rightClickedKonvaNode = targetNodeGroup;
@@ -947,8 +954,16 @@
                         if (nodeData) updateNodeStylePanel(nodeData);
                         currentKonvaLayer.batchDraw();
                     }
-                    if(contextMenu) { contextMenu.style.top = e.evt.pageY + 'px'; contextMenu.style.left = e.evt.pageX + 'px'; showElement(contextMenu); }
-                } else { rightClickedKonvaNode = null; if(contextMenu) hideElement(contextMenu); }
+                    if(contextMenu) {
+                        contextMenu.style.top = e.evt.pageY + 'px';
+                        contextMenu.style.left = e.evt.pageX + 'px';
+                        showElement(contextMenu);
+                        contextMenuJustOpened = true;
+                    }
+                } else {
+                    rightClickedKonvaNode = null;
+                    hideContextMenu();
+                }
             });
 
             let longPressTimeoutId = null; let touchStartTargetNode = null; let touchStartPointerPos = null;
@@ -976,7 +991,12 @@
                                 if (nodeData) updateNodeStylePanel(nodeData);
                                 currentKonvaLayer.batchDraw();
                             }
-                            if(contextMenu && touchStartPointerPos) { contextMenu.style.top = touchStartPointerPos.y + 'px'; contextMenu.style.left = touchStartPointerPos.x + 'px'; showElement(contextMenu); }
+                            if(contextMenu && touchStartPointerPos) {
+                                contextMenu.style.top = touchStartPointerPos.y + 'px';
+                                contextMenu.style.left = touchStartPointerPos.x + 'px';
+                                showElement(contextMenu);
+                                contextMenuJustOpened = true;
+                            }
                             touchStartTargetNode = null; longPressTimeoutId = null;
                         }
                     }, LONG_PRESS_DELAY);
@@ -1088,16 +1108,12 @@
                 });
 
                 if (isTextTruncated) {
-                    // console.log(`Node ${nodeData.id} is truncated. Type of clip: ${typeof textToRender.clip}`);
                     if (typeof textToRender.clip === 'function') {
                          textToRender.clip({
-                            x: 0,
-                            y: 0,
-                            width: textRenderWidth,
-                            height: textDisplayHeight
+                            x: 0, y: 0, width: textRenderWidth, height: textDisplayHeight
                         });
                     } else {
-                        console.warn(`textToRender.clip is not a function for node ${nodeData.id}. textToRender:`, textToRender, "Attempting to set clip as an attribute.");
+                        console.warn(`textToRender.clip is not a function for node ${nodeData.id}. Attempting to set clip as an attribute.`);
                         try {
                             textToRender.setAttr('clip', { x: 0, y: 0, width: textRenderWidth, height: textDisplayHeight });
                         } catch (clipAttrError) {
@@ -1117,15 +1133,27 @@
                         align: 'right'
                     });
                     group.add(readMoreText);
-                    readMoreText.on('click tap', () => {
-                        openNodeContentModal(nodeData.text.substring(0,30)+"...", fullText);
+                    readMoreText.on('click tap', (ev) => {
+                        const isPrimaryInteraction = (ev.evt.button === 0 && ev.type === 'click') || ev.type === 'tap';
+                        if (isPrimaryInteraction && !contextMenuJustOpened) {
+                            openNodeContentModal(nodeData.text.substring(0,30)+"...", fullText);
+                        } else if (contextMenuJustOpened) {
+                            contextMenuJustOpened = false;
+                        }
+                        ev.evt.cancelBubble = true;
                     });
                 }
                 group.add(textToRender);
                 
                 if (isTextTruncated) {
-                    textToRender.on('click tap', () => {
-                         openNodeContentModal(nodeData.text.substring(0,30)+"...", fullText);
+                    textToRender.on('click tap', (ev) => {
+                        const isPrimaryInteraction = (ev.evt.button === 0 && ev.type === 'click') || ev.type === 'tap';
+                        if (isPrimaryInteraction && !contextMenuJustOpened) {
+                            openNodeContentModal(nodeData.text.substring(0,30)+"...", fullText);
+                        } else if (contextMenuJustOpened) {
+                            contextMenuJustOpened = false;
+                        }
+                        ev.evt.cancelBubble = true;
                     });
                 }
 
@@ -1135,13 +1163,43 @@
                     if (isEditingText) return;
                     if (e.target.name() === 'readMoreIndicator') return;
 
-                    if (selectedKonvaNode && selectedKonvaNode !== this) { selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1); removeCreationHandle(selectedKonvaNode); }
-                    selectedKonvaNode = this; this.findOne('.nodeShape')?.strokeWidth(3);
-                    addCreationHandle(this, shape.height());
+                    const isPrimaryInteraction = (e.evt.button === 0 && e.type === 'click') || e.type === 'tap';
+
+                    if (isPrimaryInteraction) {
+                        if (contextMenuJustOpened) {
+                            contextMenuJustOpened = false; // Reset flag and don't open modal
+                        } else {
+                            const fullText = this.getAttr('fullTextData');
+                            const hasReadMore = this.findOne('.readMoreIndicator');
+                            if (hasReadMore && (e.target.name() === 'nodeTextContent' || e.target.name() === 'nodeShape' || e.target === this ) ) {
+                                // Check if the click target is the text or shape, not already handled by specific text/readMore listeners
+                                if (e.target.name() !== 'nodeTextContent' && e.target.name() !== 'readMoreIndicator') {
+                                     openNodeContentModal(fullText.substring(0,30)+"...", fullText);
+                                }
+                            }
+                        }
+                    }
+
+                    if (selectedKonvaNode && selectedKonvaNode !== this) {
+                        selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1);
+                        removeCreationHandle(selectedKonvaNode);
+                    }
+                    selectedKonvaNode = this;
+                    const shape = this.findOne('.nodeShape');
+                    if (shape) {
+                      shape.strokeWidth(3);
+                      addCreationHandle(this, shape.height());
+                    }
+
                     const clickedNodeData = allNodesDataForCurrentMap.find(n => n.id === this.id());
-                    if(clickedNodeData) updateNodeStylePanel(clickedNodeData);
+                    if (clickedNodeData) updateNodeStylePanel(clickedNodeData);
                     currentKonvaLayer.batchDraw();
-                    if(contextMenu && e.evt.button !== 2) hideElement(contextMenu);
+
+                    if (isPrimaryInteraction && contextMenu && !contextMenu.classList.contains('hidden')) {
+                        if (!contextMenu.contains(e.evt.target)) {
+                             hideContextMenu();
+                        }
+                    }
                 });
                 group.on('dblclick dbltap', function() {
                     const textNode = this.findOne('.nodeTextContent');
@@ -1149,7 +1207,7 @@
                     if (textNode && shapeNode) {
                          editTextOnKonvaNode(this, textNode, shapeNode.height());
                     }
-                    if(contextMenu) hideElement(contextMenu);
+                    hideContextMenu();
                 });
 
                 konvaNodeObjects[nodeData.id] = group;
@@ -1203,16 +1261,16 @@
 
             handle.on('dragstart', function(e) {
                 e.evt.cancelBubble = true;
-                if (!currentKonvaLayer || !parentNodeGroup) { // Sử dụng parentNodeGroup từ closure
+                if (!currentKonvaLayer || !parentNodeGroup) {
                     console.error("dragstart: currentKonvaLayer or parentNodeGroup is missing");
                     return;
                 }
-                const currentParentShape = parentNodeGroup.findOne('.nodeShape'); // Sử dụng parentNodeGroup
+                const currentParentShape = parentNodeGroup.findOne('.nodeShape');
                 if (!currentParentShape) {
                     console.error("dragstart: currentParentShape is undefined. parentNodeGroup ID:", parentNodeGroup.id());
                     return;
                 }
-                const parentStyle = allNodesDataForCurrentMap.find(n => n.id === parentNodeGroup.id())?.style || {}; // Sử dụng parentNodeGroup
+                const parentStyle = allNodesDataForCurrentMap.find(n => n.id === parentNodeGroup.id())?.style || {};
                 const lineColor = parentStyle.lineColor || '#007bff';
                 const lineWidth = parentStyle.lineWidth || 2;
                 let startX = currentParentShape.width() / 2;
@@ -1222,7 +1280,7 @@
                     startY = currentParentShape.y();
                 }
                 tempCreationLine = new Konva.Line({ points: [ startX, startY, this.x(), this.y() ], stroke: lineColor, strokeWidth: lineWidth, dash: parentStyle.lineDash || [] });
-                parentNodeGroup.add(tempCreationLine); // Add to parentNodeGroup
+                parentNodeGroup.add(tempCreationLine);
                 currentKonvaLayer.batchDraw();
             });
             handle.on('dragmove', function(e) {
@@ -1239,22 +1297,23 @@
                 e.evt.cancelBubble = true;
                 if (tempCreationLine) { tempCreationLine.destroy(); tempCreationLine = null; }
 
-                if (!parentNodeGroup) { // Sử dụng parentNodeGroup từ closure
+                if (!parentNodeGroup) {
                      console.error("dragend: parentNodeGroup is missing");
                      return;
                 }
-                const currentParentShapeForReset = parentNodeGroup.findOne('.nodeShape'); // Sử dụng parentNodeGroup
+                const currentParentShapeForReset = parentNodeGroup.findOne('.nodeShape');
                 if (!currentParentShapeForReset) {
                     console.error("dragend: currentParentShapeForReset is undefined. parentNodeGroup ID:", parentNodeGroup.id());
+                    // Fallback positioning if shape is not found - this might not be ideal
                     const groupWidth = parentNodeGroup.width() || DEFAULT_NODE_STYLE.width;
-                    const groupHeight = parentNodeGroup.height() || parentCurrentShapeHeight;
+                    const groupHeight = parentNodeGroup.height() || parentCurrentShapeHeight; // This variable is not defined here, potential issue
                     this.position({ x: groupWidth / 2, y: groupHeight });
                     currentKonvaLayer.batchDraw();
                     return;
                 }
 
                 const handleFinalRelativeX = this.x(); const handleFinalRelativeY = this.y();
-                const parentAbsPos = parentNodeGroup.getAbsolutePosition(); // Sử dụng parentNodeGroup
+                const parentAbsPos = parentNodeGroup.getAbsolutePosition();
                 const newNodeAbsX = parentAbsPos.x + handleFinalRelativeX;
                 const newNodeAbsY = parentAbsPos.y + handleFinalRelativeY;
 
@@ -1266,7 +1325,7 @@
                 }
                 this.position({ x: resetHandleX, y: resetHandleY });
 
-                if (currentMindMapId && db && parentNodeGroup) { // Sử dụng parentNodeGroup
+                if (currentMindMapId && db && parentNodeGroup) {
                     const defaultChildWidth = 120; const defaultChildMinHeight = 40; const defaultChildPadding = 10;
                     const newNodeData = {
                         mapId: currentMindMapId, parentId: parentNodeGroup.id(), text: "Nút mới (kéo)",
@@ -1340,13 +1399,13 @@
 
         // --- AI LOGIC FUNCTIONS ---
         async function suggestChildNodesWithAI(parentNodeKonva) {
-            if (!generativeModel || !parentNodeKonva || !currentMindMapId || !currentUser || !db) { alert("Chức năng AI chưa sẵn sàng."); if(contextMenu) hideElement(contextMenu); return; }
+            if (!generativeModel || !parentNodeKonva || !currentMindMapId || !currentUser || !db) { alert("Chức năng AI chưa sẵn sàng."); hideContextMenu(); return; }
             const parentNodeId = parentNodeKonva.id();
             const parentNodeData = allNodesDataForCurrentMap.find(n => n.id === parentNodeId);
-            if (!parentNodeData) { alert("Không tìm thấy dữ liệu nút cha."); if(contextMenu) hideElement(contextMenu); return; }
+            if (!parentNodeData) { alert("Không tìm thấy dữ liệu nút cha."); hideContextMenu(); return; }
             const parentText = parentNodeData.text;
             const prompt = `Cho một nút sơ đồ tư duy với nội dung là "${parentText}", hãy gợi ý 3 ý tưởng ngắn gọn (khoảng 2-5 từ mỗi ý tưởng) cho các nút con liên quan trực tiếp. Mỗi ý tưởng trên một dòng riêng biệt. Không sử dụng đánh số, gạch đầu dòng hay bất kỳ ký tự đặc biệt nào ở đầu dòng.`;
-            showLoadingIndicator("AI đang tạo gợi ý..."); if(contextMenu) hideElement(contextMenu);
+            showLoadingIndicator("AI đang tạo gợi ý..."); hideContextMenu();
             try {
                 const result = await generativeModel.generateContent(prompt);
                 const response = result.response; const suggestionsText = response.text();
@@ -1382,13 +1441,13 @@
             } finally { hideLoadingIndicator(); }
         }
         async function expandNodeWithAI(targetNodeKonva) {
-            if (!generativeModel || !targetNodeKonva || !currentMindMapId || !currentUser || !db) { alert("Chức năng AI chưa sẵn sàng."); if(contextMenu) hideElement(contextMenu); return; }
+            if (!generativeModel || !targetNodeKonva || !currentMindMapId || !currentUser || !db) { alert("Chức năng AI chưa sẵn sàng."); hideContextMenu(); return; }
             const targetNodeId = targetNodeKonva.id();
             const targetNodeData = allNodesDataForCurrentMap.find(n => n.id === targetNodeId);
-            if (!targetNodeData) { alert("Không tìm thấy dữ liệu cho nút đã chọn."); if(contextMenu) hideElement(contextMenu); return; }
+            if (!targetNodeData) { alert("Không tìm thấy dữ liệu cho nút đã chọn."); hideContextMenu(); return; }
             const currentText = targetNodeData.text;
             const prompt = `Với ý tưởng chính là "${currentText}", hãy viết một đoạn văn bản chi tiết hơn (khoảng 3-5 câu) để giải thích, làm rõ hoặc mở rộng ý tưởng này. Giữ văn phong mạch lạc và tập trung vào chủ đề.`;
-            showLoadingIndicator("AI đang mở rộng ý tưởng..."); if(contextMenu) hideElement(contextMenu);
+            showLoadingIndicator("AI đang mở rộng ý tưởng..."); hideContextMenu();
             try {
                 const result = await generativeModel.generateContent(prompt);
                 const response = result.response; const expandedText = response.text().trim();
@@ -1408,13 +1467,13 @@
             } finally { hideLoadingIndicator(); }
         }
         async function generateExamplesWithAI(targetNodeKonva) {
-             if (!generativeModel || !targetNodeKonva || !currentMindMapId || !currentUser || !db) { alert("Chức năng AI chưa sẵn sàng."); if(contextMenu) hideElement(contextMenu); return; }
+             if (!generativeModel || !targetNodeKonva || !currentMindMapId || !currentUser || !db) { alert("Chức năng AI chưa sẵn sàng."); hideContextMenu(); return; }
             const targetNodeId = targetNodeKonva.id();
             const targetNodeData = allNodesDataForCurrentMap.find(n => n.id === targetNodeId);
-            if (!targetNodeData) { alert("Không tìm thấy dữ liệu cho nút đã chọn."); if(contextMenu) hideElement(contextMenu); return; }
+            if (!targetNodeData) { alert("Không tìm thấy dữ liệu cho nút đã chọn."); hideContextMenu(); return; }
             const currentText = targetNodeData.text;
             const prompt = `Cho chủ đề sau: "${currentText}", hãy tạo ra 2 hoặc 3 ví dụ cụ thể để minh họa cho chủ đề này. Mỗi ví dụ trên một dòng riêng biệt. Không dùng đánh số hay gạch đầu dòng. Các ví dụ nên ngắn gọn và dễ hiểu.`;
-            showLoadingIndicator("AI đang tạo ví dụ..."); if(contextMenu) hideElement(contextMenu);
+            showLoadingIndicator("AI đang tạo ví dụ..."); hideContextMenu();
             try {
                 const result = await generativeModel.generateContent(prompt);
                 const response = result.response; const examplesText = response.text().trim();
@@ -1450,15 +1509,15 @@
             } finally { hideLoadingIndicator(); }
         }
         async function askAIAboutNode(targetNodeKonva) {
-            if (!generativeModel || !targetNodeKonva || !currentMindMapId || !currentUser || !db) { alert("Chức năng AI chưa sẵn sàng."); if(contextMenu) hideElement(contextMenu); return; }
+            if (!generativeModel || !targetNodeKonva || !currentMindMapId || !currentUser || !db) { alert("Chức năng AI chưa sẵn sàng."); hideContextMenu(); return; }
             const targetNodeId = targetNodeKonva.id();
             const targetNodeData = allNodesDataForCurrentMap.find(n => n.id === targetNodeId);
-            if (!targetNodeData) { alert("Không tìm thấy dữ liệu cho nút đã chọn."); if(contextMenu) hideElement(contextMenu); return; }
+            if (!targetNodeData) { alert("Không tìm thấy dữ liệu cho nút đã chọn."); hideContextMenu(); return; }
             const nodeTextContext = targetNodeData.text;
             const userQuestion = window.prompt(`Hỏi AI về nội dung của nút: "${nodeTextContext}"\nNhập câu hỏi của bạn:`, "");
-            if (!userQuestion || userQuestion.trim() === "") { if(contextMenu) hideElement(contextMenu); return; }
+            if (!userQuestion || userQuestion.trim() === "") { hideContextMenu(); return; }
             const prompt = `Nội dung của một nút trong sơ đồ tư duy là: "${nodeTextContext}".\n\nNgười dùng có câu hỏi sau về nút này: "${userQuestion.trim()}"\n\nHãy trả lời câu hỏi đó một cách ngắn gọn và súc tích, tập trung vào ngữ cảnh được cung cấp từ nút.`;
-            showLoadingIndicator("AI đang trả lời câu hỏi..."); if(contextMenu) hideElement(contextMenu);
+            showLoadingIndicator("AI đang trả lời câu hỏi..."); hideContextMenu();
             try {
                 const result = await generativeModel.generateContent(prompt);
                 const response = result.response; const aiAnswer = response.text().trim();
@@ -1482,10 +1541,10 @@
                 let targetNode = rightClickedKonvaNode || selectedKonvaNode;
                 if (!targetNode || !currentMindMapId || !db) {
                     alert("Không thể thêm nút con. Vui lòng thử lại.");
-                    if(contextMenu) hideElement(contextMenu); return;
+                    hideContextMenu(); return;
                 }
                 await addChildNodeLogic(targetNode);
-                if(contextMenu) hideElement(contextMenu);
+                hideContextMenu();
             });
         }
         if (ctxEditTextButton) {
@@ -1498,7 +1557,7 @@
                         editTextOnKonvaNode(targetNode, textNode, shapeNode.height());
                     }
                 }
-                if(contextMenu) hideElement(contextMenu);
+                hideContextMenu();
             });
         }
         if (ctxViewFullContentButton) {
@@ -1514,35 +1573,35 @@
                 } else {
                     alert("Vui lòng chọn một nút để xem nội dung.");
                 }
-                if(contextMenu) hideElement(contextMenu);
+                hideContextMenu();
             });
         }
         if (ctxSuggestChildrenButton) {
             ctxSuggestChildrenButton.addEventListener('click', async () => {
                 let targetNodeForAI = rightClickedKonvaNode || selectedKonvaNode;
                 if (targetNodeForAI) { await suggestChildNodesWithAI(targetNodeForAI); }
-                else { alert("Vui lòng chọn một nút cha để AI gợi ý nút con."); if(contextMenu) hideElement(contextMenu); }
+                else { alert("Vui lòng chọn một nút cha để AI gợi ý nút con."); hideContextMenu(); }
             });
         }
         if (ctxExpandNodeButton) {
             ctxExpandNodeButton.addEventListener('click', async () => {
                 let targetNodeForAI = rightClickedKonvaNode || selectedKonvaNode;
                 if (targetNodeForAI) { await expandNodeWithAI(targetNodeForAI); }
-                else { alert("Vui lòng chọn một nút để AI mở rộng ý tưởng."); if(contextMenu) hideElement(contextMenu); }
+                else { alert("Vui lòng chọn một nút để AI mở rộng ý tưởng."); hideContextMenu(); }
             });
         }
         if (ctxGenerateExamplesButton) {
             ctxGenerateExamplesButton.addEventListener('click', async () => {
                 let targetNodeForAI = rightClickedKonvaNode || selectedKonvaNode;
                 if (targetNodeForAI) { await generateExamplesWithAI(targetNodeForAI); }
-                else { alert("Vui lòng chọn một nút để AI tạo ví dụ."); if(contextMenu) hideElement(contextMenu); }
+                else { alert("Vui lòng chọn một nút để AI tạo ví dụ."); hideContextMenu(); }
             });
         }
         if (ctxAskAiNodeButton) {
             ctxAskAiNodeButton.addEventListener('click', async () => {
                 let targetNodeForAI = rightClickedKonvaNode || selectedKonvaNode;
                 if (targetNodeForAI) { await askAIAboutNode(targetNodeForAI); }
-                else { alert("Vui lòng chọn một nút để đặt câu hỏi cho AI."); if(contextMenu) hideElement(contextMenu); }
+                else { alert("Vui lòng chọn một nút để đặt câu hỏi cho AI."); hideContextMenu(); }
             });
         }
         if (ctxDeleteNodeButton) {
@@ -1550,15 +1609,17 @@
                 let targetNode = rightClickedKonvaNode || selectedKonvaNode;
                 if (!targetNode || !currentMindMapId || !db) {
                      alert("Không thể xóa nút. Vui lòng thử lại.");
-                     if(contextMenu) hideElement(contextMenu); return;
+                     hideContextMenu(); return;
                 }
                 await deleteNodeLogic(targetNode);
-                if(contextMenu) hideElement(contextMenu);
+                hideContextMenu();
             });
         }
         document.addEventListener('click', function (e) {
-            if (contextMenu && !contextMenu.contains(e.target) && e.target !== currentKonvaStage && !e.target.hasName?.('mindmapNodeGroup') && !e.target.getParent?.()?.hasName?.('mindmapNodeGroup')) {
-                hideElement(contextMenu);
+            if (contextMenu && !contextMenu.classList.contains('hidden')) {
+                if (!contextMenu.contains(e.target) && e.target !== currentKonvaStage && !e.target.hasName?.('mindmapNodeGroup') && !e.target.getParent?.()?.hasName?.('mindmapNodeGroup')) {
+                     hideContextMenu();
+                }
             }
         });
 
@@ -1567,8 +1628,13 @@
         async function addChildNodeLogic(parentNode) {
             if (!parentNode || !currentMindMapId || !db) return;
             const parentShape = parentNode.findOne('.nodeShape');
-            const parentWidth = parentShape?.width() || (parentShape?.radiusX && parentShape.radiusX() * 2) || DEFAULT_NODE_STYLE.width;
-            const parentHeight = parentShape?.height() || (parentShape?.radiusY && parentShape.radiusY() * 2) || DEFAULT_NODE_STYLE.minHeight;
+            if (!parentShape) {
+                console.error("addChildNodeLogic: Could not find '.nodeShape' in parentNode:", parentNode.id());
+                alert("Lỗi: Không tìm thấy hình dạng của nút cha để thêm nút con.");
+                return;
+            }
+            const parentWidth = parentShape.width();
+            const parentHeight = parentShape.height();
             const defaultChildStyle = { ...DEFAULT_NODE_STYLE, backgroundColor: "#f9f9f9", textColor: "#333333", borderColor: "#cccccc", shape: "rectangle", cornerRadius: 3, icon: '' };
             const newNodeData = {
                 mapId: currentMindMapId, parentId: parentNode.id(), text: "Nút con mới",
@@ -1621,7 +1687,7 @@
         const KEYBOARD_MOVE_STEP = 10;
         function handleGlobalKeyDown(e) {
             if (isEditingText) return;
-            if (contextMenu && !contextMenu.classList.contains('hidden')) { if (e.key === 'Escape') { hideElement(contextMenu); } return; }
+            if (contextMenu && !contextMenu.classList.contains('hidden')) { if (e.key === 'Escape') { hideContextMenu(); } return; }
             if (!selectedKonvaNode && !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) { if (e.key === 'Tab' || e.key === 'Enter' || e.key === 'Delete' || e.key === 'Backspace') return; }
             switch (e.key) {
                 case 'Tab': if (selectedKonvaNode) { e.preventDefault(); addChildNodeLogic(selectedKonvaNode); } break;
