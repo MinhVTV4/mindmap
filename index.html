@@ -393,7 +393,8 @@
                             <input type="number" id="node-font-size-input" min="8" max="72" title="Cỡ chữ nút">
                         </div>
                         <div class="style-group">
-                            <label for="node-icon-select">Icon:</label> <select id="node-icon-select" title="Biểu tượng nút">
+                            <label for="node-icon-select">Icon:</label> 
+                            <select id="node-icon-select" title="Biểu tượng nút">
                                 <option value="">Không có</option>
                                 <option value="⭐">⭐ Ngôi sao</option>
                                 <option value="💡">💡 Bóng đèn</option>
@@ -415,8 +416,15 @@
                             <input type="color" id="node-border-color" title="Màu viền nút">
                         </div>
                         <div class="style-group">
-                            <label for="node-line-color">Đường:</label>
+                            <label for="node-line-color">Màu đường:</label>
                             <input type="color" id="node-line-color" title="Màu đường nối từ nút này">
+                        </div>
+                         <div class="style-group">
+                            <label for="node-line-dash-select">Kiểu đường:</label> <select id="node-line-dash-select" title="Kiểu đường nối từ nút này">
+                                <option value="solid">Liền</option>
+                                <option value="dashed">Đứt</option>
+                                <option value="dotted">Chấm</option>
+                            </select>
                         </div>
                         <div class="style-group">
                             <label for="node-line-width">Dày:</label>
@@ -508,10 +516,10 @@
             width: 150, minHeight: 50, padding: 10, 
             cornerRadius: 5, 
             fontSize: 14, fontFamily: 'Arial', 
-            icon: '', // Thêm icon mặc định
-            iconSize: 16, // Kích thước icon mặc định
-            iconSpacing: 5, // Khoảng cách giữa icon và text
-            lineColor: "#888888", lineWidth: 2 
+            icon: '', 
+            iconSize: 16, 
+            iconSpacing: 5, 
+            lineColor: "#888888", lineWidth: 2, lineDash: [] // Mới: lineDash mặc định
         };
 
 
@@ -520,11 +528,12 @@
         const nodeShapeSelect = document.getElementById('node-shape-select'); 
         const nodeFontFamilySelect = document.getElementById('node-font-family-select'); 
         const nodeFontSizeInput = document.getElementById('node-font-size-input'); 
-        const nodeIconSelect = document.getElementById('node-icon-select'); // Mới
+        const nodeIconSelect = document.getElementById('node-icon-select'); 
         const nodeBgColorInput = document.getElementById('node-bg-color');
         const nodeTextColorInput = document.getElementById('node-text-color');
         const nodeBorderColorInput = document.getElementById('node-border-color');
         const nodeLineColorInput = document.getElementById('node-line-color'); 
+        const nodeLineDashSelect = document.getElementById('node-line-dash-select'); // Mới
         const nodeLineWidthInput = document.getElementById('node-line-width'); 
 
         // Context Menu Elements
@@ -757,6 +766,22 @@
         }
 
         // --- NODE STYLE PANEL LOGIC ---
+        // Helper to convert lineDash array to string for select
+        function lineDashArrayToString(dashArray) {
+            if (!dashArray || dashArray.length === 0) return 'solid';
+            if (JSON.stringify(dashArray) === JSON.stringify([10, 5])) return 'dashed';
+            if (JSON.stringify(dashArray) === JSON.stringify([2, 5])) return 'dotted';
+            return 'solid'; // Default
+        }
+
+        // Helper to convert string from select to lineDash array
+        function stringToLineDashArray(dashString) {
+            if (dashString === 'dashed') return [10, 5];
+            if (dashString === 'dotted') return [2, 5];
+            return []; // Solid
+        }
+
+
         function updateNodeStylePanel(nodeData) {
             if (!nodeData || !nodeData.style) {
                 if(nodeStylePanel) hideElement(nodeStylePanel);
@@ -766,11 +791,12 @@
             if(nodeShapeSelect) nodeShapeSelect.value = style.shape || DEFAULT_NODE_STYLE.shape; 
             if(nodeFontFamilySelect) nodeFontFamilySelect.value = style.fontFamily || DEFAULT_NODE_STYLE.fontFamily; 
             if(nodeFontSizeInput) nodeFontSizeInput.value = style.fontSize || DEFAULT_NODE_STYLE.fontSize; 
-            if(nodeIconSelect) nodeIconSelect.value = style.icon || ''; // Mới
+            if(nodeIconSelect) nodeIconSelect.value = style.icon || ''; 
             if(nodeBgColorInput) nodeBgColorInput.value = style.backgroundColor || DEFAULT_NODE_STYLE.backgroundColor;
             if(nodeTextColorInput) nodeTextColorInput.value = style.textColor || DEFAULT_NODE_STYLE.textColor;
             if(nodeBorderColorInput) nodeBorderColorInput.value = style.borderColor || DEFAULT_NODE_STYLE.borderColor; 
             if(nodeLineColorInput) nodeLineColorInput.value = style.lineColor || DEFAULT_NODE_STYLE.lineColor; 
+            if(nodeLineDashSelect) nodeLineDashSelect.value = lineDashArrayToString(style.lineDash || DEFAULT_NODE_STYLE.lineDash); // Mới
             if(nodeLineWidthInput) nodeLineWidthInput.value = style.lineWidth || DEFAULT_NODE_STYLE.lineWidth; 
             if(nodeStylePanel) showElement(nodeStylePanel);
         }
@@ -782,6 +808,8 @@
             let processedValue = value;
             if (property === 'lineWidth' || property === 'fontSize') {
                 processedValue = parseInt(value, 10);
+            } else if (property === 'lineDash') {
+                processedValue = stringToLineDashArray(value); // Chuyển đổi string từ select sang array
             }
 
 
@@ -803,11 +831,16 @@
                     }
                     
                     if (property === 'fontFamily' || property === 'fontSize' || property === 'text' || property === 'icon') { 
+                        let iconWidthForCalc = 0;
+                        if (updatedStyle.icon && updatedStyle.icon !== '') {
+                            const tempIconForStyleCalc = new Konva.Text({ text: updatedStyle.icon, fontSize: updatedStyle.iconSize || DEFAULT_NODE_STYLE.iconSize, fontFamily: updatedStyle.fontFamily || DEFAULT_NODE_STYLE.fontFamily });
+                            iconWidthForCalc = tempIconForStyleCalc.width() + (updatedStyle.iconSpacing || DEFAULT_NODE_STYLE.iconSpacing);
+                        }
                         const tempTextForCalc = new Konva.Text({
                             text: (property === 'text') ? processedValue : (existingData.text || ''), 
                             fontSize: (property === 'fontSize') ? processedValue : (updatedStyle.fontSize || DEFAULT_NODE_STYLE.fontSize),
                             fontFamily: (property === 'fontFamily') ? processedValue : (updatedStyle.fontFamily || DEFAULT_NODE_STYLE.fontFamily),
-                            width: (updatedStyle.width || DEFAULT_NODE_STYLE.width) - 2 * (updatedStyle.padding || DEFAULT_NODE_STYLE.padding) - ((updatedStyle.icon && updatedStyle.icon !== '') ? (updatedStyle.iconSize || DEFAULT_NODE_STYLE.iconSize) + (updatedStyle.iconSpacing || DEFAULT_NODE_STYLE.iconSpacing) : 0), // Trừ đi không gian cho icon nếu có
+                            width: (updatedStyle.width || DEFAULT_NODE_STYLE.width) - 2 * (updatedStyle.padding || DEFAULT_NODE_STYLE.padding) - iconWidthForCalc, 
                             align: 'center'
                         });
                         const newTextContentHeight = tempTextForCalc.height();
@@ -827,11 +860,12 @@
         if (nodeShapeSelect) nodeShapeSelect.addEventListener('change', (e) => handleNodeStyleChange('shape', e.target.value)); 
         if (nodeFontFamilySelect) nodeFontFamilySelect.addEventListener('change', (e) => handleNodeStyleChange('fontFamily', e.target.value)); 
         if (nodeFontSizeInput) nodeFontSizeInput.addEventListener('input', (e) => handleNodeStyleChange('fontSize', e.target.value)); 
-        if (nodeIconSelect) nodeIconSelect.addEventListener('change', (e) => handleNodeStyleChange('icon', e.target.value)); // Mới
+        if (nodeIconSelect) nodeIconSelect.addEventListener('change', (e) => handleNodeStyleChange('icon', e.target.value)); 
         if (nodeBgColorInput) nodeBgColorInput.addEventListener('input', (e) => handleNodeStyleChange('backgroundColor', e.target.value));
         if (nodeTextColorInput) nodeTextColorInput.addEventListener('input', (e) => handleNodeStyleChange('textColor', e.target.value));
         if (nodeBorderColorInput) nodeBorderColorInput.addEventListener('input', (e) => handleNodeStyleChange('borderColor', e.target.value));
         if (nodeLineColorInput) nodeLineColorInput.addEventListener('input', (e) => handleNodeStyleChange('lineColor', e.target.value)); 
+        if (nodeLineDashSelect) nodeLineDashSelect.addEventListener('change', (e) => handleNodeStyleChange('lineDash', e.target.value)); // Mới
         if (nodeLineWidthInput) nodeLineWidthInput.addEventListener('input', (e) => handleNodeStyleChange('lineWidth', e.target.value)); 
 
 
@@ -876,8 +910,9 @@
                             icon: '',
                             iconSize: DEFAULT_NODE_STYLE.iconSize,
                             iconSpacing: DEFAULT_NODE_STYLE.iconSpacing,
-                            lineColor: "#888888", 
-                            lineWidth: 2         
+                            lineColor: DEFAULT_NODE_STYLE.lineColor, 
+                            lineWidth: DEFAULT_NODE_STYLE.lineWidth,
+                            lineDash: DEFAULT_NODE_STYLE.lineDash // Mới
                         },
                         createdAt: serverTimestamp()
                     };
@@ -1140,10 +1175,11 @@
                     iconObject = new Konva.Text({
                         text: style.icon,
                         fontSize: iconSize,
-                        fontFamily: style.fontFamily, // Hoặc một font chuyên cho icon
-                        fill: style.textColor, // Hoặc màu riêng cho icon
+                        fontFamily: style.fontFamily, 
+                        fill: style.textColor, 
                         x: textPadding,
                         listening: false,
+                        name: 'nodeIcon' // Thêm name cho icon
                     });
                     iconTextWidth = iconObject.width() + iconSpacing;
                 }
@@ -1155,11 +1191,11 @@
                     text: nodeData.text,
                     fontSize: style.fontSize,
                     fontFamily: style.fontFamily,
-                    width: mainTextWidth > 0 ? mainTextWidth : 0, // Đảm bảo width không âm
+                    width: mainTextWidth > 0 ? mainTextWidth : 0, 
                     align: 'center'
                 });
                 const actualTextContentHeight = tempText.height();
-                const dynamicShapeHeight = Math.max(style.minHeight, actualTextContentHeight + 2 * textPadding);
+                const dynamicShapeHeight = Math.max(style.minHeight, actualTextContentHeight + 2 * textPadding, iconObject ? iconObject.height() + 2* textPadding : 0); // Đảm bảo nút đủ cao cho cả icon
 
 
                 const group = new Konva.Group({
@@ -1208,7 +1244,7 @@
                 shape.moveToBottom(); 
 
                 if (iconObject) {
-                    iconObject.y((dynamicShapeHeight - iconObject.height()) / 2); // Căn giữa icon
+                    iconObject.y((dynamicShapeHeight - iconObject.height()) / 2); 
                     group.add(iconObject);
                 }
 
@@ -1218,7 +1254,7 @@
                     fontFamily: style.fontFamily,
                     fill: style.textColor,
                     width: mainTextWidth > 0 ? mainTextWidth : 0,
-                    x: textPadding + iconTextWidth, // Vị trí x sau icon
+                    x: textPadding + iconTextWidth, 
                     padding: 0, 
                     align: 'center',
                     listening: false
@@ -1294,6 +1330,7 @@
                         ],
                         stroke: parentStyle.lineColor, 
                         strokeWidth: parentStyle.lineWidth, 
+                        dash: parentStyle.lineDash || [], // Áp dụng lineDash
                         lineCap: 'round',
                         lineJoin: 'round',
                         name: 'connectionLine'
@@ -1375,7 +1412,7 @@
                     ],
                     stroke: lineColor,
                     strokeWidth: lineWidth,
-                    dash: [5, 5] 
+                    dash: parentStyle.lineDash || [] // Áp dụng lineDash cho temp line
                 });
                 selectedKonvaNode.add(tempCreationLine); 
                 currentKonvaLayer.batchDraw();
@@ -1441,12 +1478,13 @@
                             minHeight: defaultChildMinHeight, 
                             padding: defaultChildPadding,
                             cornerRadius: 3,
-                            lineColor: "#888888", 
-                            lineWidth: 2,
+                            lineColor: DEFAULT_NODE_STYLE.lineColor, 
+                            lineWidth: DEFAULT_NODE_STYLE.lineWidth,
+                            lineDash: DEFAULT_NODE_STYLE.lineDash, // Mới
                             shape: "rectangle",
                             fontSize: DEFAULT_NODE_STYLE.fontSize, 
                             fontFamily: DEFAULT_NODE_STYLE.fontFamily,
-                            icon: '' // Icon mặc định cho nút mới
+                            icon: '' 
                         },
                         createdAt: serverTimestamp()
                     };
@@ -1475,7 +1513,6 @@
             if (!currentKonvaStage || !currentKonvaLayer || isEditingText) return;
             isEditingText = true; 
             konvaTextNode.hide();
-            // Ẩn icon nếu có
             const iconNode = konvaGroup.findOne('.nodeIcon');
             if (iconNode) iconNode.hide();
 
@@ -1490,7 +1527,7 @@
                 y: stageBox.top + textAbsPos.y
             };
             
-            const nodeStyle = allNodesDataForCurrentMap.find(n => n.id === konvaGroup.id())?.style || {};
+            // const nodeStyle = allNodesDataForCurrentMap.find(n => n.id === konvaGroup.id())?.style || {};
             // const textPadding = nodeStyle.padding !== undefined ? nodeStyle.padding : DEFAULT_NODE_STYLE.padding;
 
 
@@ -1552,7 +1589,7 @@
                     align: 'center'
                 });
                 const newTextContentHeight = tempTextForHeightCalc.height();
-                const newFinalShapeHeight = Math.max(currentStyleForCalc.minHeight, newTextContentHeight + 2 * currentStyleForCalc.padding);
+                const newFinalShapeHeight = Math.max(currentStyleForCalc.minHeight, newTextContentHeight + 2 * currentStyleForCalc.padding, currentStyleForCalc.icon ? (currentStyleForCalc.iconSize || DEFAULT_NODE_STYLE.iconSize) + 2 * currentStyleForCalc.padding : 0);
                 
                 window.removeEventListener('click', handleOutsideClick); 
                 isEditingText = false; 
@@ -1567,11 +1604,12 @@
                     console.log("Node text and style.height updated in Firestore.");
                 } catch (e) { 
                     console.error("Error updating node text and height in Firestore:", e); 
-                    const originalKonvaTextNode = konvaGroup.findOne('Text');
+                    const originalKonvaTextNode = konvaGroup.findOne('Text'); // Lấy lại tham chiếu
                      if (originalKonvaTextNode) {
                         originalKonvaTextNode.text(textarea.value); 
                         originalKonvaTextNode.show();
-                        if (iconNode) iconNode.show();
+                         const originalIconNode = konvaGroup.findOne('.nodeIcon');
+                        if (originalIconNode) originalIconNode.show();
                         currentKonvaLayer.batchDraw();
                     }
                 }
@@ -1587,7 +1625,8 @@
                 if (originalKonvaTextNode) {
                     originalKonvaTextNode.show();
                 }
-                 if (iconNode) iconNode.show(); // Hiện lại icon
+                const originalIconNode = konvaGroup.findOne('.nodeIcon');
+                if (originalIconNode) originalIconNode.show();
                 currentKonvaLayer.batchDraw();
                 window.removeEventListener('click', handleOutsideClick);
                 isEditingText = false; 
@@ -1677,11 +1716,13 @@
                     backgroundColor: "#f9f9f9", textColor: "#333333", borderColor: "#cccccc", 
                     width: 120, minHeight: 40, padding: 10, 
                     cornerRadius: 3,
-                    lineColor: "#888888", lineWidth: 2,
+                    lineColor: DEFAULT_NODE_STYLE.lineColor, 
+                    lineWidth: DEFAULT_NODE_STYLE.lineWidth,
+                    lineDash: DEFAULT_NODE_STYLE.lineDash, 
                     shape: "rectangle",
                     fontSize: DEFAULT_NODE_STYLE.fontSize, 
                     fontFamily: DEFAULT_NODE_STYLE.fontFamily,
-                    icon: '' // Mặc định không có icon cho nút con mới
+                    icon: '' 
                 },
                 createdAt: serverTimestamp()
             };
