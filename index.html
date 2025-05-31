@@ -501,21 +501,23 @@
         let genAIModel; 
 
         try {
+            console.log("Attempting Firebase initialization...");
             app = initializeApp(firebaseConfig);
+            console.log("Firebase App initialized:", app);
             auth = getAuth(app);
+            console.log("Firebase Auth initialized:", auth);
             db = getFirestore(app);
+            console.log("Firestore initialized:", db);
             console.log("Firebase initialized successfully!");
 
-            // Khởi tạo mô hình AI (sử dụng gemini-1.5-flash-latest)
-            // Bạn cần đảm bảo đã bật Vertex AI API và cấu hình đúng trong Firebase project nếu dùng Vertex backend
-            // Hoặc đã bật Gemini API nếu dùng Gemini Developer API trực tiếp.
-            // Trong trường hợp này, SDK firebase-ai-vertex.js thường dùng với Vertex AI backend.
-            // Nếu dùng Gemini Developer API key trực tiếp, bạn sẽ dùng firebase-ai.js và new GoogleAIProvider("YOUR_KEY")
-            // Vì tài liệu bạn tham khảo dùng "Firebase AI Logic" (trước là Vertex AI in Firebase) và không yêu cầu key trong code client
-            // nên có thể nó đang dùng Vertex AI backend được cấu hình sẵn trong Firebase console.
-            if (app) { // Chỉ khởi tạo model nếu app Firebase đã được khởi tạo
-                 genAIModel = getGenerativeModel(app, { model: "gemini-1.5-flash-latest" }); 
-                 console.log("Generative AI Model initialized with gemini-1.5-flash-latest.");
+            if (app) { 
+                 try {
+                    genAIModel = getGenerativeModel(app, { model: "gemini-1.5-flash-latest" }); 
+                    console.log("Generative AI Model initialized with gemini-1.5-flash-latest.");
+                 } catch (aiError) {
+                    console.error("AI Model initialization error:", aiError);
+                    // Không alert ở đây để tránh làm gián đoạn nếu chỉ AI model lỗi
+                 }
             } else {
                 console.error("Firebase app not initialized, cannot initialize AI Model.");
             }
@@ -632,14 +634,14 @@
 
         // --- AI SUGGESTION LOGIC ---
         async function handleAISuggestion() {
-            console.log("handleAISuggestion called"); // Debug log
+            console.log("handleAISuggestion called"); 
             if (!selectedKonvaNode) {
                 alert("Vui lòng chọn một nút để nhận gợi ý AI.");
                 return;
             }
-            if (!genAIModel) { // Kiểm tra genAIModel đã được khởi tạo
+            if (!genAIModel) { 
                 alert("Mô hình AI chưa sẵn sàng. Vui lòng thử lại sau hoặc kiểm tra console lỗi.");
-                console.error("genAIModel is not initialized.");
+                console.error("genAIModel is not initialized for AI suggestion.");
                 return;
             }
 
@@ -686,7 +688,7 @@
                         
                         let ideasAdded = 0;
                         for (const index of chosenIndices) {
-                            if (ideas[index]) { // Kiểm tra ý tưởng tồn tại
+                            if (ideas[index]) { 
                                 await addChildNodeLogic(selectedKonvaNode, ideas[index]); 
                                 ideasAdded++;
                             }
@@ -708,28 +710,38 @@
             }
         }
 
-        if (aiSuggestionButton) aiSuggestionButton.addEventListener('click', handleAISuggestion);
-        if (ctxAiSuggestButton) ctxAiSuggestButton.addEventListener('click', () => {
-            if (rightClickedKonvaNode) {
-                if (selectedKonvaNode !== rightClickedKonvaNode) {
-                    if (selectedKonvaNode) {
-                         selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1);
-                         removeCreationHandle(selectedKonvaNode);
+        if (aiSuggestionButton) {
+            console.log("Attaching listener to AI Suggestion Button");
+            aiSuggestionButton.addEventListener('click', handleAISuggestion);
+        } else {
+            console.error("AI Suggestion Button not found!");
+        }
+
+        if (ctxAiSuggestButton) {
+             console.log("Attaching listener to Context AI Suggestion Button");
+            ctxAiSuggestButton.addEventListener('click', () => {
+                if (rightClickedKonvaNode) {
+                    if (selectedKonvaNode !== rightClickedKonvaNode) {
+                        if (selectedKonvaNode) {
+                             selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1);
+                             removeCreationHandle(selectedKonvaNode);
+                        }
+                        selectedKonvaNode = rightClickedKonvaNode;
+                        selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(3);
+                        const nodeData = allNodesDataForCurrentMap.find(n => n.id === selectedKonvaNode.id());
+                        if (nodeData) updateNodeStylePanel(nodeData);
+                        const shapeNode = selectedKonvaNode.findOne('.nodeShape');
+                        const dynamicHeight = shapeNode ? shapeNode.height() : DEFAULT_NODE_STYLE.minHeight;
+                        addCreationHandle(selectedKonvaNode, dynamicHeight);
+                        currentKonvaLayer.batchDraw();
                     }
-                    selectedKonvaNode = rightClickedKonvaNode;
-                    selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(3);
-                    const nodeData = allNodesDataForCurrentMap.find(n => n.id === selectedKonvaNode.id());
-                    if (nodeData) updateNodeStylePanel(nodeData);
-                    // Lấy chiều cao động từ shape thực tế để truyền cho addCreationHandle
-                    const shapeNode = selectedKonvaNode.findOne('.nodeShape');
-                    const dynamicHeight = shapeNode ? shapeNode.height() : DEFAULT_NODE_STYLE.minHeight;
-                    addCreationHandle(selectedKonvaNode, dynamicHeight);
-                    currentKonvaLayer.batchDraw();
+                    handleAISuggestion();
                 }
-                handleAISuggestion();
-            }
-            if(contextMenu) hideElement(contextMenu);
-        });
+                if(contextMenu) hideElement(contextMenu);
+            });
+        } else {
+            console.error("Context AI Suggestion Button not found!");
+        }
 
 
         // --- AUTHENTICATION LOGIC ---
@@ -752,8 +764,9 @@
         }
 
         if (registerButton) {
+            console.log("Register button found, attaching listener.");
             registerButton.addEventListener('click', async () => {
-                console.log("Register button clicked"); // Debug
+                console.log("Register button clicked"); 
                 if (!auth) {
                      displayAuthError(registerErrorMsg, "Lỗi: Dịch vụ xác thực chưa sẵn sàng.");
                      console.error("Register attempt failed: Firebase Auth service not initialized.");
@@ -767,10 +780,10 @@
                      console.error("Register attempt failed: Invalid API Key in firebaseConfig.");
                     return;
                 }
-                console.log("Attempting registration for:", email); // Debug
+                console.log("Attempting registration for:", email); 
                 try {
                     await createUserWithEmailAndPassword(auth, email, password);
-                    console.log("createUserWithEmailAndPassword call succeeded."); // Debug
+                    console.log("createUserWithEmailAndPassword call succeeded."); 
                 } catch (error) {
                     console.error("Register error caught:", error);
                     displayAuthError(registerErrorMsg, "Lỗi đăng ký: " + error.code + " - " + error.message);
@@ -782,8 +795,9 @@
 
 
         if (loginButton) {
+            console.log("Login button found, attaching listener.");
             loginButton.addEventListener('click', async () => {
-                console.log("Login button clicked"); // Debug
+                console.log("Login button clicked"); 
                 if (!auth) {
                      displayAuthError(loginErrorMsg, "Lỗi: Dịch vụ xác thực chưa sẵn sàng.");
                      console.error("Login attempt failed: Firebase Auth service not initialized.");
@@ -792,15 +806,12 @@
                 const email = loginEmailInput.value;
                 const password = loginPasswordInput.value;
                 clearAuthError(loginErrorMsg);
-                if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY_HERE") { 
-                    displayAuthError(loginErrorMsg, "Lỗi cấu hình Firebase: API Key không hợp lệ. Vui lòng kiểm tra lại firebaseConfig.");
-                    console.error("Login attempt failed: Invalid API Key in firebaseConfig.");
-                    return;
-                }
-                console.log("Attempting login for:", email); // Debug
+                // API Key check is already done by Firebase itself, this specific check might be redundant
+                // if (firebaseConfig.apiKey === "YOUR_API_KEY_HERE") { ... } 
+                console.log("Attempting login for:", email); 
                 try {
                     await signInWithEmailAndPassword(auth, email, password);
-                    console.log("signInWithEmailAndPassword call succeeded."); // Debug
+                    console.log("signInWithEmailAndPassword call succeeded."); 
                 } catch (error) { 
                     console.error("Login error caught:", error);
                     displayAuthError(loginErrorMsg, "Lỗi đăng nhập: " + error.code + " - " + error.message);
@@ -826,7 +837,9 @@
         }
 
         if (auth) { 
+            console.log("Auth service initialized, attaching onAuthStateChanged listener.");
             onAuthStateChanged(auth, (user) => {
+                console.log("onAuthStateChanged triggered. User:", user ? user.email : null);
                 if (user) {
                     currentUser = user;
                     if(userEmailDisplay) userEmailDisplay.textContent = `Chào, ${user.email}`;
@@ -846,6 +859,8 @@
                     window.removeEventListener('keydown', handleGlobalKeyDown); 
                 }
             });
+        } else {
+            console.error("Auth service not initialized, cannot attach onAuthStateChanged listener.");
         }
 
 
@@ -1313,29 +1328,26 @@
                         listening: false,
                         name: 'nodeIcon' 
                     });
-                    // Thêm vào layer tạm để đo, sau đó xóa đi nếu không muốn nó tự vẽ
-                    // Hoặc ước lượng width. Emoji thường có width gần bằng fontSize.
-                    // Đo width của icon
                     const tempLayer = new Konva.Layer();
                     tempLayer.add(iconObject);
                     iconTextWidth = iconObject.width() + iconSpacing;
-                    tempLayer.destroy(); // Xóa layer tạm
+                    tempLayer.destroy(); 
                 }
 
 
                 const mainTextWidth = style.width - 2 * textPadding - iconTextWidth;
 
-                const tempText = new Konva.Text({ // Dùng để tính chiều cao
+                const tempText = new Konva.Text({ 
                     text: nodeData.text,
                     fontSize: style.fontSize,
                     fontFamily: style.fontFamily,
-                    width: mainTextWidth > 0 ? mainTextWidth : 1, // Phải có width > 0 để tính height 
+                    width: mainTextWidth > 0 ? mainTextWidth : 1, 
                     align: 'center'
                 });
                 const actualTextContentHeight = tempText.height();
                 
                 let minHeightForNode = style.minHeight;
-                if (iconObject) { // Nếu có icon, đảm bảo nút đủ cao cho icon
+                if (iconObject) { 
                     const tempIconForHeight = new Konva.Text({text: style.icon, fontSize: iconSize, fontFamily: style.fontFamily});
                     minHeightForNode = Math.max(style.minHeight, tempIconForHeight.height() + 2 * textPadding);
                 }
@@ -1387,14 +1399,14 @@
                 group.add(shape);
                 shape.moveToBottom(); 
 
-                if (iconObject) { // Tạo lại iconObject để add vào group thật
-                    iconObject = new Konva.Text({
+                if (iconObject) { 
+                    iconObject = new Konva.Text({ // Tạo lại để add vào group thật
                         text: style.icon,
                         fontSize: iconSize,
                         fontFamily: style.fontFamily,
                         fill: style.textColor,
                         x: textPadding,
-                        y: (dynamicShapeHeight - iconSize) / 2, // Căn giữa icon theo chiều dọc
+                        y: (dynamicShapeHeight - iconSize) / 2, 
                         listening: false,
                         name: 'nodeIcon'
                     });
@@ -1406,7 +1418,7 @@
                     fontSize: style.fontSize,
                     fontFamily: style.fontFamily,
                     fill: style.textColor,
-                    width: mainTextWidth > 0 ? mainTextWidth : 1, // Đảm bảo width > 0
+                    width: mainTextWidth > 0 ? mainTextWidth : 1, 
                     x: textPadding + iconTextWidth, 
                     padding: 0, 
                     align: 'center',
@@ -1679,7 +1691,7 @@
                 y: stageBox.top + textAbsPos.y
             };
             
-            const nodeStyle = allNodesDataForCurrentMap.find(n => n.id === konvaGroup.id())?.style || {};
+            // const nodeStyle = allNodesDataForCurrentMap.find(n => n.id === konvaGroup.id())?.style || {};
             // const textPadding = nodeStyle.padding !== undefined ? nodeStyle.padding : DEFAULT_NODE_STYLE.padding;
 
 
@@ -1722,7 +1734,7 @@
                 
                 const nodeRef = doc(db, "nodes", konvaGroup.id());
                 const nodeSnap = await getDoc(nodeRef);
-                let currentStyleForCalc = DEFAULT_NODE_STYLE; // Sử dụng global default
+                let currentStyleForCalc = DEFAULT_NODE_STYLE; 
                 if (nodeSnap.exists() && nodeSnap.data().style) {
                     currentStyleForCalc = {...DEFAULT_NODE_STYLE, ...nodeSnap.data().style};
                 }
