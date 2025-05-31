@@ -6,28 +6,35 @@
     <title>Sơ đồ tư duy MVP - Firebase</title>
     <script src="https://unpkg.com/konva@9.3.6/konva.min.js"></script>
     <style>
-        body {
+        html, body { /* Thêm html để đảm bảo full height */
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
             padding: 0;
             background-color: #f0f2f5;
             color: #1c1e21;
+            height: 100%; /* Đảm bảo body chiếm toàn bộ chiều cao viewport */
+            overflow: hidden; /* Ngăn scrollbar không mong muốn ở body */
+        }
+        #app-root {
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
+            height: 100%;
         }
-        .container {
-            width: 90%;
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 20px;
+        .container { /* Container chung cho auth và main app */
+            width: 100%;
+            padding: 0; /* Bỏ padding mặc định của container */
             background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 8px 16px rgba(0,0,0,0.1);
+            box-shadow: none; /* Bỏ box-shadow nếu không cần thiết cho chế độ toàn màn hình */
+            flex-grow: 1; /* Cho phép container chính của app chiếm không gian còn lại */
+            display: flex; /* Để dễ dàng quản lý layout bên trong */
+            flex-direction: column;
         }
         /* --- AUTH SECTION --- */
-        #auth-section, #main-app-section {
+        #auth-section { /* Vẫn giữ padding cho auth section */
             padding: 20px;
+            max-width: 450px; /* Giới hạn chiều rộng cho form auth */
+            margin: auto; /* Căn giữa form auth */
+            flex-grow: 0; /* Không cho auth section co giãn */
         }
         .form-container {
             max-width: 400px;
@@ -105,34 +112,51 @@
             text-align: center;
         }
         /* --- MAIN APP SECTION --- */
+        #main-app-section {
+            display: flex;
+            flex-direction: column;
+            height: 100%; /* Cho main-app-section chiếm toàn bộ chiều cao của container cha */
+            padding: 10px; /* Giảm padding để tối đa không gian */
+            box-sizing: border-box; /* Đảm bảo padding không làm tăng kích thước */
+        }
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
+            padding-bottom: 10px; /* Giảm padding */
+            margin-bottom: 10px; /* Giảm margin */
             border-bottom: 1px solid #dddfe2;
+            flex-shrink: 0; /* Không cho header co lại */
         }
         header h1 {
             color: #1c1e21;
-            font-size: 24px;
+            font-size: 20px; /* Giảm kích thước font */
             margin: 0;
         }
         #user-info span {
             margin-right: 10px;
             font-size: 0.9em;
         }
+        #mindmap-management-view { /* Sửa lại để không chiếm toàn bộ không gian khi canvas hiển thị */
+             /* flex-grow: 1; */ /* Bỏ flex-grow để không chiếm không gian khi ẩn */
+             display: flex;
+             flex-direction: column;
+        }
         #mindmap-management, #canvas-view {
-            margin-bottom: 20px;
+            margin-bottom: 10px; /* Giảm margin */
+        }
+        #mindmap-list-container{
+            flex-grow: 1;
+            overflow-y: auto; /* Cho phép cuộn nếu danh sách dài */
         }
         #mindmap-list {
             list-style: none;
             padding: 0;
         }
         #mindmap-list li {
-            padding: 12px;
+            padding: 10px; /* Giảm padding */
             border: 1px solid #dddfe2;
-            margin-bottom: 8px;
+            margin-bottom: 5px; /* Giảm margin */
             cursor: pointer;
             border-radius: 6px;
             display: flex;
@@ -143,19 +167,27 @@
         #mindmap-list li:hover {
             background-color: #f0f2f5;
         }
+
+        #canvas-view {
+            flex-grow: 1; /* Cho phép canvas view chiếm không gian còn lại */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Ngăn canvas view tạo scrollbar */
+        }
         #canvas-toolbar {
-            padding: 10px 0;
-            margin-bottom: 10px;
+            padding: 8px 5px; /* Giảm padding */
+            margin-bottom: 5px; /* Giảm margin */
             border-bottom: 1px solid #ccd0d5; 
+            flex-shrink: 0; /* Không cho toolbar co lại */
         }
         #canvas-toolbar h2 {
-            margin: 0 0 10px 0;
-            font-size: 20px;
+            margin: 0 0 5px 0; /* Giảm margin */
+            font-size: 18px; /* Giảm font */
         }
         #konva-container {
             width: 100%;
-            height: 60vh; 
-            min-height: 400px;
+            /* height: calc(100% - 50px); */ /* Chiều cao canvas tính toán dựa trên toolbar, cần điều chỉnh */
+            flex-grow: 1; /* Cho konva container chiếm không gian còn lại trong canvas-view */
             background-color: #f7f7f7; 
             border: 1px solid #ccd0d5; 
             border-radius: 6px;
@@ -172,33 +204,38 @@
         }
         /* Node Style Panel */
         #node-style-panel {
-            margin-top: 10px;
-            padding: 10px;
+            margin-top: 5px; /* Giảm margin */
+            padding: 8px; /* Giảm padding */
             background-color: #f9f9f9;
             border: 1px solid #e0e0e0;
             border-radius: 4px;
         }
         #node-style-panel h5 { 
-            margin: 5px 0;
-            font-size: 0.95em;
+            margin: 3px 0; /* Giảm margin */
+            font-size: 0.9em; /* Giảm font */
             color: #606770;
         }
         #node-style-panel label {
-            margin-right: 5px;
-            font-size: 0.9em;
+            margin-right: 3px; /* Giảm margin */
+            font-size: 0.85em; /* Giảm font */
             vertical-align: middle;
         }
         #node-style-panel input[type="color"] {
-            width: 28px; 
-            height: 28px;
+            width: 24px; 
+            height: 24px;
             padding: 0;
             border: 1px solid #ccc;
             border-radius: 4px;
             vertical-align: middle;
-            margin-right: 10px; 
+            margin-right: 8px; 
+        }
+        #node-style-panel input[type="number"] {
+            width: 50px; /* Giảm chiều rộng */
+            padding: 5px; /* Giảm padding */
+            font-size: 0.85em; /* Giảm font */
         }
         .style-group { 
-            margin-bottom: 8px;
+            margin-bottom: 5px; /* Giảm margin */
         }
         /* Context Menu */
         #context-menu {
@@ -850,6 +887,7 @@
                 e.evt.preventDefault(); 
                 
                 let targetNodeGroup = e.target;
+                // Lặp để tìm group cha có name là 'mindmapNodeGroup'
                 while (targetNodeGroup && targetNodeGroup !== currentKonvaStage && !targetNodeGroup.hasName('mindmapNodeGroup')) {
                     targetNodeGroup = targetNodeGroup.getParent();
                 }
@@ -857,6 +895,7 @@
                 if (targetNodeGroup && targetNodeGroup.hasName('mindmapNodeGroup')) {
                     rightClickedKonvaNode = targetNodeGroup; 
                     
+                    // Tự động chọn node được nhấp chuột phải
                     if (!selectedKonvaNode || selectedKonvaNode.id() !== rightClickedKonvaNode.id()) {
                         if (selectedKonvaNode) { 
                             selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1);
@@ -870,7 +909,7 @@
                         currentKonvaLayer.batchDraw();
                     }
 
-                    if(contextMenu) { // Kiểm tra contextMenu tồn tại
+                    if(contextMenu) { 
                         contextMenu.style.top = e.evt.pageY + 'px';
                         contextMenu.style.left = e.evt.pageX + 'px';
                         showElement(contextMenu);
@@ -1202,6 +1241,7 @@
 
             const textPosition = konvaGroup.getAbsolutePosition(); 
             const stageBox = currentKonvaStage.container().getBoundingClientRect(); 
+            let textareaBeingRemoved = false; 
 
             const areaPosition = {
                 x: stageBox.left + textPosition.x,
@@ -1237,8 +1277,11 @@
 
 
             async function saveAndRemoveTextarea() {
+                if (textareaBeingRemoved) return; 
+                textareaBeingRemoved = true; 
+
                 const newText = textarea.value;
-                if (textarea.parentNode) {
+                if (textarea.parentNode) { 
                     textarea.parentNode.removeChild(textarea);
                 }
                 konvaTextNode.text(newText);
@@ -1252,16 +1295,24 @@
                 } catch (e) { console.error("Error updating node text in Firestore:", e); }
             }
 
+            function removeTextareaWithoutSaving() {
+                if (textareaBeingRemoved) return;
+                textareaBeingRemoved = true;
+                 if (textarea.parentNode) {
+                    textarea.parentNode.removeChild(textarea);
+                }
+                konvaTextNode.show();
+                currentKonvaLayer.batchDraw();
+                window.removeEventListener('click', handleOutsideClick);
+            }
+
             textarea.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     saveAndRemoveTextarea();
                 }
                 if (e.key === 'Escape') {
-                    if (textarea.parentNode) textarea.parentNode.removeChild(textarea);
-                    konvaTextNode.show();
-                    currentKonvaLayer.batchDraw();
-                    window.removeEventListener('click', handleOutsideClick); 
+                    removeTextareaWithoutSaving();
                 }
             });
             textarea.addEventListener('blur', saveAndRemoveTextarea);
@@ -1348,7 +1399,7 @@
             });
         }
         document.addEventListener('click', function (e) {
-            if (contextMenu && !contextMenu.contains(e.target)) {
+            if (contextMenu && !contextMenu.contains(e.target) && e.target !== currentKonvaStage && !e.target.hasName?.('mindmapNodeGroup') && !e.target.getParent?.()?.hasName?.('mindmapNodeGroup')) {
                 hideElement(contextMenu);
             }
         });
