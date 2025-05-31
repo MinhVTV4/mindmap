@@ -13,7 +13,13 @@
             background-color: #f0f2f5;
             color: #1c1e21;
             height: 100%;
-            overflow: hidden;
+            overflow: hidden; /* Ngăn cuộn trang chính */
+            -webkit-touch-callout: none; /* iOS Safari */
+            -webkit-user-select: none; /* Safari */
+            -khtml-user-select: none; /* Konqueror HTML */
+            -moz-user-select: none; /* Old versions of Firefox */
+            -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently supported by Chrome, Edge, Opera and Firefox */
         }
         #app-root {
             display: flex;
@@ -497,8 +503,6 @@
             auth = getAuth(app);
             db = getFirestore(app);
             ai = getAI(app, { backend: new GoogleAIBackend() });
-            // Model name có thể là "gemini-1.5-flash-latest", "gemini-pro", "gemini-2.0-flash", etc.
-            // Kiểm tra tài liệu Firebase/Google AI để có tên model mới nhất và phù hợp.
             generativeModel = getGenerativeModel(ai, { model: "gemini-1.5-flash-latest" });
             console.log("Firebase initialized successfully with AI Logic SDK!");
         } catch (error) {
@@ -639,7 +643,6 @@
                 if (userQuestion) {
                     contentHTML += `<p><strong>Câu hỏi của bạn:</strong> ${userQuestion}</p>`;
                 }
-                // Replace newlines in AI answer with <br> for HTML display
                 const formattedAiAnswer = aiAnswer.replace(/\n/g, '<br>');
                 contentHTML += `<p><strong>AI trả lời:</strong></p><div style="background-color: #f9f9f9; padding: 10px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; font-size: 0.9em;">${formattedAiAnswer}</div>`;
                 aiResponseModalBody.innerHTML = contentHTML;
@@ -996,7 +999,7 @@
 
         // --- FIRESTORE SERVICE LOGIC (Nodes) & KONVA INTEGRATION ---
         function initKonvaStage() {
-            if (currentKonvaStage) { currentKonvaStage.off('dragstart dragmove dragend click tap wheel contextmenu'); currentKonvaStage.destroy(); currentKonvaStage = null; }
+            if (currentKonvaStage) { currentKonvaStage.off('dragstart dragmove dragend click tap wheel contextmenu touchstart touchend touchmove'); currentKonvaStage.destroy(); currentKonvaStage = null; }
             if (currentKonvaLayer) { currentKonvaLayer.destroy(); currentKonvaLayer = null; }
             const container = document.getElementById('konva-container');
             if (!container) { console.error("Konva container not found!"); return; }
@@ -1015,28 +1018,131 @@
                 currentKonvaStage.position(newPos); currentKonvaStage.batchDraw(); saveCanvasState();
             });
             currentKonvaStage.on('click tap', function(e) {
-                if (e.target === currentKonvaStage) {
+                if (e.target === currentKonvaStage) { // Clicked on empty stage area
                     if (selectedKonvaNode) { selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1); removeCreationHandle(selectedKonvaNode); selectedKonvaNode = null; if(nodeStylePanel) hideElement(nodeStylePanel); currentKonvaLayer.batchDraw(); }
                     if(contextMenu) hideElement(contextMenu);
                 }
+                // Click/tap on a node is handled by the node's own event listener
             });
+
+            // Mouse Right-Click for Context Menu
             currentKonvaStage.on('contextmenu', function(e) {
-                e.evt.preventDefault(); let targetNodeGroup = e.target;
-                while (targetNodeGroup && targetNodeGroup !== currentKonvaStage && !targetNodeGroup.hasName('mindmapNodeGroup')) { targetNodeGroup = targetNodeGroup.getParent(); }
+                e.evt.preventDefault();
+                let targetNodeGroup = e.target;
+                while (targetNodeGroup && targetNodeGroup !== currentKonvaStage && !targetNodeGroup.hasName('mindmapNodeGroup')) {
+                    targetNodeGroup = targetNodeGroup.getParent();
+                }
+
                 if (targetNodeGroup && targetNodeGroup.hasName('mindmapNodeGroup')) {
                     rightClickedKonvaNode = targetNodeGroup;
                     if (!selectedKonvaNode || selectedKonvaNode.id() !== rightClickedKonvaNode.id()) {
                         if (selectedKonvaNode) { selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1); removeCreationHandle(selectedKonvaNode); }
-                        selectedKonvaNode = rightClickedKonvaNode; selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(3);
+                        selectedKonvaNode = rightClickedKonvaNode;
+                        selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(3);
                         const nodeDataForHandle = allNodesDataForCurrentMap.find(n => n.id === selectedKonvaNode.id());
-                        const currentHeightForHandle = nodeDataForHandle?.style?.height || selectedKonvaNode.findOne('.nodeShape')?.height() || DEFAULT_NODE_STYLE.minHeight;
+                        const shape = selectedKonvaNode.findOne('.nodeShape');
+                        const currentHeightForHandle = nodeDataForHandle?.style?.height || shape?.height() || DEFAULT_NODE_STYLE.minHeight;
                         addCreationHandle(selectedKonvaNode, currentHeightForHandle);
                         const nodeData = allNodesDataForCurrentMap.find(n => n.id === selectedKonvaNode.id());
                         if (nodeData) updateNodeStylePanel(nodeData);
                         currentKonvaLayer.batchDraw();
                     }
-                    if(contextMenu) { contextMenu.style.top = e.evt.pageY + 'px'; contextMenu.style.left = e.evt.pageX + 'px'; showElement(contextMenu); }
-                } else { rightClickedKonvaNode = null; if(contextMenu) hideElement(contextMenu); }
+                    if(contextMenu) {
+                        contextMenu.style.top = e.evt.pageY + 'px';
+                        contextMenu.style.left = e.evt.pageX + 'px';
+                        showElement(contextMenu);
+                    }
+                } else {
+                    rightClickedKonvaNode = null;
+                    if(contextMenu) hideElement(contextMenu);
+                }
+            });
+
+            // Touch "Long Press" for Context Menu
+            let longPressTimeoutId = null;
+            let touchStartTargetNode = null;
+            let touchStartPointerPos = null; // For pageX, pageY
+            let touchStartX = 0, touchStartY = 0; // For movement threshold
+            const LONG_PRESS_DELAY = 750; // ms
+            const MOVE_THRESHOLD = 10; // pixels
+
+            currentKonvaStage.on('touchstart', function(e) {
+                let targetNodeGroup = e.target;
+                while (targetNodeGroup && targetNodeGroup !== currentKonvaStage && !targetNodeGroup.hasName('mindmapNodeGroup')) {
+                    targetNodeGroup = targetNodeGroup.getParent();
+                }
+
+                if (targetNodeGroup && targetNodeGroup.hasName('mindmapNodeGroup')) {
+                    // e.evt.preventDefault(); // Be cautious with this, might prevent scrolling on canvas if needed
+                    touchStartTargetNode = targetNodeGroup;
+                    if (e.evt.touches && e.evt.touches.length > 0) {
+                        touchStartX = e.evt.touches[0].pageX;
+                        touchStartY = e.evt.touches[0].pageY;
+                        touchStartPointerPos = { x: e.evt.touches[0].pageX, y: e.evt.touches[0].pageY };
+                    } else { // Fallback
+                        touchStartX = e.evt.pageX || 0;
+                        touchStartY = e.evt.pageY || 0;
+                        touchStartPointerPos = { x: touchStartX, y: touchStartY };
+                    }
+
+                    clearTimeout(longPressTimeoutId);
+                    longPressTimeoutId = setTimeout(() => {
+                        if (touchStartTargetNode) {
+                            // Long press confirmed
+                            // e.evt.preventDefault(); // This 'e' is from touchstart, might be stale or not what we want to prevent default on here.
+                                                    // The default context menu from long press is usually handled by browser if not prevented on original touchstart.
+                                                    // For now, let's rely on the contextmenu event for mouse and this custom for touch.
+
+                            rightClickedKonvaNode = touchStartTargetNode;
+                            if (!selectedKonvaNode || selectedKonvaNode.id() !== rightClickedKonvaNode.id()) {
+                                if (selectedKonvaNode) {
+                                    selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1);
+                                    removeCreationHandle(selectedKonvaNode);
+                                }
+                                selectedKonvaNode = rightClickedKonvaNode;
+                                selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(3);
+                                const nodeDataForHandle = allNodesDataForCurrentMap.find(n => n.id === selectedKonvaNode.id());
+                                const shape = selectedKonvaNode.findOne('.nodeShape');
+                                const currentHeightForHandle = nodeDataForHandle?.style?.height || shape?.height() || DEFAULT_NODE_STYLE.minHeight;
+                                addCreationHandle(selectedKonvaNode, currentHeightForHandle);
+                                const nodeData = allNodesDataForCurrentMap.find(n => n.id === selectedKonvaNode.id());
+                                if (nodeData) updateNodeStylePanel(nodeData);
+                                currentKonvaLayer.batchDraw();
+                            }
+
+                            if(contextMenu && touchStartPointerPos) {
+                                contextMenu.style.top = touchStartPointerPos.y + 'px';
+                                contextMenu.style.left = touchStartPointerPos.x + 'px';
+                                showElement(contextMenu);
+                            }
+                            touchStartTargetNode = null; // Reset
+                            longPressTimeoutId = null;
+                        }
+                    }, LONG_PRESS_DELAY);
+                } else {
+                    clearTimeout(longPressTimeoutId);
+                    touchStartTargetNode = null;
+                }
+            });
+
+            currentKonvaStage.on('touchend', function(e) {
+                clearTimeout(longPressTimeoutId);
+                touchStartTargetNode = null;
+                // 'tap' event on nodes will handle selection
+            });
+
+            currentKonvaStage.on('touchmove', function(e) {
+                if (touchStartTargetNode && e.evt.touches && e.evt.touches.length > 0) {
+                    const deltaX = Math.abs(e.evt.touches[0].pageX - touchStartX);
+                    const deltaY = Math.abs(e.evt.touches[0].pageY - touchStartY);
+                    if (deltaX > MOVE_THRESHOLD || deltaY > MOVE_THRESHOLD) {
+                        clearTimeout(longPressTimeoutId);
+                        touchStartTargetNode = null;
+                    }
+                } else { // If not a touch event or no touches, clear timeout
+                     clearTimeout(longPressTimeoutId);
+                     touchStartTargetNode = null;
+                }
             });
         }
         async function saveCanvasState() { /* ... giữ nguyên ... */ }
@@ -1082,8 +1188,11 @@
                 });
                 textToRender.y((dynamicShapeHeight - textToRender.height()) / 2); group.add(textToRender);
                 group.on('dragend', async function() { if(!db) return; try { await updateDoc(doc(db, "nodes", this.id()), { position: { x: this.x(), y: this.y() } }); } catch (e) { console.error("Error updating node position:", e); } });
-                group.on('click tap', function(e) {
+                group.on('click tap', function(e) { // This handles selection on short tap
                     e.evt.cancelBubble = true;
+                    // If a long press was initiated and menu shown, this tap might occur when selecting a menu item.
+                    // Or it's a genuine tap on the node.
+                    // The context menu itself will be hidden by its own item click handlers or stage click.
                     if (selectedKonvaNode && selectedKonvaNode !== this) { selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1); removeCreationHandle(selectedKonvaNode); }
                     selectedKonvaNode = this; this.findOne('.nodeShape')?.strokeWidth(3);
                     const nodeDataForHandle = allNodesDataForCurrentMap.find(n => n.id === this.id());
@@ -1091,7 +1200,9 @@
                     addCreationHandle(this, currentHeightForHandle);
                     const clickedNodeData = allNodesDataForCurrentMap.find(n => n.id === this.id());
                     if(clickedNodeData) updateNodeStylePanel(clickedNodeData);
-                    currentKonvaLayer.batchDraw(); if(contextMenu) hideElement(contextMenu);
+                    currentKonvaLayer.batchDraw();
+                    // Do not hide context menu here, as this tap might be part of selecting the node before a context menu action.
+                    // The stage click/tap and menu item clicks will handle hiding the context menu.
                 });
                 group.on('dblclick dbltap', function() { editTextOnKonvaNode(this, textToRender, dynamicShapeHeight); if(contextMenu) hideElement(contextMenu); });
                 konvaNodeObjects[nodeData.id] = group; currentKonvaLayer.add(group);
