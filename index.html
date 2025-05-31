@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mind Map - Micro MVP (Local)</title>
+    <script src="https://unpkg.com/konva@9.3.6/konva.min.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 10px;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #controls {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 8px 12px;
+            margin: 0 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #konva-container {
+            width: 90vw; /* Điều chỉnh kích thước theo ý muốn */
+            max-width: 1000px;
+            height: 75vh;
+            max-height: 700px;
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        /* Styling cho text editor (nếu có) */
+        .text-editor {
+            position: absolute;
+            z-index: 100;
+            border: 1px solid #ccc;
+            background-color: white;
+            padding: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <button id="add-node-btn">Thêm Nút</button>
+        <button id="add-line-btn">Vẽ Đường Nối (Chọn 2 nút)</button>
+        <span>Zoom:</span>
+        <button id="zoom-in-btn">+</button>
+        <button id="zoom-out-btn">-</button>
+        <button id="reset-zoom-btn">Reset Zoom</button>
+    </div>
+    <div id="konva-container"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const container = document.getElementById('konva-container');
+            const stageWidth = container.clientWidth;
+            const stageHeight = container.clientHeight;
+
+            // 1. Khởi tạo Stage và Layer
+            const stage = new Konva.Stage({
+                container: 'konva-container',
+                width: stageWidth,
+                height: stageHeight,
+                draggable: true // Cho phép kéo toàn bộ stage (pan)
+            });
+
+            const layer = new Konva.Layer();
+            stage.add(layer);
+
+            let nodeCounter = 0;
+            let selectedNodesForLine = []; // Lưu các nút được chọn để vẽ đường nối
+
+            // --- ZOOM FUNCTIONALITY ---
+            const scaleBy = 1.1;
+            document.getElementById('zoom-in-btn').addEventListener('click', function() {
+                const oldScale = stage.scaleX();
+                const newScale = oldScale * scaleBy;
+                stage.scale({ x: newScale, y: newScale });
+                stage.batchDraw();
+            });
+
+            document.getElementById('zoom-out-btn').addEventListener('click', function() {
+                const oldScale = stage.scaleX();
+                const newScale = oldScale / scaleBy;
+                stage.scale({ x: newScale, y: newScale });
+                stage.batchDraw();
+            });
+             document.getElementById('reset-zoom-btn').addEventListener('click', function() {
+                stage.scale({ x: 1, y: 1 });
+                stage.position({ x: 0, y: 0 }); // Reset cả vị trí pan
+                stage.batchDraw();
+            });
+
+
+            // --- NODE FUNCTIONALITY ---
+            function createNode(x, y, textContent) {
+                nodeCounter++;
+                const group = new Konva.Group({
+                    x: x,
+                    y: y,
+                    draggable: true,
+                    name: 'nodeGroup' // Để dễ dàng tìm kiếm
+                });
+
+                const rectWidth = 150;
+                const rectHeight = 50;
+
+                const rect = new Konva.Rect({
+                    width: rectWidth,
+                    height: rectHeight,
+                    fill: Konva.Util.getRandomColor(),
+                    stroke: 'black',
+                    strokeWidth: 1,
+                    cornerRadius: 5,
+                    name: 'nodeRect'
+                });
+                group.add(rect);
+
+                const text = new Konva.Text({
+                    text: textContent || `Nút ${nodeCounter}`,
+                    fontSize: 16,
+                    fontFamily: 'Arial',
+                    fill: '#333',
+                    width: rectWidth,
+                    height: rectHeight,
+                    padding: 10,
+                    align: 'center',
+                    verticalAlign: 'middle',
+                    name: 'nodeText'
+                });
+                group.add(text);
+
+                // Đánh dấu nút khi được chọn để vẽ đường nối
+                group.on('click tap', function(e) {
+                    // Ngăn sự kiện click lan truyền lên stage nếu đang kéo
+                    if (e.evt.defaultPrevented) return;
+
+                    if (document.getElementById('add-line-btn').classList.contains('active')) {
+                        const nodeRect = this.findOne('.nodeRect');
+                        if (selectedNodesForLine.includes(this)) {
+                            // Bỏ chọn
+                            selectedNodesForLine = selectedNodesForLine.filter(n => n !== this);
+                            nodeRect.strokeWidth(1);
+                            nodeRect.stroke('black');
+                        } else if (selectedNodesForLine.length < 2) {
+                            // Chọn
+                            selectedNodesForLine.push(this);
+                            nodeRect.strokeWidth(3);
+                            nodeRect.stroke('blue');
+                        }
+                        layer.batchDraw();
+
+                        if (selectedNodesForLine.length === 2) {
+                            drawLineBetweenNodes(selectedNodesForLine[0], selectedNodesForLine[1]);
+                            // Reset lựa chọn
+                            selectedNodesForLine.forEach(n => {
+                                n.findOne('.nodeRect').strokeWidth(1);
+                                n.findOne('.nodeRect').stroke('black');
+                            });
+                            selectedNodesForLine = [];
+                            document.getElementById('add-line-btn').classList.remove('active');
+                            document.getElementById('add-line-btn').textContent = 'Vẽ Đường Nối (Chọn 2 nút)';
+                        }
+                    }
+                });
+
+                // Chỉnh sửa text khi double click
+                group.on('dblclick dbltap', function () {
+                    editText(group, text);
+                });
+
+                layer.add(group);
+                layer.batchDraw();
+                return group;
+            }
+
+            document.getElementById('add-node-btn').addEventListener('click', function () {
+                // Lấy vị trí trung tâm của view hiện tại trên stage
+                const pointerPosition = stage.getPointerPosition(); // Vị trí chuột nếu có
+                let spawnX, spawnY;
+
+                if (pointerPosition) {
+                    // Chuyển đổi tọa độ con trỏ từ màn hình sang tọa độ stage (đã tính zoom và pan)
+                    const transform = stage.getAbsoluteTransform().copy();
+                    transform.invert(); // Ma trận nghịch đảo
+                    const stagePointerPos = transform.point(pointerPosition);
+                    spawnX = stagePointerPos.x;
+                    spawnY = stagePointerPos.y;
+                } else {
+                    // Nếu không có vị trí chuột (ví dụ, nút được nhấn bằng bàn phím), dùng trung tâm stage
+                    spawnX = (stage.width() / 2 - stage.x()) / stage.scaleX();
+                    spawnY = (stage.height() / 2 - stage.y()) / stage.scaleY();
+                }
+                createNode(spawnX, spawnY - 25, `Nút mới ${nodeCounter + 1}`);
+            });
+
+            // --- TEXT EDITING FUNCTIONALITY ---
+            function editText(nodeGroup, textNode) {
+                // Ẩn text node hiện tại
+                textNode.hide();
+                layer.draw();
+
+                // Tạo textarea để edit
+                const textPosition = nodeGroup.getAbsolutePosition();
+                const stageBox = stage.container().getBoundingClientRect();
+
+                // Điều chỉnh vị trí textarea dựa trên vị trí của stage và zoom
+                const areaPosition = {
+                    x: stageBox.left + textPosition.x * stage.scaleX() + stage.x(),
+                    y: stageBox.top + textPosition.y * stage.scaleY() + stage.y()
+                };
+
+                const textarea = document.createElement('textarea');
+                document.body.appendChild(textarea);
+
+                textarea.value = textNode.text();
+                textarea.style.position = 'absolute';
+                textarea.style.top = areaPosition.y + 'px';
+                textarea.style.left = areaPosition.x + 'px';
+                textarea.style.width = textNode.width() * stage.scaleX() - 2 * textNode.padding() * stage.scaleX() + 'px';
+                textarea.style.height = textNode.height() * stage.scaleY() - 2 * textNode.padding() * stage.scaleY() + 'px';
+                textarea.style.fontSize = textNode.fontSize() * stage.scaleY() + 'px';
+                textarea.style.border = '1px solid #ccc';
+                textarea.style.padding = '0px';
+                textarea.style.margin = '0px';
+                textarea.style.overflow = 'hidden';
+                textarea.style.background = 'none';
+                textarea.style.outline = 'none';
+                textarea.style.resize = 'none';
+                textarea.style.fontFamily = textNode.fontFamily();
+                textarea.style.transformOrigin = 'left top';
+                textarea.style.lineHeight = textNode.lineHeight();
+                textarea.focus();
+
+                function removeTextarea() {
+                    if (textarea.parentNode) {
+                        textarea.parentNode.removeChild(textarea);
+                    }
+                    window.removeEventListener('click', handleOutsideClick);
+                    textNode.show();
+                    layer.batchDraw();
+                }
+
+                function setTextareaWidth(newWidth) {
+                    if (!newWidth) {
+                        // set width for placeholder
+                        textarea.style.width = textNode.placeholder.length * textNode.fontSize() + 'px';
+                    } else {
+                        textarea.style.width = newWidth + 'px';
+                    }
+                }
+
+                textarea.addEventListener('keydown', function (e) {
+                    // hide on enter
+                    // but don't hide on shift + enter
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        textNode.text(textarea.value);
+                        removeTextarea();
+                    }
+                    // on esc do not set value back to node
+                    if (e.key === 'Escape') {
+                        removeTextarea();
+                    }
+                });
+
+                textarea.addEventListener('blur', function() {
+                    textNode.text(textarea.value);
+                    removeTextarea();
+                });
+
+                function handleOutsideClick(e) {
+                    if (e.target !== textarea) {
+                        textNode.text(textarea.value);
+                        removeTextarea();
+                    }
+                }
+                // Đợi một chút để textarea focus rồi mới add event listener
+                setTimeout(() => {
+                    window.addEventListener('click', handleOutsideClick);
+                });
+            }
+
+
+            // --- LINE DRAWING FUNCTIONALITY ---
+            document.getElementById('add-line-btn').addEventListener('click', function() {
+                this.classList.toggle('active');
+                if (this.classList.contains('active')) {
+                    this.textContent = 'ĐANG CHỌN NÚT... (Click nút này để hủy)';
+                    selectedNodesForLine = []; // Reset khi bắt đầu chế độ vẽ đường
+                } else {
+                    this.textContent = 'Vẽ Đường Nối (Chọn 2 nút)';
+                    selectedNodesForLine.forEach(n => { // Bỏ highlight nếu hủy giữa chừng
+                         const nodeRect = n.findOne('.nodeRect');
+                         if (nodeRect) {
+                            nodeRect.strokeWidth(1);
+                            nodeRect.stroke('black');
+                         }
+                    });
+                    selectedNodesForLine = [];
+                    layer.batchDraw();
+                }
+            });
+
+            function drawLineBetweenNodes(node1, node2) {
+                const line = new Konva.Line({
+                    points: [
+                        node1.x() + node1.findOne('.nodeRect').width() / 2,
+                        node1.y() + node1.findOne('.nodeRect').height() / 2,
+                        node2.x() + node2.findOne('.nodeRect').width() / 2,
+                        node2.y() + node2.findOne('.nodeRect').height() / 2
+                    ],
+                    stroke: 'grey',
+                    strokeWidth: 2,
+                    name: 'connectionLine',
+                    // Lưu trữ ID của các node mà nó kết nối (nếu cần sau này)
+                    // connectedNodes: [node1.id(), node2.id()]
+                });
+                layer.add(line);
+                line.moveToBottom(); // Đưa đường line xuống dưới các node
+                layer.batchDraw();
+            }
+
+            // Tự động điều chỉnh kích thước Stage khi cửa sổ thay đổi
+            window.addEventListener('resize', () => {
+                const newWidth = container.clientWidth;
+                const newHeight = container.clientHeight;
+                stage.width(newWidth);
+                stage.height(newHeight);
+                stage.batchDraw();
+            });
+
+            // Tạo một vài nút ban đầu để thử nghiệm
+            createNode(100, 100, "Nút 1");
+            createNode(300, 150, "Nút 2");
+
+            stage.draw(); // Hoặc layer.draw() / layer.batchDraw()
+        });
+    </script>
+</body>
+</html>
