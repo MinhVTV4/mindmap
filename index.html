@@ -419,10 +419,19 @@
         let contextMenuJustOpened = false;
 
         // --- START: Biến trạng thái cho việc kéo thả nút ---
-        let potentiallyDraggedNode = null; // Nút có thể đang được kéo
-        let dragStartPointerPosition = null; // Vị trí con trỏ khi bắt đầu nhấn chuột/chạm
-        const DRAG_THRESHOLD = 10; // Ngưỡng pixel để xác định là kéo (thay vì click)
+        let potentiallyDraggedNode = null;
+        let dragStartPointerPosition = null;
+        const DRAG_THRESHOLD = 10;
         // --- END: Biến trạng thái cho việc kéo thả nút ---
+
+        // --- START: Biến trạng thái cho long-press context menu ---
+        let longPressTimeoutId = null;
+        let touchStartTargetNodeForContextMenu = null;
+        let touchStartPointerPositionForContextMenu = null;
+        const LONG_PRESS_DELAY = 750;
+        const LONG_PRESS_MOVE_THRESHOLD = 10;
+        let touchStartCoordsForLongPress = { x: 0, y: 0 };
+        // --- END: Biến trạng thái cho long-press context menu ---
 
 
         // --- DOM ELEMENTS ---
@@ -541,7 +550,6 @@
                 showElement(aiResponseModalOverlay);
                 if (currentKonvaStage && currentKonvaStage.listening()) {
                     currentKonvaStage.listening(false);
-                    // currentKonvaStage.draggable(false); // Tạm thời không thay đổi draggable của stage ở đây
                 }
             }
         }
@@ -550,7 +558,6 @@
                 hideElement(aiResponseModalOverlay);
                  if (currentKonvaStage && !currentKonvaStage.listening()) {
                     currentKonvaStage.listening(true);
-                    // currentKonvaStage.draggable(true); // Tạm thời không thay đổi draggable của stage ở đây
                 }
             }
         }
@@ -573,7 +580,6 @@
                 showElement(nodeContentModalOverlay);
                 if (currentKonvaStage && currentKonvaStage.listening()) {
                     currentKonvaStage.listening(false);
-                     // currentKonvaStage.draggable(false); // Tạm thời không thay đổi draggable của stage ở đây
                 }
             }
         }
@@ -582,7 +588,6 @@
                 hideElement(nodeContentModalOverlay);
                  if (currentKonvaStage && !currentKonvaStage.listening()) {
                     currentKonvaStage.listening(true);
-                    // currentKonvaStage.draggable(true); // Tạm thời không thay đổi draggable của stage ở đây
                 }
             }
         }
@@ -624,7 +629,7 @@
                 const email = registerEmailInput.value;
                 const password = registerPasswordInput.value;
                 clearAuthError(registerErrorMsg);
-                if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY") {
+                if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY") { // Replace with your actual key or check mechanism
                     displayAuthError(registerErrorMsg, "Lỗi cấu hình Firebase: API Key không hợp lệ. Vui lòng kiểm tra lại firebaseConfig.");
                     return;
                 }
@@ -645,7 +650,7 @@
                 const email = loginEmailInput.value;
                 const password = loginPasswordInput.value;
                 clearAuthError(loginErrorMsg);
-                 if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY") {
+                 if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY") { // Replace with your actual key or check mechanism
                     displayAuthError(loginErrorMsg, "Lỗi cấu hình Firebase: API Key không hợp lệ. Vui lòng kiểm tra lại firebaseConfig.");
                     return;
                 }
@@ -714,8 +719,9 @@
                 mindmapDataUnsubscribe = null;
             }
             if (currentKonvaStage) {
-                currentKonvaStage.destroyChildren();
-                currentKonvaLayer = null;
+                currentKonvaStage.destroyChildren(); // Should destroy layer content
+                // currentKonvaStage.destroy(); // This would destroy the stage itself, might not be needed if re-init always happens
+                currentKonvaLayer = null; // Layer is destroyed with stage or children
             }
             window.removeEventListener('keydown', handleGlobalKeyDown);
         }
@@ -725,7 +731,7 @@
             showElement(canvasView);
             if(currentMindmapTitleDisplay) currentMindmapTitleDisplay.textContent = mapTitle;
             currentMindMapId = mapId;
-            initKonvaStage(); // Sẽ gọi loadAndListenNodesForCurrentMap sau khi stage sẵn sàng
+            initKonvaStage();
             if (db && currentMindMapId) {
                 const mapDocRef = doc(db, "mindmaps", currentMindMapId);
                 if (mindmapDataUnsubscribe) mindmapDataUnsubscribe();
@@ -744,7 +750,6 @@
                     console.error("Error listening to mindmap data:", error);
                 });
             }
-            // loadAndListenNodesForCurrentMap(); // Được gọi bên trong initKonvaStage hoặc sau đó
             hideElement(nodeStylePanel);
             hideContextMenu();
             window.addEventListener('keydown', handleGlobalKeyDown);
@@ -922,7 +927,7 @@
 
         // --- FIRESTORE SERVICE LOGIC (Nodes) & KONVA INTEGRATION ---
         function initKonvaStage() {
-            if (currentKonvaStage) { currentKonvaStage.off('dragstart dragmove dragend click tap wheel contextmenu touchstart touchend touchmove mousedown mousemove mouseup'); currentKonvaStage.destroy(); currentKonvaStage = null; } // Đảm bảo xóa hết listener cũ
+            if (currentKonvaStage) { currentKonvaStage.off('dragstart dragmove dragend click tap wheel contextmenu touchstart touchend touchmove mousedown mousemove mouseup'); currentKonvaStage.destroy(); currentKonvaStage = null; }
             if (currentKonvaLayer) { currentKonvaLayer.destroy(); currentKonvaLayer = null; }
 
             const container = document.getElementById('konva-container');
@@ -932,86 +937,132 @@
                 container: 'konva-container',
                 width: container.clientWidth,
                 height: container.clientHeight,
-                draggable: true, // Stage vẫn có thể kéo được mặc định
-                // dragDistance: 25 // Không cần cho stage nếu logic mới xử lý tốt
+                draggable: true,
             });
             currentKonvaLayer = new Konva.Layer();
             currentKonvaStage.add(currentKonvaLayer);
             selectedKonvaNode = null;
 
-            // --- START: Xử lý sự kiện kéo thả mới cho Stage ---
             currentKonvaStage.on('mousedown touchstart', function(e_stage) {
-                let targetShape = e_stage.target;
-                let targetNodeGroup = null;
+                let hitShape = e_stage.target;
+                let determinedTargetNodeGroup = null;
 
-                // Tìm node group cha nếu target là một phần của node
-                if (targetShape !== currentKonvaStage) {
-                    targetNodeGroup = targetShape.getAncestor('.mindmapNodeGroup', true);
-                }
-
-                // Xử lý long press cho context menu (logic hiện tại của bạn)
-                if (e_stage.type === 'touchstart' && targetNodeGroup) {
-                    // (Logic long press của bạn ở đây, cần điều chỉnh để hoạt động với targetNodeGroup nếu cần)
-                    // Ví dụ: touchStartTargetNode = targetNodeGroup; ... setTimeout ...
-                }
-
-
-                if (targetNodeGroup) { // Nếu nhấn vào một node
-                    potentiallyDraggedNode = targetNodeGroup;
-                    dragStartPointerPosition = currentKonvaStage.getPointerPosition();
-                    if (currentKonvaStage.isDragging()) currentKonvaStage.stopDrag(); // Dừng kéo stage nếu đang kéo
-                    currentKonvaStage.draggable(false); // Tạm thời không cho kéo stage
-                } else { // Nếu nhấn vào nền stage
+                if (hitShape === currentKonvaStage) {
                     potentiallyDraggedNode = null;
-                    currentKonvaStage.draggable(true); // Cho phép kéo stage
+                    currentKonvaStage.draggable(true);
+                    clearTimeout(longPressTimeoutId);
+                    touchStartTargetNodeForContextMenu = null;
+                } else {
+                    let currentShape = hitShape;
+                    while (currentShape && currentShape !== currentKonvaStage) {
+                        if (currentShape.hasName && currentShape.hasName('mindmapNodeGroup')) {
+                            determinedTargetNodeGroup = currentShape;
+                            break;
+                        }
+                        // Check if getParent exists before calling it
+                        if (typeof currentShape.getParent !== 'function') {
+                            determinedTargetNodeGroup = null; // Cannot traverse further
+                            break;
+                        }
+                        currentShape = currentShape.getParent();
+                    }
+
+                    if (determinedTargetNodeGroup) {
+                        potentiallyDraggedNode = determinedTargetNodeGroup;
+                        dragStartPointerPosition = currentKonvaStage.getPointerPosition();
+                        if (currentKonvaStage.isDragging()) currentKonvaStage.stopDrag();
+                        currentKonvaStage.draggable(false);
+
+                        if (e_stage.type === 'touchstart') {
+                            touchStartTargetNodeForContextMenu = determinedTargetNodeGroup;
+                            const touch = e_stage.evt.touches && e_stage.evt.touches[0];
+                            if (touch) {
+                                touchStartCoordsForLongPress = { x: touch.pageX, y: touch.pageY };
+                                touchStartPointerPositionForContextMenu = { x: touch.pageX, y: touch.pageY };
+                            } else { // Fallback if touch event is not standard
+                                const pointerPos = currentKonvaStage.getPointerPosition() || {x:0, y:0};
+                                touchStartCoordsForLongPress = pointerPos;
+                                touchStartPointerPositionForContextMenu = pointerPos;
+                            }
+
+                            clearTimeout(longPressTimeoutId);
+                            longPressTimeoutId = setTimeout(() => {
+                                if (touchStartTargetNodeForContextMenu) {
+                                    rightClickedKonvaNode = touchStartTargetNodeForContextMenu;
+                                    if (!selectedKonvaNode || selectedKonvaNode.id() !== rightClickedKonvaNode.id()) {
+                                        if (selectedKonvaNode) { selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1); removeCreationHandle(selectedKonvaNode); }
+                                        selectedKonvaNode = rightClickedKonvaNode;
+                                        selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(3);
+                                        const shape = selectedKonvaNode.findOne('.nodeShape');
+                                        if (shape) addCreationHandle(selectedKonvaNode, shape.height());
+                                        const nodeData = allNodesDataForCurrentMap.find(n => n.id === selectedKonvaNode.id());
+                                        if (nodeData) updateNodeStylePanel(nodeData);
+                                        currentKonvaLayer.batchDraw();
+                                    }
+                                    if (contextMenu && touchStartPointerPositionForContextMenu) {
+                                        contextMenu.style.top = touchStartPointerPositionForContextMenu.y + 'px';
+                                        contextMenu.style.left = touchStartPointerPositionForContextMenu.x + 'px';
+                                        showElement(contextMenu);
+                                        contextMenuJustOpened = true;
+                                    }
+                                    touchStartTargetNodeForContextMenu = null;
+                                    longPressTimeoutId = null;
+                                }
+                            }, LONG_PRESS_DELAY);
+                        }
+                    } else {
+                        potentiallyDraggedNode = null;
+                        currentKonvaStage.draggable(true);
+                        clearTimeout(longPressTimeoutId);
+                        touchStartTargetNodeForContextMenu = null;
+                    }
                 }
             });
 
             currentKonvaStage.on('mousemove touchmove', function(e_stage) {
+                if (touchStartTargetNodeForContextMenu && e_stage.type === 'touchmove') {
+                    const touch = e_stage.evt.touches && e_stage.evt.touches[0];
+                    if (touch) {
+                        const deltaX = Math.abs(touch.pageX - touchStartCoordsForLongPress.x);
+                        const deltaY = Math.abs(touch.pageY - touchStartCoordsForLongPress.y);
+                        if (deltaX > LONG_PRESS_MOVE_THRESHOLD || deltaY > LONG_PRESS_MOVE_THRESHOLD) {
+                            clearTimeout(longPressTimeoutId);
+                            touchStartTargetNodeForContextMenu = null;
+                        }
+                    }
+                }
+
                 if (!potentiallyDraggedNode || !dragStartPointerPosition) {
-                    // Nếu không có node nào được nhấn hoặc không có vị trí bắt đầu, thì không làm gì
-                    // Hoặc nếu stage đang được kéo thì để nó tiếp tục
                     return;
                 }
-
-                // Kiểm tra xem nút chuột có đang được nhấn không (chỉ cho mousemove)
                 if (e_stage.type === 'mousemove' && e_stage.evt.buttons !== 1) {
-                    // Nút chuột không được nhấn, reset
-                    // potentiallyDraggedNode = null; // Để mouseup xử lý
-                    // dragStartPointerPosition = null;
                     return;
                 }
-
                 const currentPointerPosition = currentKonvaStage.getPointerPosition();
-                if (!currentPointerPosition) return; // Không lấy được vị trí con trỏ
-
+                if (!currentPointerPosition) return;
                 const dx = currentPointerPosition.x - dragStartPointerPosition.x;
                 const dy = currentPointerPosition.y - dragStartPointerPosition.y;
 
                 if (Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) {
                     if (potentiallyDraggedNode.draggable() === false) {
                         potentiallyDraggedNode.draggable(true);
-                        // Quan trọng: truyền sự kiện gốc (e_stage.evt) để Konva xử lý pointerId cho touch
                         potentiallyDraggedNode.startDrag(e_stage.evt);
                     }
-                    // Khi đã bắt đầu kéo node, không cần dragStartPointerPosition cho logic này nữa
-                    // Konva sẽ quản lý việc kéo node.
+                    clearTimeout(longPressTimeoutId);
+                    touchStartTargetNodeForContextMenu = null;
                 }
             });
 
             currentKonvaStage.on('mouseup touchend', function(e_stage) {
-                // Nếu một node đang được kéo, sự kiện dragend của node đó sẽ xử lý việc đặt draggable(false)
-                // if (potentiallyDraggedNode && potentiallyDraggedNode.isDragging()) {
-                //    // potentiallyDraggedNode.stopDrag(); // Konva tự xử lý
-                // }
+                clearTimeout(longPressTimeoutId);
+                touchStartTargetNodeForContextMenu = null;
                 potentiallyDraggedNode = null;
                 dragStartPointerPosition = null;
-                currentKonvaStage.draggable(true); // Luôn cho phép kéo stage trở lại sau khi thả chuột
+                currentKonvaStage.draggable(true);
             });
-            // --- END: Xử lý sự kiện kéo thả mới cho Stage ---
 
 
-            currentKonvaStage.on('dragend', saveCanvasState); // Lưu trạng thái canvas khi stage được kéo
+            currentKonvaStage.on('dragend', saveCanvasState);
             currentKonvaStage.on('wheel', (e) => {
                 e.evt.preventDefault(); const oldScale = currentKonvaStage.scaleX();
                 const pointer = currentKonvaStage.getPointerPosition(); if (!pointer) return;
@@ -1021,8 +1072,9 @@
                 const newPos = { x: pointer.x - mousePointTo.x * newScale, y: pointer.y - mousePointTo.y * newScale, };
                 currentKonvaStage.position(newPos); currentKonvaStage.batchDraw(); saveCanvasState();
             });
-            currentKonvaStage.on('click tap', function(e) { // Click/tap trên stage (nền)
-                if (e.target === currentKonvaStage) { // Chỉ xử lý nếu click trực tiếp vào stage
+
+            currentKonvaStage.on('click tap', function(e) {
+                if (e.target === currentKonvaStage) {
                     if (selectedKonvaNode) {
                         selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1);
                         removeCreationHandle(selectedKonvaNode);
@@ -1033,25 +1085,42 @@
                     hideContextMenu();
                 }
             });
-            currentKonvaStage.on('contextmenu', function(e) {
-                e.evt.preventDefault();
-                let targetNodeGroup = e.target;
-                while (targetNodeGroup && targetNodeGroup !== currentKonvaStage && !targetNodeGroup.hasName('mindmapNodeGroup')) { targetNodeGroup = targetNodeGroup.getParent(); }
 
-                if (targetNodeGroup && targetNodeGroup.hasName('mindmapNodeGroup')) {
-                    rightClickedKonvaNode = targetNodeGroup;
+            currentKonvaStage.on('contextmenu', function(e_context) {
+                e_context.evt.preventDefault();
+                if (e_context.evt.pointerType === 'touch') { // Handled by long press
+                    return;
+                }
+
+                let hitShape = e_context.target;
+                let targetNodeGroupForContextMenu = null;
+                let currentShape = hitShape;
+                while (currentShape && currentShape !== currentKonvaStage) {
+                    if (currentShape.hasName && currentShape.hasName('mindmapNodeGroup')) {
+                        targetNodeGroupForContextMenu = currentShape;
+                        break;
+                    }
+                    if (typeof currentShape.getParent !== 'function') {
+                        targetNodeGroupForContextMenu = null; break;
+                    }
+                    currentShape = currentShape.getParent();
+                }
+
+                if (targetNodeGroupForContextMenu) {
+                    rightClickedKonvaNode = targetNodeGroupForContextMenu;
                     if (!selectedKonvaNode || selectedKonvaNode.id() !== rightClickedKonvaNode.id()) {
                         if (selectedKonvaNode) { selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1); removeCreationHandle(selectedKonvaNode); }
-                        selectedKonvaNode = rightClickedKonvaNode; selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(3);
+                        selectedKonvaNode = rightClickedKonvaNode;
+                        selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(3);
                         const shape = selectedKonvaNode.findOne('.nodeShape');
-                        addCreationHandle(selectedKonvaNode, shape.height());
+                         if (shape) addCreationHandle(selectedKonvaNode, shape.height());
                         const nodeData = allNodesDataForCurrentMap.find(n => n.id === selectedKonvaNode.id());
                         if (nodeData) updateNodeStylePanel(nodeData);
                         currentKonvaLayer.batchDraw();
                     }
                     if(contextMenu) {
-                        contextMenu.style.top = e.evt.pageY + 'px';
-                        contextMenu.style.left = e.evt.pageX + 'px';
+                        contextMenu.style.top = e_context.evt.pageY + 'px';
+                        contextMenu.style.left = e_context.evt.pageX + 'px';
                         showElement(contextMenu);
                         contextMenuJustOpened = true;
                     }
@@ -1060,16 +1129,7 @@
                     hideContextMenu();
                 }
             });
-
-            // Logic long-press hiện tại của bạn cho context menu (cần tích hợp hoặc đảm bảo không xung đột)
-            // Bạn có thể cần di chuyển logic long-press vào bên trong handler 'mousedown touchstart' của stage
-            // để nó có thể xác định targetNodeGroup một cách chính xác.
-            // Ví dụ:
-            // let longPressTimeoutId = null; let touchStartTargetNode = null; let touchStartPointerPos = null;
-            // ... (phần còn lại của logic long-press)
-
-
-            loadAndListenNodesForCurrentMap(); // Tải dữ liệu node sau khi stage đã sẵn sàng
+            loadAndListenNodesForCurrentMap();
         }
 
         async function saveCanvasState() {
@@ -1145,8 +1205,7 @@
                 const group = new Konva.Group({
                     x: nodeData.position.x,
                     y: nodeData.position.y,
-                    draggable: false, // --- THAY ĐỔI: Khởi tạo không thể kéo ---
-                    // dragDistance: 30, // --- THAY ĐỔI: Xóa bỏ, sẽ xử lý bằng logic mới ---
+                    draggable: false,
                     id: nodeData.id,
                     name: 'mindmapNodeGroup',
                     fullTextData: fullText
@@ -1236,7 +1295,6 @@
                     });
                 }
 
-                // --- THAY ĐỔI: Cập nhật sự kiện dragend của node ---
                 group.on('dragend', async function() {
                     if(!db) return;
                     try {
@@ -1244,20 +1302,29 @@
                     } catch (e) {
                         console.error("Error updating node position:", e);
                     }
-                    this.draggable(false); // Đặt lại thành không thể kéo sau khi kéo xong
+                    this.draggable(false);
                 });
 
                 group.on('click tap', function(e) {
-                    e.evt.cancelBubble = true; // Ngăn sự kiện click/tap lan ra stage
+                    e.evt.cancelBubble = true;
                     if (isEditingText) return;
                     if (e.target.name() === 'readMoreIndicator') return;
 
-                    // Nếu node này đang được kéo (isDragging() là true), thì không xử lý click/tap nữa
-                    // vì đây là kết thúc của một hành động kéo, không phải click thuần túy.
-                    // Logic mới ở stage sẽ xử lý việc bắt đầu kéo.
-                    if (this.isDragging && this.isDragging()) {
+                    if (this.isDragging && this.isDragging()) { // Check if the group itself is being dragged
                         return;
                     }
+                     // Check if the stage initiated a drag on this node
+                    if (potentiallyDraggedNode === this && (dragStartPointerPosition !== null)) {
+                        // This means a drag was initiated but not enough to pass DRAG_THRESHOLD,
+                        // or it's the end of a drag. We should not treat this as a simple click for selection
+                        // if a drag was intended. The mouseup/touchend on stage will clear dragStartPointerPosition.
+                        // However, if dragStartPointerPosition is null here, it means it was a clean click.
+                        // This check might be tricky. The current logic relies on mouseup/touchend to clear state.
+                        // A simpler check: if a drag has been started on this node by the stage logic,
+                        // the 'click' might be part of that drag sequence.
+                        // The `this.isDragging()` check should ideally cover this if Konva's internal state is set.
+                    }
+
 
                     const isPrimaryInteraction = (e.evt.button === 0 && e.type === 'click') || e.type === 'tap';
 
@@ -1400,8 +1467,8 @@
                 const currentParentShapeForReset = parentNodeGroup.findOne('.nodeShape');
                 if (!currentParentShapeForReset) {
                     console.error("dragend: currentParentShapeForReset is undefined. parentNodeGroup ID:", parentNodeGroup.id());
-                    const groupWidth = parentNodeGroup.width() || DEFAULT_NODE_STYLE.width;
-                    const groupHeight = parentNodeGroup.findOne('.nodeShape')?.height() || DEFAULT_NODE_STYLE.minHeight;
+                    const groupWidth = parentNodeGroup.width() || DEFAULT_NODE_STYLE.width; // Fallback
+                    const groupHeight = parentNodeGroup.findOne('.nodeShape')?.height() || DEFAULT_NODE_STYLE.minHeight; // Fallback
                     this.position({ x: groupWidth / 2, y: groupHeight });
                     currentKonvaLayer.batchDraw();
                     return;
@@ -1795,11 +1862,6 @@
                 case 'ArrowUp': case 'ArrowDown': case 'ArrowLeft': case 'ArrowRight':
                     e.preventDefault();
                     if (selectedKonvaNode) {
-                        // --- THAY ĐỔI: Chỉ di chuyển nếu node có thể kéo (draggable) ---
-                        // Tuy nhiên, với logic mới, node chỉ draggable trong lúc kéo.
-                        // Nên việc di chuyển bằng phím có thể cần node.draggable(true) tạm thời
-                        // Hoặc đơn giản là cập nhật vị trí và lưu.
-                        // Hiện tại, giữ nguyên logic di chuyển bằng phím, không phụ thuộc draggable.
                         let newX = selectedKonvaNode.x(); let newY = selectedKonvaNode.y();
                         if (e.key === 'ArrowUp') newY -= KEYBOARD_MOVE_STEP; else if (e.key === 'ArrowDown') newY += KEYBOARD_MOVE_STEP;
                         else if (e.key === 'ArrowLeft') newX -= KEYBOARD_MOVE_STEP; else if (e.key === 'ArrowRight') newX += KEYBOARD_MOVE_STEP;
