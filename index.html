@@ -264,8 +264,8 @@
             vertical-align: middle;
             margin-right: 5px; 
         }
-        #node-style-panel input[type="number"], #node-style-panel select { /* Áp dụng style cho select */
-            width: auto; /* Để select tự co giãn */
+        #node-style-panel input[type="number"], #node-style-panel select { 
+            width: auto; 
             min-width: 60px;
             padding: 4px; 
             font-size: 0.8em; 
@@ -377,6 +377,21 @@
                                 <option value="roundedRectangle">Bo góc</option>
                             </select>
                         </div>
+                         <div class="style-group">
+                            <label for="node-font-family-select">Font:</label>
+                            <select id="node-font-family-select" title="Font chữ nút">
+                                <option value="Arial">Arial</option>
+                                <option value="Verdana">Verdana</option>
+                                <option value="Tahoma">Tahoma</option>
+                                <option value="Times New Roman">Times New Roman</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Courier New">Courier New</option>
+                            </select>
+                        </div>
+                        <div class="style-group">
+                            <label for="node-font-size-input">Cỡ:</label>
+                            <input type="number" id="node-font-size-input" min="8" max="72" title="Cỡ chữ nút">
+                        </div>
                         <div class="style-group">
                             <label for="node-bg-color">Nền:</label>
                             <input type="color" id="node-bg-color" title="Màu nền nút">
@@ -481,7 +496,8 @@
             backgroundColor: "#e0e0e0", textColor: "#000000", borderColor: "#555555", 
             shape: "rectangle", 
             width: 150, minHeight: 50, padding: 10, 
-            cornerRadius: 5, fontSize: 14, fontFamily: 'Arial',
+            cornerRadius: 5, 
+            fontSize: 14, fontFamily: 'Arial', // Thêm font mặc định
             lineColor: "#888888", lineWidth: 2 
         };
 
@@ -489,6 +505,8 @@
         // --- DOM ELEMENTS ---
         const nodeStylePanel = document.getElementById('node-style-panel');
         const nodeShapeSelect = document.getElementById('node-shape-select'); 
+        const nodeFontFamilySelect = document.getElementById('node-font-family-select'); // Mới
+        const nodeFontSizeInput = document.getElementById('node-font-size-input'); // Mới
         const nodeBgColorInput = document.getElementById('node-bg-color');
         const nodeTextColorInput = document.getElementById('node-text-color');
         const nodeBorderColorInput = document.getElementById('node-border-color');
@@ -731,25 +749,33 @@
                 return;
             }
             const style = nodeData.style;
-            if(nodeShapeSelect) nodeShapeSelect.value = style.shape || 'rectangle'; 
-            if(nodeBgColorInput) nodeBgColorInput.value = style.backgroundColor || '#e0e0e0';
-            if(nodeTextColorInput) nodeTextColorInput.value = style.textColor || '#000000';
-            if(nodeBorderColorInput) nodeBorderColorInput.value = style.borderColor || '#555555'; 
-            if(nodeLineColorInput) nodeLineColorInput.value = style.lineColor || '#888888'; 
-            if(nodeLineWidthInput) nodeLineWidthInput.value = style.lineWidth || 2; 
+            if(nodeShapeSelect) nodeShapeSelect.value = style.shape || DEFAULT_NODE_STYLE.shape; 
+            if(nodeFontFamilySelect) nodeFontFamilySelect.value = style.fontFamily || DEFAULT_NODE_STYLE.fontFamily; // Mới
+            if(nodeFontSizeInput) nodeFontSizeInput.value = style.fontSize || DEFAULT_NODE_STYLE.fontSize; // Mới
+            if(nodeBgColorInput) nodeBgColorInput.value = style.backgroundColor || DEFAULT_NODE_STYLE.backgroundColor;
+            if(nodeTextColorInput) nodeTextColorInput.value = style.textColor || DEFAULT_NODE_STYLE.textColor;
+            if(nodeBorderColorInput) nodeBorderColorInput.value = style.borderColor || DEFAULT_NODE_STYLE.borderColor; 
+            if(nodeLineColorInput) nodeLineColorInput.value = style.lineColor || DEFAULT_NODE_STYLE.lineColor; 
+            if(nodeLineWidthInput) nodeLineWidthInput.value = style.lineWidth || DEFAULT_NODE_STYLE.lineWidth; 
             if(nodeStylePanel) showElement(nodeStylePanel);
         }
 
         async function handleNodeStyleChange(property, value) {
             if (!selectedKonvaNode || !db) return; 
             const nodeId = selectedKonvaNode.id();
-            const processedValue = (property === 'lineWidth') ? parseInt(value, 10) : value;
+            
+            let processedValue = value;
+            if (property === 'lineWidth' || property === 'fontSize') {
+                processedValue = parseInt(value, 10);
+            }
+
 
             try {
                 const nodeRef = doc(db, "nodes", nodeId);
                 const nodeSnap = await getDoc(nodeRef);
                 if (nodeSnap.exists()) {
-                    const existingStyle = nodeSnap.data().style || {};
+                    const existingData = nodeSnap.data();
+                    const existingStyle = existingData.style || {};
                     const updatedStyle = { ...existingStyle, [property]: processedValue };
                     
                     if (property === 'shape') {
@@ -760,6 +786,20 @@
                              updatedStyle.cornerRadius = 5; 
                         }
                     }
+                    
+                    // Khi font hoặc size thay đổi, tính lại chiều cao và lưu
+                    if (property === 'fontFamily' || property === 'fontSize' || property === 'text') { // Thêm 'text' vào đây nếu muốn tính lại height khi text thay đổi từ editTextOnKonvaNode
+                        const tempTextForCalc = new Konva.Text({
+                            text: (property === 'text') ? processedValue : (existingData.text || ''), // Lấy text mới nếu đang thay đổi text
+                            fontSize: (property === 'fontSize') ? processedValue : (updatedStyle.fontSize || DEFAULT_NODE_STYLE.fontSize),
+                            fontFamily: (property === 'fontFamily') ? processedValue : (updatedStyle.fontFamily || DEFAULT_NODE_STYLE.fontFamily),
+                            width: updatedStyle.width || DEFAULT_NODE_STYLE.width - 2 * (updatedStyle.padding || DEFAULT_NODE_STYLE.padding),
+                            align: 'center'
+                        });
+                        const newTextContentHeight = tempTextForCalc.height();
+                        updatedStyle.height = Math.max(updatedStyle.minHeight || DEFAULT_NODE_STYLE.minHeight, newTextContentHeight + 2 * (updatedStyle.padding || DEFAULT_NODE_STYLE.padding));
+                    }
+
 
                     await updateDoc(nodeRef, { style: updatedStyle });
                 } else {
@@ -771,6 +811,8 @@
         }
 
         if (nodeShapeSelect) nodeShapeSelect.addEventListener('change', (e) => handleNodeStyleChange('shape', e.target.value)); 
+        if (nodeFontFamilySelect) nodeFontFamilySelect.addEventListener('change', (e) => handleNodeStyleChange('fontFamily', e.target.value)); // Mới
+        if (nodeFontSizeInput) nodeFontSizeInput.addEventListener('input', (e) => handleNodeStyleChange('fontSize', e.target.value)); // Mới
         if (nodeBgColorInput) nodeBgColorInput.addEventListener('input', (e) => handleNodeStyleChange('backgroundColor', e.target.value));
         if (nodeTextColorInput) nodeTextColorInput.addEventListener('input', (e) => handleNodeStyleChange('textColor', e.target.value));
         if (nodeBorderColorInput) nodeBorderColorInput.addEventListener('input', (e) => handleNodeStyleChange('borderColor', e.target.value));
@@ -814,6 +856,8 @@
                             borderColor: "#0e5aab", 
                             shape: "ellipse", 
                             width: 150, minHeight: 60, padding: 10, 
+                            fontSize: DEFAULT_NODE_STYLE.fontSize, // Thêm fontSize mặc định
+                            fontFamily: DEFAULT_NODE_STYLE.fontFamily, // Thêm fontFamily mặc định
                             lineColor: "#888888", 
                             lineWidth: 2         
                         },
@@ -1059,7 +1103,7 @@
             if (!currentKonvaLayer) return;
             currentKonvaLayer.destroyChildren(); 
             const konvaNodeObjects = {};
-            // const defaultNodeStyle đã được định nghĩa ở global
+            // const DEFAULT_NODE_STYLE đã được định nghĩa ở global
 
             nodesData.forEach(nodeData => {
                 if (!nodeData.position || typeof nodeData.position.x !== 'number' || typeof nodeData.position.y !== 'number') {
@@ -1067,7 +1111,7 @@
                     return; 
                 }
 
-                const style = { ...DEFAULT_NODE_STYLE, ...(nodeData.style || {}) }; // Sử dụng DEFAULT_NODE_STYLE
+                const style = { ...DEFAULT_NODE_STYLE, ...(nodeData.style || {}) }; 
                 const textPadding = style.padding;
 
                 const tempText = new Konva.Text({
@@ -1357,7 +1401,9 @@
                             cornerRadius: 3,
                             lineColor: "#888888", 
                             lineWidth: 2,
-                            shape: "rectangle" 
+                            shape: "rectangle",
+                            fontSize: DEFAULT_NODE_STYLE.fontSize, // Thêm font mặc định
+                            fontFamily: DEFAULT_NODE_STYLE.fontFamily
                         },
                         createdAt: serverTimestamp()
                     };
@@ -1437,9 +1483,7 @@
                 if (textarea.parentNode) { 
                     textarea.parentNode.removeChild(textarea);
                 }
-                // konvaTextNode.text(newText); // Không cập nhật trực tiếp, để onSnapshot làm
                 
-                // Lấy style hiện tại từ Firestore hoặc default để tính toán
                 const nodeRef = doc(db, "nodes", konvaGroup.id());
                 const nodeSnap = await getDoc(nodeRef);
                 let currentStyleForCalc = DEFAULT_NODE_STYLE;
@@ -1457,19 +1501,7 @@
                 });
                 const newTextContentHeight = tempTextForHeightCalc.height();
                 const newFinalShapeHeight = Math.max(currentStyleForCalc.minHeight, newTextContentHeight + 2 * currentStyleForCalc.padding);
-
-                // konvaTextNode.y((newFinalShapeHeight - newTextContentHeight) / 2); // Để onSnapshot làm
-                // const shape = konvaGroup.findOne('.nodeShape'); // Để onSnapshot làm
-                // if(shape) {
-                //     shape.height(newFinalShapeHeight);
-                //     if (shape.getClassName() === 'Ellipse') {
-                //         shape.radiusY(newFinalShapeHeight / 2);
-                //         shape.y(newFinalShapeHeight / 2); 
-                //     }
-                // }
                 
-                // konvaTextNode.show(); // Để onSnapshot làm
-                // currentKonvaLayer.batchDraw(); // Để onSnapshot làm
                 window.removeEventListener('click', handleOutsideClick); 
                 isEditingText = false; 
 
@@ -1481,11 +1513,13 @@
                     };
                     await updateDoc(nodeRef, updatedNodeData);
                     console.log("Node text and style.height updated in Firestore.");
+                    // onSnapshot sẽ render lại, không cần cập nhật Konva objects ở đây nữa
                 } catch (e) { 
                     console.error("Error updating node text and height in Firestore:", e); 
-                    // Nếu lỗi, có thể cần hiện lại text cũ trên Konva (nếu đã ẩn)
+                    // Nếu lỗi, onSnapshot sẽ không chạy, cần hiện lại text cũ
                     const originalKonvaTextNode = konvaGroup.findOne('Text');
                      if (originalKonvaTextNode) {
+                        originalKonvaTextNode.text(textarea.value); // Hoặc text cũ trước khi sửa
                         originalKonvaTextNode.show();
                         currentKonvaLayer.batchDraw();
                     }
@@ -1498,7 +1532,7 @@
                  if (textarea.parentNode) {
                     textarea.parentNode.removeChild(textarea);
                 }
-                const originalKonvaTextNode = konvaGroup.findOne('Text'); // Lấy lại tham chiếu có thể đã được render lại
+                const originalKonvaTextNode = konvaGroup.findOne('Text'); 
                 if (originalKonvaTextNode) {
                     originalKonvaTextNode.show();
                 }
@@ -1592,7 +1626,9 @@
                     width: 120, minHeight: 40, padding: 10, 
                     cornerRadius: 3,
                     lineColor: "#888888", lineWidth: 2,
-                    shape: "rectangle" 
+                    shape: "rectangle",
+                    fontSize: DEFAULT_NODE_STYLE.fontSize, 
+                    fontFamily: DEFAULT_NODE_STYLE.fontFamily
                 },
                 createdAt: serverTimestamp()
             };
