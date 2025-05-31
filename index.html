@@ -6,35 +6,35 @@
     <title>Sơ đồ tư duy MVP - Firebase</title>
     <script src="https://unpkg.com/konva@9.3.6/konva.min.js"></script>
     <style>
-        html, body { /* Thêm html để đảm bảo full height */
+        html, body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
             padding: 0;
             background-color: #f0f2f5;
             color: #1c1e21;
-            height: 100%; /* Đảm bảo body chiếm toàn bộ chiều cao viewport */
-            overflow: hidden; /* Ngăn scrollbar không mong muốn ở body */
+            height: 100%; 
+            overflow: hidden; 
         }
         #app-root {
             display: flex;
             flex-direction: column;
             height: 100%;
         }
-        .container { /* Container chung cho auth và main app */
+        .container { 
             width: 100%;
-            padding: 0; /* Bỏ padding mặc định của container */
+            padding: 0; 
             background-color: #fff;
-            box-shadow: none; /* Bỏ box-shadow nếu không cần thiết cho chế độ toàn màn hình */
-            flex-grow: 1; /* Cho phép container chính của app chiếm không gian còn lại */
-            display: flex; /* Để dễ dàng quản lý layout bên trong */
+            box-shadow: none; 
+            flex-grow: 1; 
+            display: flex; 
             flex-direction: column;
         }
         /* --- AUTH SECTION --- */
-        #auth-section { /* Vẫn giữ padding cho auth section */
+        #auth-section { 
             padding: 20px;
-            max-width: 450px; /* Giới hạn chiều rộng cho form auth */
-            margin: auto; /* Căn giữa form auth */
-            flex-grow: 0; /* Không cho auth section co giãn */
+            max-width: 450px; 
+            margin: auto; 
+            flex-grow: 0; 
         }
         .form-container {
             max-width: 400px;
@@ -57,24 +57,25 @@
             font-size: 16px;
         }
         input[type="number"] { 
-            width: 60px;
-            padding: 8px;
-            margin-left: 5px;
-            margin-right: 15px;
+            width: 50px; /* Giảm chiều rộng */
+            padding: 6px; /* Giảm padding */
+            margin-left: 3px; /* Giảm margin */
+            margin-right: 10px; /* Giảm margin */
             border: 1px solid #dddfe2;
             border-radius: 4px;
-            font-size: 14px;
+            font-size: 13px; /* Giảm font */
+            text-align: center;
         }
         button {
-            padding: 10px 15px;
-            font-size: 16px;
+            padding: 8px 12px; /* Giảm padding nút chung */
+            font-size: 14px; /* Giảm font nút chung */
             font-weight: bold;
             background-color: #1877f2;
             color: white;
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            margin-right: 8px;
+            margin-right: 6px; /* Giảm margin */
             transition: background-color 0.3s;
         }
         button:hover {
@@ -115,48 +116,47 @@
         #main-app-section {
             display: flex;
             flex-direction: column;
-            height: 100%; /* Cho main-app-section chiếm toàn bộ chiều cao của container cha */
-            padding: 10px; /* Giảm padding để tối đa không gian */
-            box-sizing: border-box; /* Đảm bảo padding không làm tăng kích thước */
+            height: 100%; 
+            padding: 8px; /* Giảm padding */
+            box-sizing: border-box; 
         }
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-bottom: 10px; /* Giảm padding */
-            margin-bottom: 10px; /* Giảm margin */
+            padding-bottom: 8px; 
+            margin-bottom: 8px; 
             border-bottom: 1px solid #dddfe2;
-            flex-shrink: 0; /* Không cho header co lại */
+            flex-shrink: 0; 
         }
         header h1 {
             color: #1c1e21;
-            font-size: 20px; /* Giảm kích thước font */
+            font-size: 18px; 
             margin: 0;
         }
         #user-info span {
-            margin-right: 10px;
-            font-size: 0.9em;
+            margin-right: 8px; /* Giảm margin */
+            font-size: 0.85em; /* Giảm font */
         }
-        #mindmap-management-view { /* Sửa lại để không chiếm toàn bộ không gian khi canvas hiển thị */
-             /* flex-grow: 1; */ /* Bỏ flex-grow để không chiếm không gian khi ẩn */
+        #mindmap-management-view { 
              display: flex;
              flex-direction: column;
         }
         #mindmap-management, #canvas-view {
-            margin-bottom: 10px; /* Giảm margin */
+            margin-bottom: 8px; 
         }
         #mindmap-list-container{
             flex-grow: 1;
-            overflow-y: auto; /* Cho phép cuộn nếu danh sách dài */
+            overflow-y: auto; 
         }
         #mindmap-list {
             list-style: none;
             padding: 0;
         }
         #mindmap-list li {
-            padding: 10px; /* Giảm padding */
+            padding: 8px; 
             border: 1px solid #dddfe2;
-            margin-bottom: 5px; /* Giảm margin */
+            margin-bottom: 4px; 
             cursor: pointer;
             border-radius: 6px;
             display: flex;
@@ -169,25 +169,45 @@
         }
 
         #canvas-view {
-            flex-grow: 1; /* Cho phép canvas view chiếm không gian còn lại */
+            flex-grow: 1; 
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* Ngăn canvas view tạo scrollbar */
+            overflow: hidden; 
         }
         #canvas-toolbar {
-            padding: 8px 5px; /* Giảm padding */
-            margin-bottom: 5px; /* Giảm margin */
+            display: flex; /* Sử dụng flexbox cho toolbar */
+            align-items: center; /* Căn giữa các item theo chiều dọc */
+            flex-wrap: wrap; /* Cho phép xuống dòng nếu không đủ chỗ */
+            padding: 6px 5px; 
+            margin-bottom: 5px; 
             border-bottom: 1px solid #ccd0d5; 
-            flex-shrink: 0; /* Không cho toolbar co lại */
+            flex-shrink: 0; 
+        }
+        #canvas-toolbar .toolbar-group { /* Nhóm các nút điều khiển */
+            display: flex;
+            align-items: center;
+            margin-right: 10px; /* Khoảng cách giữa các nhóm */
+        }
+        #canvas-toolbar .toolbar-group:last-child {
+            margin-right: 0;
         }
         #canvas-toolbar h2 {
-            margin: 0 0 5px 0; /* Giảm margin */
-            font-size: 18px; /* Giảm font */
+            margin: 0 10px 0 0; /* Bỏ margin bottom, thêm margin right */
+            font-size: 16px; 
+            font-weight: 500; /* Giảm độ đậm */
+            white-space: nowrap; /* Không xuống dòng tiêu đề */
+            overflow: hidden;
+            text-overflow: ellipsis; /* Hiển thị ... nếu quá dài */
+            max-width: 200px; /* Giới hạn chiều rộng tiêu đề */
+        }
+        #back-to-maps-list-button { /* Style cho nút icon */
+            padding: 6px 8px; /* Giảm padding cho nút icon */
+            font-size: 18px; /* Kích thước icon */
+            line-height: 1;
         }
         #konva-container {
             width: 100%;
-            /* height: calc(100% - 50px); */ /* Chiều cao canvas tính toán dựa trên toolbar, cần điều chỉnh */
-            flex-grow: 1; /* Cho konva container chiếm không gian còn lại trong canvas-view */
+            flex-grow: 1; 
             background-color: #f7f7f7; 
             border: 1px solid #ccd0d5; 
             border-radius: 6px;
@@ -204,20 +224,22 @@
         }
         /* Node Style Panel */
         #node-style-panel {
-            margin-top: 5px; /* Giảm margin */
-            padding: 8px; /* Giảm padding */
+            margin-top: 5px; 
+            padding: 8px; 
             background-color: #f9f9f9;
             border: 1px solid #e0e0e0;
             border-radius: 4px;
+            width: 100%; /* Cho panel style chiếm toàn bộ chiều rộng còn lại */
+            box-sizing: border-box;
         }
         #node-style-panel h5 { 
-            margin: 3px 0; /* Giảm margin */
-            font-size: 0.9em; /* Giảm font */
+            margin: 3px 0; 
+            font-size: 0.9em; 
             color: #606770;
         }
         #node-style-panel label {
-            margin-right: 3px; /* Giảm margin */
-            font-size: 0.85em; /* Giảm font */
+            margin-right: 3px; 
+            font-size: 0.85em; 
             vertical-align: middle;
         }
         #node-style-panel input[type="color"] {
@@ -230,12 +252,14 @@
             margin-right: 8px; 
         }
         #node-style-panel input[type="number"] {
-            width: 50px; /* Giảm chiều rộng */
-            padding: 5px; /* Giảm padding */
-            font-size: 0.85em; /* Giảm font */
+            width: 50px; 
+            padding: 5px; 
+            font-size: 0.85em; 
         }
         .style-group { 
-            margin-bottom: 5px; /* Giảm margin */
+            margin-bottom: 5px; 
+            display: inline-block; /* Cho các group style nằm trên cùng dòng */
+            margin-right: 10px;
         }
         /* Context Menu */
         #context-menu {
@@ -308,15 +332,24 @@
 
             <div id="canvas-view" class="hidden">
                 <div id="canvas-toolbar">
-                    <button id="back-to-maps-list-button" class="secondary">&larr; Quay lại danh sách</button>
-                    <h2 id="current-mindmap-title-display" style="display: inline-block; margin-left: 15px;"></h2>
-                    <hr style="margin: 10px 0;">
-                    <button id="add-child-node-button">Thêm Nút Con (Click)</button> 
-                    <button id="delete-node-button" class="danger">Xóa Nút</button>
-                    <span style="margin-left: 20px;">Zoom:</span>
-                    <button id="zoom-in-button" class="secondary">+</button>
-                    <button id="zoom-out-button" class="secondary">-</button>
-                    <button id="reset-zoom-button" class="secondary">Reset</button>
+                    <div class="toolbar-group">
+                        <button id="back-to-maps-list-button" class="secondary" title="Quay lại danh sách">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left-short" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M12 8a.5.5 0 0 1-.5.5H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5a.5.5 0 0 1 .5.5z"/>
+                            </svg>
+                        </button>
+                        <h2 id="current-mindmap-title-display"></h2>
+                    </div>
+                    <div class="toolbar-group">
+                        <button id="add-child-node-button" title="Thêm nút con (Click)">Thêm Nút</button> 
+                        <button id="delete-node-button" class="danger" title="Xóa nút đã chọn">Xóa Nút</button>
+                    </div>
+                    <div class="toolbar-group">
+                        <span style="font-size:0.9em;">Zoom:</span>
+                        <button id="zoom-in-button" class="secondary" title="Phóng to">+</button>
+                        <button id="zoom-out-button" class="secondary" title="Thu nhỏ">-</button>
+                        <button id="reset-zoom-button" class="secondary" title="Reset zoom">Reset</button>
+                    </div>
                     
                     <div id="node-style-panel" class="hidden">
                         <h5>Kiểu Nút:</h5>
@@ -887,7 +920,6 @@
                 e.evt.preventDefault(); 
                 
                 let targetNodeGroup = e.target;
-                // Lặp để tìm group cha có name là 'mindmapNodeGroup'
                 while (targetNodeGroup && targetNodeGroup !== currentKonvaStage && !targetNodeGroup.hasName('mindmapNodeGroup')) {
                     targetNodeGroup = targetNodeGroup.getParent();
                 }
@@ -895,7 +927,6 @@
                 if (targetNodeGroup && targetNodeGroup.hasName('mindmapNodeGroup')) {
                     rightClickedKonvaNode = targetNodeGroup; 
                     
-                    // Tự động chọn node được nhấp chuột phải
                     if (!selectedKonvaNode || selectedKonvaNode.id() !== rightClickedKonvaNode.id()) {
                         if (selectedKonvaNode) { 
                             selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1);
