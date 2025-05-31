@@ -49,7 +49,7 @@
             border-radius: 6px;
             font-size: 16px;
         }
-        input[type="number"] { /* Thêm style cho input number */
+        input[type="number"] { 
             width: 60px;
             padding: 8px;
             margin-left: 5px;
@@ -200,6 +200,29 @@
         .style-group { 
             margin-bottom: 8px;
         }
+        /* Context Menu */
+        #context-menu {
+            position: absolute;
+            z-index: 1000;
+            background-color: white;
+            border: 1px solid #ccc;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+            border-radius: 4px;
+            padding: 5px 0;
+        }
+        #context-menu ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        #context-menu li {
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        #context-menu li:hover {
+            background-color: #f0f0f0;
+        }
     </style>
 </head>
 <body>
@@ -251,7 +274,8 @@
                     <button id="back-to-maps-list-button" class="secondary">&larr; Quay lại danh sách</button>
                     <h2 id="current-mindmap-title-display" style="display: inline-block; margin-left: 15px;"></h2>
                     <hr style="margin: 10px 0;">
-                    <button id="add-child-node-button">Thêm Nút Con (Click)</button> <button id="delete-node-button" class="danger">Xóa Nút</button>
+                    <button id="add-child-node-button">Thêm Nút Con (Click)</button> 
+                    <button id="delete-node-button" class="danger">Xóa Nút</button>
                     <span style="margin-left: 20px;">Zoom:</span>
                     <button id="zoom-in-button" class="secondary">+</button>
                     <button id="zoom-out-button" class="secondary">-</button>
@@ -280,6 +304,14 @@
                 <div id="konva-container"></div>
             </div>
         </section>
+
+        <div id="context-menu" class="hidden">
+            <ul>
+                <li id="ctx-add-child">Thêm nút con</li>
+                <li id="ctx-edit-text">Sửa văn bản</li>
+                <li id="ctx-delete-node">Xóa nút</li>
+            </ul>
+        </div>
     </div>
 
     <script type="module">
@@ -343,7 +375,8 @@
         let mindmapNodesUnsubscribe = null; 
         let allNodesDataForCurrentMap = []; 
         let mindmapDataUnsubscribe = null; 
-        let tempCreationLine = null; // Đường line tạm thời khi kéo tạo nút
+        let tempCreationLine = null; 
+        let rightClickedKonvaNode = null; // Node được nhấp chuột phải
 
         // --- DOM ELEMENTS ---
         const nodeStylePanel = document.getElementById('node-style-panel');
@@ -352,6 +385,12 @@
         const nodeBorderColorInput = document.getElementById('node-border-color');
         const nodeLineColorInput = document.getElementById('node-line-color'); 
         const nodeLineWidthInput = document.getElementById('node-line-width'); 
+
+        // Context Menu Elements
+        const contextMenu = document.getElementById('context-menu');
+        const ctxAddChildButton = document.getElementById('ctx-add-child');
+        const ctxEditTextButton = document.getElementById('ctx-edit-text');
+        const ctxDeleteNodeButton = document.getElementById('ctx-delete-node');
 
 
         // Auth
@@ -504,6 +543,7 @@
                     hideElement(mainAppSection);
                     hideElement(canvasView);
                     if(nodeStylePanel) hideElement(nodeStylePanel); 
+                    if(contextMenu) hideElement(contextMenu); // Ẩn context menu khi logout
                     if(mindmapListUl) mindmapListUl.innerHTML = '';
                 }
             });
@@ -516,8 +556,10 @@
             showElement(mindmapManagementView);
             hideElement(canvasView);
             if(nodeStylePanel) hideElement(nodeStylePanel); 
+            if(contextMenu) hideElement(contextMenu);
             currentMindMapId = null; 
             selectedKonvaNode = null;
+            rightClickedKonvaNode = null;
             if (mindmapNodesUnsubscribe) {
                 mindmapNodesUnsubscribe(); 
                 mindmapNodesUnsubscribe = null;
@@ -562,6 +604,7 @@
             
             loadAndListenNodesForCurrentMap();
             hideElement(nodeStylePanel); 
+            hideElement(contextMenu);
         }
 
         if (backToMapsListButton) {
@@ -584,7 +627,7 @@
         }
 
         async function handleNodeStyleChange(property, value) {
-            if (!selectedKonvaNode || !db) return;
+            if (!selectedKonvaNode || !db) return; // Sử dụng selectedKonvaNode thay vì rightClickedKonvaNode ở đây
             const nodeId = selectedKonvaNode.id();
             const processedValue = (property === 'lineWidth') ? parseInt(value, 10) : value;
 
@@ -741,7 +784,7 @@
         // --- FIRESTORE SERVICE LOGIC (Nodes) & KONVA INTEGRATION ---
         function initKonvaStage() {
             if (currentKonvaStage) {
-                currentKonvaStage.off('dragstart dragmove dragend click tap wheel'); // Hủy các event listener cũ
+                currentKonvaStage.off('dragstart dragmove dragend click tap wheel contextmenu'); // Hủy các event listener cũ
                 currentKonvaStage.destroy(); 
                 currentKonvaStage = null;
             }
@@ -770,11 +813,12 @@
                 e.evt.preventDefault();
                 const oldScale = currentKonvaStage.scaleX();
                 const pointer = currentKonvaStage.getPointerPosition();
+                if (!pointer) return; // Thêm kiểm tra pointer
                 const mousePointTo = {
                     x: (pointer.x - currentKonvaStage.x()) / oldScale,
                     y: (pointer.y - currentKonvaStage.y()) / oldScale,
                 };
-                const direction = e.evt.deltaY > 0 ? -1 : 1; // -1 for zoom out, 1 for zoom in
+                const direction = e.evt.deltaY > 0 ? -1 : 1; 
                 const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
 
                 currentKonvaStage.scale({ x: newScale, y: newScale });
@@ -790,14 +834,43 @@
 
 
             currentKonvaStage.on('click tap', function(e) {
-                if (e.target === currentKonvaStage) {
+                if (e.target === currentKonvaStage) { // Click vào vùng trống
                     if (selectedKonvaNode) {
                         selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1);
-                        removeCreationHandle(selectedKonvaNode); // Xóa handle của node cũ
+                        removeCreationHandle(selectedKonvaNode); 
                         selectedKonvaNode = null;
                         if(nodeStylePanel) hideElement(nodeStylePanel); 
                         currentKonvaLayer.batchDraw();
                     }
+                    if(contextMenu) hideElement(contextMenu); // Ẩn context menu khi click ra ngoài
+                }
+            });
+
+            // Context Menu event listener for Stage
+            currentKonvaStage.on('contextmenu', function(e) {
+                e.evt.preventDefault(); // Ngăn menu mặc định của trình duyệt
+                if (e.target.hasName('mindmapNodeGroup')) {
+                    rightClickedKonvaNode = e.target; // Node group được nhấp chuột phải
+                    
+                    // Chọn node này luôn
+                    if (selectedKonvaNode && selectedKonvaNode !== rightClickedKonvaNode) {
+                        selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1);
+                        removeCreationHandle(selectedKonvaNode);
+                    }
+                    selectedKonvaNode = rightClickedKonvaNode;
+                    selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(3);
+                    addCreationHandle(selectedKonvaNode);
+                    const nodeData = allNodesDataForCurrentMap.find(n => n.id === selectedKonvaNode.id());
+                    if (nodeData) updateNodeStylePanel(nodeData);
+                    currentKonvaLayer.batchDraw();
+
+
+                    contextMenu.style.top = e.evt.pageY + 'px';
+                    contextMenu.style.left = e.evt.pageX + 'px';
+                    showElement(contextMenu);
+                } else {
+                    rightClickedKonvaNode = null; // Không nhấp vào node
+                    hideElement(contextMenu);
                 }
             });
         }
@@ -852,7 +925,7 @@
 
         function renderNodesAndLines(nodesData) {
             if (!currentKonvaLayer) return;
-            currentKonvaLayer.destroyChildren(); // Xóa mọi thứ để vẽ lại, bao gồm cả handle cũ
+            currentKonvaLayer.destroyChildren(); 
             const konvaNodeObjects = {};
 
             nodesData.forEach(nodeData => {
@@ -872,9 +945,9 @@
                 const group = new Konva.Group({
                     x: nodeData.position.x,
                     y: nodeData.position.y,
-                    draggable: true, // Node group vẫn draggable để di chuyển
+                    draggable: true, 
                     id: nodeData.id,
-                    name: 'mindmapNodeGroup' // Để phân biệt với các group khác
+                    name: 'mindmapNodeGroup' 
                 });
 
                 let shape;
@@ -884,7 +957,7 @@
                         radiusY: style.height / 2,
                         fill: style.backgroundColor,
                         stroke: style.borderColor, 
-                        strokeWidth: 1, // Sẽ cập nhật khi chọn
+                        strokeWidth: 1, 
                         name: 'nodeShape' 
                     });
                 } else {
@@ -893,7 +966,7 @@
                         height: style.height,
                         fill: style.backgroundColor,
                         stroke: style.borderColor, 
-                        strokeWidth: 1, // Sẽ cập nhật khi chọn
+                        strokeWidth: 1, 
                         cornerRadius: style.cornerRadius,
                         name: 'nodeShape' 
                     });
@@ -910,7 +983,7 @@
                     padding: 10,
                     align: 'center',
                     verticalAlign: 'middle',
-                    listening: false // Để click xuyên qua text tới group
+                    listening: false 
                 });
                 group.add(text);
 
@@ -927,26 +1000,27 @@
                     e.evt.cancelBubble = true; 
                     if (selectedKonvaNode && selectedKonvaNode !== this) {
                         selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1);
-                        removeCreationHandle(selectedKonvaNode); // Xóa handle của node cũ
+                        removeCreationHandle(selectedKonvaNode); 
                     }
                     selectedKonvaNode = this;
                     this.findOne('.nodeShape')?.strokeWidth(3);
-                    addCreationHandle(this); // Thêm handle cho node mới chọn
+                    addCreationHandle(this); 
                     
                     const clickedNodeData = allNodesDataForCurrentMap.find(n => n.id === this.id());
                     if(clickedNodeData) updateNodeStylePanel(clickedNodeData);
 
                     currentKonvaLayer.batchDraw();
+                    hideElement(contextMenu); // Ẩn context menu khi click chọn node
                 });
 
                 group.on('dblclick dbltap', function() {
                     editTextOnKonvaNode(this, text);
+                    hideElement(contextMenu); // Ẩn context menu khi double click
                 });
 
                 konvaNodeObjects[nodeData.id] = group;
                 currentKonvaLayer.add(group);
 
-                // Nếu node này đang được chọn, vẽ lại highlight và handle
                 if (selectedKonvaNode && selectedKonvaNode.id() === nodeData.id) {
                     shape.strokeWidth(3);
                     addCreationHandle(group);
@@ -991,23 +1065,21 @@
         const HANDLE_STROKE = 'rgba(0,100,0,0.9)';
 
         function addCreationHandle(parentNodeGroup) {
-            if (!parentNodeGroup || parentNodeGroup.findOne('.creationHandle')) return; // Không thêm nếu đã có
+            if (!parentNodeGroup || parentNodeGroup.findOne('.creationHandle')) return; 
 
             const parentShape = parentNodeGroup.findOne('.nodeShape');
             if (!parentShape) return;
 
             const handle = new Konva.Circle({
-                x: parentShape.width() / 2, // Vị trí tương đối với group cha
-                y: parentShape.height(),    // Ở giữa cạnh dưới
+                x: parentShape.width() / 2, 
+                y: parentShape.height(),    
                 radius: HANDLE_RADIUS,
                 fill: HANDLE_FILL,
                 stroke: HANDLE_STROKE,
                 strokeWidth: 1,
-                draggable: true, // Handle này có thể kéo
+                draggable: true, 
                 name: 'creationHandle',
                 dragBoundFunc: function(pos) {
-                    // Giới hạn kéo handle trong phạm vi stage nếu cần, hoặc không giới hạn
-                    // Chuyển đổi vị trí tuyệt đối của handle về vị trí tương đối với group cha
                     const parentAbsPos = parentNodeGroup.getAbsolutePosition();
                     return {
                         x: pos.x - parentAbsPos.x,
@@ -1017,28 +1089,28 @@
             });
 
             parentNodeGroup.add(handle);
-            parentNodeGroup.creationHandle = handle; // Lưu tham chiếu
+            parentNodeGroup.creationHandle = handle; 
 
             handle.on('dragstart', function(e) {
-                e.evt.cancelBubble = true; // Ngăn group cha bị kéo
+                e.evt.cancelBubble = true; 
                 if (!currentKonvaLayer || !selectedKonvaNode) return;
 
                 const parentStyle = allNodesDataForCurrentMap.find(n => n.id === selectedKonvaNode.id())?.style || {};
-                const lineColor = parentStyle.lineColor || '#007bff'; // Màu đường tạm
+                const lineColor = parentStyle.lineColor || '#007bff'; 
                 const lineWidth = parentStyle.lineWidth || 2;
 
                 tempCreationLine = new Konva.Line({
                     points: [
-                        selectedKonvaNode.findOne('.nodeShape').width() / 2, // Bắt đầu từ tâm của nút cha (tương đối với group cha)
+                        selectedKonvaNode.findOne('.nodeShape').width() / 2, 
                         selectedKonvaNode.findOne('.nodeShape').height() / 2,
-                        this.x(), // Đến vị trí hiện tại của handle (tương đối với group cha)
+                        this.x(), 
                         this.y()
                     ],
                     stroke: lineColor,
                     strokeWidth: lineWidth,
-                    dash: [5, 5] // Nét đứt cho đường tạm
+                    dash: [5, 5] 
                 });
-                selectedKonvaNode.add(tempCreationLine); // Thêm đường tạm vào group cha
+                selectedKonvaNode.add(tempCreationLine); 
                 currentKonvaLayer.batchDraw();
             });
 
@@ -1060,22 +1132,18 @@
                     tempCreationLine = null;
                 }
                 
-                // Vị trí cuối cùng của handle (tương đối với group cha)
                 const handleFinalRelativeX = this.x();
                 const handleFinalRelativeY = this.y();
 
-                // Chuyển đổi thành vị trí tuyệt đối trên stage cho nút con mới
                 const parentAbsPos = selectedKonvaNode.getAbsolutePosition();
                 const newNodeAbsX = parentAbsPos.x + handleFinalRelativeX;
                 const newNodeAbsY = parentAbsPos.y + handleFinalRelativeY;
 
-                // Reset vị trí handle về vị trí ban đầu của nó
                 this.position({ 
                     x: selectedKonvaNode.findOne('.nodeShape').width() / 2, 
                     y: selectedKonvaNode.findOne('.nodeShape').height() 
                 });
 
-                // Tạo nút con mới tại vị trí đó
                 if (currentMindMapId && db && selectedKonvaNode) {
                     const defaultChildWidth = 120;
                     const defaultChildHeight = 40;
@@ -1083,7 +1151,7 @@
                         mapId: currentMindMapId,
                         parentId: selectedKonvaNode.id(),
                         text: "Nút mới (kéo)",
-                        position: { // Vị trí của nút con mới (top-left)
+                        position: { 
                             x: newNodeAbsX - defaultChildWidth / 2,
                             y: newNodeAbsY - defaultChildHeight / 2
                         },
@@ -1101,7 +1169,6 @@
                     };
                     try {
                         await addDoc(collection(db, "nodes"), newNodeData);
-                        // onSnapshot sẽ tự động render lại
                     } catch (err) {
                         console.error("Error creating child node by dragging:", err);
                         alert("Lỗi khi tạo nút con: " + err.message);
@@ -1202,7 +1269,87 @@
             }, 0);
         }
 
-        if (addChildNodeButton) { // Nút "Thêm Nút Con (Click)" vẫn giữ lại
+        // --- CONTEXT MENU ACTIONS ---
+        if (ctxAddChildButton) {
+            ctxAddChildButton.addEventListener('click', async () => {
+                if (!rightClickedKonvaNode || !currentMindMapId || !db) {
+                    alert("Không thể thêm nút con. Vui lòng thử lại.");
+                    hideElement(contextMenu);
+                    return;
+                }
+                // Sử dụng logic tương tự như addChildNodeButton nhưng với rightClickedKonvaNode
+                const parentKonvaNode = rightClickedKonvaNode;
+                const parentShape = parentKonvaNode.findOne('.nodeShape');
+                const parentWidth = parentShape?.width() || (parentShape?.radiusX && parentShape.radiusX() * 2) || 150;
+                const parentHeight = parentShape?.height() || (parentShape?.radiusY && parentShape.radiusY() * 2) || 50;
+
+                const newNodeData = {
+                    mapId: currentMindMapId,
+                    parentId: parentKonvaNode.id(),
+                    text: "Nút con (menu)",
+                    position: {
+                        x: parentKonvaNode.x() + parentWidth / 2 + 20, // Vị trí khác một chút
+                        y: parentKonvaNode.y() + parentHeight + 40
+                    },
+                    style: { 
+                        backgroundColor: "#fafafa", textColor: "#444444", borderColor: "#dddddd", 
+                        width: 110, height: 35, cornerRadius: 3,
+                        lineColor: "#999999", lineWidth: 1.5 
+                    },
+                    createdAt: serverTimestamp()
+                };
+                try {
+                    await addDoc(collection(db, "nodes"), newNodeData);
+                } catch (e) { console.error("Error adding child node from context menu:", e); }
+                hideElement(contextMenu);
+            });
+        }
+
+        if (ctxEditTextButton) {
+            ctxEditTextButton.addEventListener('click', () => {
+                if (rightClickedKonvaNode) {
+                    const textNode = rightClickedKonvaNode.findOne('Text');
+                    if (textNode) {
+                        editTextOnKonvaNode(rightClickedKonvaNode, textNode);
+                    }
+                }
+                hideElement(contextMenu);
+            });
+        }
+
+        if (ctxDeleteNodeButton) {
+            ctxDeleteNodeButton.addEventListener('click', async () => {
+                if (!rightClickedKonvaNode || !currentMindMapId || !db) {
+                     alert("Không thể xóa nút. Vui lòng thử lại.");
+                     hideElement(contextMenu);
+                     return;
+                }
+                const nodeIdToDelete = rightClickedKonvaNode.id();
+                const konvaTextNode = rightClickedKonvaNode.findOne('Text');
+                const nodeTextToDelete = konvaTextNode ? konvaTextNode.text() : "Không có tiêu đề";
+
+                if (confirm(`Bạn có chắc muốn xóa nút "${nodeTextToDelete}"? (Chỉ xóa nút này)`)) {
+                    try {
+                        await deleteDoc(doc(db, "nodes", nodeIdToDelete));
+                        if (selectedKonvaNode && selectedKonvaNode.id() === nodeIdToDelete) {
+                            selectedKonvaNode = null;
+                            if(nodeStylePanel) hideElement(nodeStylePanel);
+                        }
+                        rightClickedKonvaNode = null; 
+                    } catch (e) { console.error("Error deleting node from context menu:", e); }
+                }
+                hideElement(contextMenu);
+            });
+        }
+        // Ẩn context menu khi click bất kỳ đâu trên document
+        document.addEventListener('click', function (e) {
+            if (contextMenu && !contextMenu.contains(e.target)) {
+                hideElement(contextMenu);
+            }
+        });
+
+
+        if (addChildNodeButton) { 
             addChildNodeButton.addEventListener('click', async () => {
                 if (!selectedKonvaNode) {
                     alert("Vui lòng chọn một nút cha để thêm nút con.");
