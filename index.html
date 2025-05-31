@@ -3,353 +3,925 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mind Map - Micro MVP (Local)</title>
+    <title>Sơ đồ tư duy MVP - Firebase</title>
     <script src="https://unpkg.com/konva@9.3.6/konva.min.js"></script>
     <style>
         body {
-            font-family: sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
-            padding: 10px;
-            background-color: #f0f0f0;
+            padding: 0;
+            background-color: #f0f2f5;
+            color: #1c1e21;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            min-height: 100vh;
         }
-        #controls {
-            margin-bottom: 15px;
-            padding: 10px;
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
             background-color: #fff;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 8px 16px rgba(0,0,0,0.1);
+        }
+        /* --- AUTH SECTION --- */
+        #auth-section, #main-app-section {
+            padding: 20px;
+        }
+        .form-container {
+            max-width: 400px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #dddfe2;
+            border-radius: 8px;
+        }
+        .form-container h3 {
+            text-align: center;
+            color: #1877f2;
+            margin-bottom: 20px;
+        }
+        input[type="email"], input[type="password"], input[type="text"] {
+            width: calc(100% - 22px);
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #dddfe2;
+            border-radius: 6px;
+            font-size: 16px;
         }
         button {
-            padding: 8px 12px;
-            margin: 0 5px;
-            background-color: #007bff;
+            padding: 10px 15px;
+            font-size: 16px;
+            font-weight: bold;
+            background-color: #1877f2;
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
+            margin-right: 8px;
+            transition: background-color 0.3s;
         }
         button:hover {
-            background-color: #0056b3;
+            background-color: #166fe5;
+        }
+        button.secondary {
+            background-color: #e4e6eb;
+            color: #4b4f56;
+        }
+        button.secondary:hover {
+            background-color: #ccd0d5;
+        }
+        button.danger {
+            background-color: #fa3e3e;
+        }
+        button.danger:hover {
+            background-color: #e03030;
+        }
+        .auth-toggle {
+            text-align: center;
+            margin-top: 15px;
+        }
+        .auth-toggle a {
+            color: #1877f2;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .auth-toggle a:hover {
+            text-decoration: underline;
+        }
+        .error-message {
+            color: #fa3e3e;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        /* --- MAIN APP SECTION --- */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #dddfe2;
+        }
+        header h1 {
+            color: #1c1e21;
+            font-size: 24px;
+            margin: 0;
+        }
+        #user-info span {
+            margin-right: 10px;
+            font-size: 0.9em;
+        }
+        #mindmap-management, #canvas-view {
+            margin-bottom: 20px;
+        }
+        #mindmap-list {
+            list-style: none;
+            padding: 0;
+        }
+        #mindmap-list li {
+            padding: 12px;
+            border: 1px solid #dddfe2;
+            margin-bottom: 8px;
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+        #mindmap-list li:hover {
+            background-color: #f0f2f5;
+        }
+        #canvas-toolbar {
+            padding: 10px 0;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #dddfe2;
+        }
+        #canvas-toolbar h2 {
+            margin: 0 0 10px 0;
+            font-size: 20px;
         }
         #konva-container {
-            width: 90vw; /* Điều chỉnh kích thước theo ý muốn */
-            max-width: 1000px;
-            height: 75vh;
-            max-height: 700px;
-            background-color: #ffffff;
-            border: 1px solid #ccc;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            width: 100%;
+            height: 60vh; /* Điều chỉnh kích thước theo ý muốn */
+            min-height: 400px;
+            background-color: #f7f7f7; /* Màu nền canvas nhẹ nhàng hơn */
+            border: 1px solid #ccd0d5;
+            border-radius: 6px;
+            position: relative; /* Cần cho Konva */
+            overflow: hidden; /* Tránh scrollbar không mong muốn từ Konva */
         }
-        /* Styling cho text editor (nếu có) */
-        .text-editor {
-            position: absolute;
-            z-index: 100;
-            border: 1px solid #ccc;
-            background-color: white;
-            padding: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        .hidden {
+            display: none !important;
+        }
+        .loading-indicator {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
         }
     </style>
 </head>
 <body>
-    <div id="controls">
-        <button id="add-node-btn">Thêm Nút</button>
-        <button id="add-line-btn">Vẽ Đường Nối (Chọn 2 nút)</button>
-        <span>Zoom:</span>
-        <button id="zoom-in-btn">+</button>
-        <button id="zoom-out-btn">-</button>
-        <button id="reset-zoom-btn">Reset Zoom</button>
+    <div id="app-root">
+        <section id="auth-section" class="container">
+            <div id="login-form" class="form-container">
+                <h3>Đăng nhập Sơ đồ tư duy</h3>
+                <p id="login-error" class="error-message hidden"></p>
+                <input type="email" id="login-email" placeholder="Email" required>
+                <input type="password" id="login-password" placeholder="Mật khẩu" required>
+                <button id="login-button">Đăng nhập</button>
+                <p class="auth-toggle">Chưa có tài khoản? <a href="#" id="show-register-link">Đăng ký ngay</a></p>
+            </div>
+            <div id="register-form" class="form-container hidden">
+                <h3>Đăng ký tài khoản</h3>
+                <p id="register-error" class="error-message hidden"></p>
+                <input type="email" id="register-email" placeholder="Email" required>
+                <input type="password" id="register-password" placeholder="Mật khẩu (ít nhất 6 ký tự)" required>
+                <button id="register-button">Đăng ký</button>
+                <p class="auth-toggle">Đã có tài khoản? <a href="#" id="show-login-link">Đăng nhập</a></p>
+            </div>
+        </section>
+
+        <section id="main-app-section" class="container hidden">
+            <header>
+                <h1 id="main-app-title">Bảng điều khiển</h1>
+                <div id="user-info">
+                    <span id="user-email-display"></span>
+                    <button id="logout-button" class="secondary">Đăng xuất</button>
+                </div>
+            </header>
+
+            <div id="mindmap-management-view">
+                <h2>Quản lý Sơ đồ tư duy</h2>
+                <div style="margin-bottom: 15px;">
+                    <input type="text" id="new-mindmap-title-input" placeholder="Nhập tiêu đề sơ đồ mới...">
+                    <button id="create-mindmap-button">Tạo Sơ đồ mới</button>
+                </div>
+                <div id="mindmap-list-container">
+                    <h3>Danh sách sơ đồ của bạn:</h3>
+                    <div id="mindmap-list-loading" class="loading-indicator hidden">Đang tải danh sách...</div>
+                    <ul id="mindmap-list">
+                        </ul>
+                </div>
+            </div>
+
+            <div id="canvas-view" class="hidden">
+                <div id="canvas-toolbar">
+                    <button id="back-to-maps-list-button" class="secondary">&larr; Quay lại danh sách</button>
+                    <h2 id="current-mindmap-title-display" style="display: inline-block; margin-left: 15px;"></h2>
+                    <hr style="margin: 10px 0;">
+                    <button id="add-child-node-button">Thêm Nút Con</button>
+                    <button id="delete-node-button" class="danger">Xóa Nút (và con)</button>
+                    <span style="margin-left: 20px;">Zoom:</span>
+                    <button id="zoom-in-button" class="secondary">+</button>
+                    <button id="zoom-out-button" class="secondary">-</button>
+                    <button id="reset-zoom-button" class="secondary">Reset</button>
+                </div>
+                <div id="konva-container-loading" class="loading-indicator hidden">Đang tải sơ đồ...</div>
+                <div id="konva-container"></div>
+            </div>
+        </section>
     </div>
-    <div id="konva-container"></div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
+    <script type="module">
+        // --- FIREBASE SDK IMPORTS ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+        import {
+            getAuth,
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            signOut,
+            onAuthStateChanged
+        } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+        import {
+            getFirestore,
+            collection,
+            addDoc,
+            doc,
+            setDoc,
+            getDoc,
+            getDocs,
+            updateDoc,
+            deleteDoc,
+            query,
+            where,
+            serverTimestamp,
+            onSnapshot,
+            writeBatch
+        } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+
+        // --- FIREBASE CONFIGURATION ---
+        // !!! THAY THẾ BẰNG CẤU HÌNH FIREBASE CỦA BẠN !!!
+        // !!! TUYỆT ĐỐI KHÔNG CHIA SẺ CÔNG KHAI CONFIG NÀY !!!
+        const firebaseConfig = {
+            apiKey: "AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXX", // Thay thế!
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com", // Thay thế!
+            projectId: "YOUR_PROJECT_ID", // Thay thế!
+            storageBucket: "YOUR_PROJECT_ID.appspot.com", // Thay thế!
+            messagingSenderId: "YOUR_SENDER_ID", // Thay thế!
+            appId: "YOUR_APP_ID" // Thay thế!
+        };
+
+        // --- INITIALIZE FIREBASE ---
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- GLOBAL APP STATE ---
+        let currentUser = null;
+        let currentMindMapId = null;
+        let currentKonvaStage = null;
+        let currentKonvaLayer = null;
+        let selectedKonvaNode = null; // Konva group object
+        let mindmapNodesUnsubscribe = null; // Để hủy lắng nghe onSnapshot
+
+        // --- DOM ELEMENTS ---
+        // Auth
+        const authSection = document.getElementById('auth-section');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const loginEmailInput = document.getElementById('login-email');
+        const loginPasswordInput = document.getElementById('login-password');
+        const loginButton = document.getElementById('login-button');
+        const showRegisterLink = document.getElementById('show-register-link');
+        const registerEmailInput = document.getElementById('register-email');
+        const registerPasswordInput = document.getElementById('register-password');
+        const registerButton = document.getElementById('register-button');
+        const showLoginLink = document.getElementById('show-login-link');
+        const loginErrorMsg = document.getElementById('login-error');
+        const registerErrorMsg = document.getElementById('register-error');
+
+        // Main App
+        const mainAppSection = document.getElementById('main-app-section');
+        const mainAppTitle = document.getElementById('main-app-title');
+        const userEmailDisplay = document.getElementById('user-email-display');
+        const logoutButton = document.getElementById('logout-button');
+
+        // Mind Map Management View
+        const mindmapManagementView = document.getElementById('mindmap-management-view');
+        const newMindmapTitleInput = document.getElementById('new-mindmap-title-input');
+        const createMindmapButton = document.getElementById('create-mindmap-button');
+        const mindmapListUl = document.getElementById('mindmap-list');
+        const mindmapListLoading = document.getElementById('mindmap-list-loading');
+
+        // Canvas View
+        const canvasView = document.getElementById('canvas-view');
+        const backToMapsListButton = document.getElementById('back-to-maps-list-button');
+        const currentMindmapTitleDisplay = document.getElementById('current-mindmap-title-display');
+        const addChildNodeButton = document.getElementById('add-child-node-button');
+        const deleteNodeButton = document.getElementById('delete-node-button');
+        const zoomInButton = document.getElementById('zoom-in-button');
+        const zoomOutButton = document.getElementById('zoom-out-button');
+        const resetZoomButton = document.getElementById('reset-zoom-button');
+        const konvaContainer = document.getElementById('konva-container');
+        const konvaContainerLoading = document.getElementById('konva-container-loading');
+
+
+        // --- UTILITY FUNCTIONS ---
+        function showElement(el) { el.classList.remove('hidden'); }
+        function hideElement(el) { el.classList.add('hidden'); }
+        function displayAuthError(el, message) {
+            el.textContent = message;
+            showElement(el);
+        }
+        function clearAuthError(el) {
+            el.textContent = '';
+            hideElement(el);
+        }
+
+        // --- AUTHENTICATION LOGIC ---
+        showRegisterLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            hideElement(loginForm);
+            showElement(registerForm);
+            clearAuthError(loginErrorMsg);
+        });
+
+        showLoginLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            hideElement(registerForm);
+            showElement(loginForm);
+            clearAuthError(registerErrorMsg);
+        });
+
+        registerButton.addEventListener('click', async () => {
+            const email = registerEmailInput.value;
+            const password = registerPasswordInput.value;
+            clearAuthError(registerErrorMsg);
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                // onAuthStateChanged sẽ xử lý việc chuyển UI
+            } catch (error) {
+                console.error("Register error:", error);
+                displayAuthError(registerErrorMsg, error.message);
+            }
+        });
+
+        loginButton.addEventListener('click', async () => {
+            const email = loginEmailInput.value;
+            const password = loginPasswordInput.value;
+            clearAuthError(loginErrorMsg);
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                // onAuthStateChanged sẽ xử lý việc chuyển UI
+            } catch (error) {
+                console.error("Login error:", error);
+                displayAuthError(loginErrorMsg, error.message);
+            }
+        });
+
+        logoutButton.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                // onAuthStateChanged sẽ xử lý việc chuyển UI
+                currentMindMapId = null; // Reset state
+                if (mindmapNodesUnsubscribe) mindmapNodesUnsubscribe(); // Hủy lắng nghe
+            } catch (error) {
+                console.error("Logout error:", error);
+            }
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                userEmailDisplay.textContent = `Chào, ${user.email}`;
+                hideElement(authSection);
+                showElement(mainAppSection);
+                showMindmapManagementView(); // Hiển thị danh sách map
+                loadUserMindMaps();
+            } else {
+                currentUser = null;
+                userEmailDisplay.textContent = '';
+                showElement(authSection);
+                hideElement(mainAppSection);
+                hideElement(canvasView); // Đảm bảo canvas ẩn khi logout
+                mindmapListUl.innerHTML = ''; // Xóa danh sách map cũ
+            }
+        });
+
+        // --- UI VIEW MANAGEMENT ---
+        function showMindmapManagementView() {
+            mainAppTitle.textContent = "Bảng điều khiển";
+            showElement(mindmapManagementView);
+            hideElement(canvasView);
+            currentMindMapId = null; // Reset khi quay lại danh sách
+            selectedKonvaNode = null;
+            if (mindmapNodesUnsubscribe) {
+                mindmapNodesUnsubscribe(); // Hủy lắng nghe onSnapshot của map cũ
+                mindmapNodesUnsubscribe = null;
+            }
+            if (currentKonvaStage) {
+                currentKonvaStage.destroyChildren(); // Xóa layer cũ
+                currentKonvaLayer = null;
+            }
+        }
+
+        function showCanvasView(mapId, mapTitle) {
+            mainAppTitle.textContent = "Sơ đồ tư duy";
+            hideElement(mindmapManagementView);
+            showElement(canvasView);
+            currentMindmapTitleDisplay.textContent = mapTitle;
+            currentMindMapId = mapId;
+            initKonvaStage();
+            loadAndListenNodesForCurrentMap();
+        }
+
+        backToMapsListButton.addEventListener('click', showMindmapManagementView);
+
+
+        // --- FIRESTORE SERVICE LOGIC (Mind Maps) ---
+        createMindmapButton.addEventListener('click', async () => {
+            const title = newMindmapTitleInput.value.trim();
+            if (!title) {
+                alert("Vui lòng nhập tiêu đề cho sơ đồ.");
+                return;
+            }
+            if (!currentUser) {
+                alert("Vui lòng đăng nhập để tạo sơ đồ.");
+                return;
+            }
+
+            try {
+                // 1. Tạo mind map mới
+                const mindMapData = {
+                    userId: currentUser.uid,
+                    title: title,
+                    createdAt: serverTimestamp(),
+                    lastModified: serverTimestamp(),
+                };
+                const mindMapDocRef = await addDoc(collection(db, "mindmaps"), mindMapData);
+                console.log("Mind map created with ID: ", mindMapDocRef.id);
+
+                // 2. Tạo nút gốc cho mind map này
+                const rootNodeData = {
+                    mapId: mindMapDocRef.id,
+                    parentId: null,
+                    text: "Ý tưởng trung tâm",
+                    position: { x: konvaContainer.clientWidth / 2 - 75, y: 50 }, // Vị trí ban đầu
+                    style: { backgroundColor: "#1877f2", textColor: "#ffffff", shape: "ellipse", width: 150, height: 60 },
+                    createdAt: serverTimestamp()
+                };
+                await addDoc(collection(db, "nodes"), rootNodeData);
+                console.log("Root node created for map: ", mindMapDocRef.id);
+
+                newMindmapTitleInput.value = ''; // Xóa input
+                // loadUserMindMaps(); // Danh sách sẽ tự cập nhật nếu dùng onSnapshot cho maps, hoặc gọi lại
+                // Tạm thời, cứ load lại danh sách
+                alert(`Sơ đồ "${title}" đã được tạo!`);
+            } catch (e) {
+                console.error("Error creating new mind map: ", e);
+                alert("Lỗi khi tạo sơ đồ: " + e.message);
+            }
+        });
+
+        async function loadUserMindMaps() {
+            if (!currentUser) return;
+            showElement(mindmapListLoading);
+            mindmapListUl.innerHTML = ''; // Xóa danh sách cũ
+
+            try {
+                const q = query(collection(db, "mindmaps"), where("userId", "==", currentUser.uid));
+                // Sử dụng onSnapshot để danh sách map tự cập nhật
+                onSnapshot(q, (querySnapshot) => {
+                    mindmapListUl.innerHTML = ''; // Xóa trước khi render lại
+                    if (querySnapshot.empty) {
+                        mindmapListUl.innerHTML = '<li>Bạn chưa có sơ đồ nào. Hãy tạo một cái mới!</li>';
+                    }
+                    querySnapshot.forEach((doc) => {
+                        const map = { id: doc.id, ...doc.data() };
+                        const li = document.createElement('li');
+                        li.textContent = map.title;
+                        li.dataset.mapId = map.id;
+                        li.dataset.mapTitle = map.title;
+
+                        const deleteButton = document.createElement('button');
+                        deleteButton.textContent = 'Xóa';
+                        deleteButton.classList.add('danger', 'secondary'); // secondary để nhỏ hơn
+                        deleteButton.style.fontSize = '0.8em';
+                        deleteButton.style.padding = '5px 8px';
+                        deleteButton.onclick = async (e) => {
+                            e.stopPropagation(); // Ngăn sự kiện click vào li
+                            if (confirm(`Bạn có chắc muốn xóa sơ đồ "${map.title}" và tất cả các nút của nó?`)) {
+                                await deleteMindMap(map.id);
+                            }
+                        };
+
+                        li.appendChild(deleteButton);
+                        li.addEventListener('click', () => {
+                            showCanvasView(map.id, map.title);
+                        });
+                        mindmapListUl.appendChild(li);
+                    });
+                    hideElement(mindmapListLoading);
+                }, (error) => {
+                    console.error("Error fetching user mind maps with onSnapshot: ", error);
+                    mindmapListUl.innerHTML = '<li>Lỗi khi tải danh sách sơ đồ.</li>';
+                    hideElement(mindmapListLoading);
+                });
+
+            } catch (e) {
+                console.error("Error setting up mind map listener: ", e);
+                mindmapListUl.innerHTML = '<li>Lỗi khi tải danh sách sơ đồ.</li>';
+                hideElement(mindmapListLoading);
+            }
+        }
+
+        async function deleteMindMap(mapId) {
+            if (!mapId) return;
+            try {
+                // 1. Xóa tất cả các nút thuộc về mind map này
+                const nodesQuery = query(collection(db, "nodes"), where("mapId", "==", mapId));
+                const nodesSnapshot = await getDocs(nodesQuery);
+                const batch = writeBatch(db);
+                nodesSnapshot.forEach(nodeDoc => {
+                    batch.delete(doc(db, "nodes", nodeDoc.id));
+                });
+                await batch.commit();
+                console.log(`All nodes for map ${mapId} deleted.`);
+
+                // 2. Xóa mind map document
+                await deleteDoc(doc(db, "mindmaps", mapId));
+                console.log(`Mind map ${mapId} deleted.`);
+                alert("Sơ đồ đã được xóa.");
+                // Danh sách map sẽ tự cập nhật nhờ onSnapshot
+            } catch (error) {
+                console.error("Error deleting mind map: ", error);
+                alert("Lỗi khi xóa sơ đồ: " + error.message);
+            }
+        }
+
+
+        // --- FIRESTORE SERVICE LOGIC (Nodes) & KONVA INTEGRATION ---
+        function initKonvaStage() {
+            if (currentKonvaStage) {
+                currentKonvaStage.destroy(); // Hủy stage cũ nếu có
+            }
             const container = document.getElementById('konva-container');
-            const stageWidth = container.clientWidth;
-            const stageHeight = container.clientHeight;
-
-            // 1. Khởi tạo Stage và Layer
-            const stage = new Konva.Stage({
+            currentKonvaStage = new Konva.Stage({
                 container: 'konva-container',
-                width: stageWidth,
-                height: stageHeight,
-                draggable: true // Cho phép kéo toàn bộ stage (pan)
+                width: container.clientWidth,
+                height: container.clientHeight,
+                draggable: true
             });
+            currentKonvaLayer = new Konva.Layer();
+            currentKonvaStage.add(currentKonvaLayer);
+            selectedKonvaNode = null; // Reset selected node
+        }
 
-            const layer = new Konva.Layer();
-            stage.add(layer);
+        function loadAndListenNodesForCurrentMap() {
+            if (!currentMindMapId || !currentKonvaLayer) return;
 
-            let nodeCounter = 0;
-            let selectedNodesForLine = []; // Lưu các nút được chọn để vẽ đường nối
+            showElement(konvaContainerLoading);
+            currentKonvaLayer.destroyChildren(); // Xóa node cũ
+            currentKonvaLayer.draw();
 
-            // --- ZOOM FUNCTIONALITY ---
-            const scaleBy = 1.1;
-            document.getElementById('zoom-in-btn').addEventListener('click', function() {
-                const oldScale = stage.scaleX();
-                const newScale = oldScale * scaleBy;
-                stage.scale({ x: newScale, y: newScale });
-                stage.batchDraw();
+            const q = query(collection(db, "nodes"), where("mapId", "==", currentMindMapId));
+
+            if (mindmapNodesUnsubscribe) mindmapNodesUnsubscribe(); // Hủy sub cũ
+
+            mindmapNodesUnsubscribe = onSnapshot(q, (querySnapshot) => {
+                const nodesFromDb = [];
+                querySnapshot.forEach((doc) => {
+                    nodesFromDb.push({ id: doc.id, ...doc.data() });
+                });
+                renderNodesAndLines(nodesFromDb);
+                hideElement(konvaContainerLoading);
+            }, (error) => {
+                console.error(`Error listening to nodes for map ${currentMindMapId}:`, error);
+                alert("Lỗi khi tải các nút của sơ đồ: " + error.message);
+                hideElement(konvaContainerLoading);
             });
+        }
 
-            document.getElementById('zoom-out-btn').addEventListener('click', function() {
-                const oldScale = stage.scaleX();
-                const newScale = oldScale / scaleBy;
-                stage.scale({ x: newScale, y: newScale });
-                stage.batchDraw();
-            });
-             document.getElementById('reset-zoom-btn').addEventListener('click', function() {
-                stage.scale({ x: 1, y: 1 });
-                stage.position({ x: 0, y: 0 }); // Reset cả vị trí pan
-                stage.batchDraw();
-            });
+        function renderNodesAndLines(nodesData) {
+            if (!currentKonvaLayer) return;
+            currentKonvaLayer.destroyChildren(); // Xóa tất cả mọi thứ để vẽ lại từ đầu
+            const konvaNodeObjects = {}; // Để lưu trữ Konva.Group cho việc vẽ đường nối
 
+            // 1. Vẽ các nút
+            nodesData.forEach(nodeData => {
+                const defaultStyle = {
+                    backgroundColor: "#e0e0e0", textColor: "#000000", shape: "rectangle",
+                    width: 150, height: 50, cornerRadius: 5, fontSize: 14, fontFamily: 'Arial'
+                };
+                const style = { ...defaultStyle, ...(nodeData.style || {}) };
 
-            // --- NODE FUNCTIONALITY ---
-            function createNode(x, y, textContent) {
-                nodeCounter++;
                 const group = new Konva.Group({
-                    x: x,
-                    y: y,
+                    x: nodeData.position.x,
+                    y: nodeData.position.y,
                     draggable: true,
-                    name: 'nodeGroup' // Để dễ dàng tìm kiếm
+                    id: nodeData.id // Gán ID của Firestore
                 });
 
-                const rectWidth = 150;
-                const rectHeight = 50;
-
-                const rect = new Konva.Rect({
-                    width: rectWidth,
-                    height: rectHeight,
-                    fill: Konva.Util.getRandomColor(),
-                    stroke: 'black',
-                    strokeWidth: 1,
-                    cornerRadius: 5,
-                    name: 'nodeRect'
-                });
-                group.add(rect);
+                let shape;
+                if (style.shape === 'ellipse') {
+                    shape = new Konva.Ellipse({
+                        radiusX: style.width / 2,
+                        radiusY: style.height / 2,
+                        fill: style.backgroundColor,
+                        stroke: '#555',
+                        strokeWidth: 1,
+                    });
+                } else { // Mặc định là rectangle
+                    shape = new Konva.Rect({
+                        width: style.width,
+                        height: style.height,
+                        fill: style.backgroundColor,
+                        stroke: '#555',
+                        strokeWidth: 1,
+                        cornerRadius: style.cornerRadius,
+                    });
+                }
+                group.add(shape);
 
                 const text = new Konva.Text({
-                    text: textContent || `Nút ${nodeCounter}`,
-                    fontSize: 16,
-                    fontFamily: 'Arial',
-                    fill: '#333',
-                    width: rectWidth,
-                    height: rectHeight,
+                    text: nodeData.text,
+                    fontSize: style.fontSize,
+                    fontFamily: style.fontFamily,
+                    fill: style.textColor,
+                    width: style.width,
+                    height: style.height,
                     padding: 10,
                     align: 'center',
-                    verticalAlign: 'middle',
-                    name: 'nodeText'
+                    verticalAlign: 'middle'
                 });
                 group.add(text);
 
-                // Đánh dấu nút khi được chọn để vẽ đường nối
-                group.on('click tap', function(e) {
-                    // Ngăn sự kiện click lan truyền lên stage nếu đang kéo
-                    if (e.evt.defaultPrevented) return;
+                group.on('dragend', async function() {
+                    try {
+                        await updateDoc(doc(db, "nodes", this.id()), {
+                            position: { x: this.x(), y: this.y() }
+                        });
+                    } catch (e) { console.error("Error updating node position:", e); }
+                });
 
-                    if (document.getElementById('add-line-btn').classList.contains('active')) {
-                        const nodeRect = this.findOne('.nodeRect');
-                        if (selectedNodesForLine.includes(this)) {
-                            // Bỏ chọn
-                            selectedNodesForLine = selectedNodesForLine.filter(n => n !== this);
-                            nodeRect.strokeWidth(1);
-                            nodeRect.stroke('black');
-                        } else if (selectedNodesForLine.length < 2) {
-                            // Chọn
-                            selectedNodesForLine.push(this);
-                            nodeRect.strokeWidth(3);
-                            nodeRect.stroke('blue');
-                        }
-                        layer.batchDraw();
-
-                        if (selectedNodesForLine.length === 2) {
-                            drawLineBetweenNodes(selectedNodesForLine[0], selectedNodesForLine[1]);
-                            // Reset lựa chọn
-                            selectedNodesForLine.forEach(n => {
-                                n.findOne('.nodeRect').strokeWidth(1);
-                                n.findOne('.nodeRect').stroke('black');
-                            });
-                            selectedNodesForLine = [];
-                            document.getElementById('add-line-btn').classList.remove('active');
-                            document.getElementById('add-line-btn').textContent = 'Vẽ Đường Nối (Chọn 2 nút)';
-                        }
+                group.on('click tap', function() {
+                    // Bỏ chọn nút cũ (nếu có)
+                    if (selectedKonvaNode && selectedKonvaNode !== this) {
+                        selectedKonvaNode.findOne('Rect')?.strokeWidth(1);
+                        selectedKonvaNode.findOne('Ellipse')?.strokeWidth(1);
                     }
+                    // Chọn nút mới
+                    selectedKonvaNode = this;
+                    this.findOne('Rect')?.strokeWidth(3); // Highlight
+                    this.findOne('Ellipse')?.strokeWidth(3); // Highlight
+                    currentKonvaLayer.batchDraw();
                 });
 
-                // Chỉnh sửa text khi double click
-                group.on('dblclick dbltap', function () {
-                    editText(group, text);
+                group.on('dblclick dbltap', function() {
+                    editTextOnKonvaNode(this, text);
                 });
 
-                layer.add(group);
-                layer.batchDraw();
-                return group;
-            }
-
-            document.getElementById('add-node-btn').addEventListener('click', function () {
-                // Lấy vị trí trung tâm của view hiện tại trên stage
-                const pointerPosition = stage.getPointerPosition(); // Vị trí chuột nếu có
-                let spawnX, spawnY;
-
-                if (pointerPosition) {
-                    // Chuyển đổi tọa độ con trỏ từ màn hình sang tọa độ stage (đã tính zoom và pan)
-                    const transform = stage.getAbsoluteTransform().copy();
-                    transform.invert(); // Ma trận nghịch đảo
-                    const stagePointerPos = transform.point(pointerPosition);
-                    spawnX = stagePointerPos.x;
-                    spawnY = stagePointerPos.y;
-                } else {
-                    // Nếu không có vị trí chuột (ví dụ, nút được nhấn bằng bàn phím), dùng trung tâm stage
-                    spawnX = (stage.width() / 2 - stage.x()) / stage.scaleX();
-                    spawnY = (stage.height() / 2 - stage.y()) / stage.scaleY();
-                }
-                createNode(spawnX, spawnY - 25, `Nút mới ${nodeCounter + 1}`);
+                konvaNodeObjects[nodeData.id] = group;
+                currentKonvaLayer.add(group);
             });
 
-            // --- TEXT EDITING FUNCTIONALITY ---
-            function editText(nodeGroup, textNode) {
-                // Ẩn text node hiện tại
-                textNode.hide();
-                layer.draw();
+            // 2. Vẽ các đường nối (nhánh)
+            nodesData.forEach(nodeData => {
+                if (nodeData.parentId && konvaNodeObjects[nodeData.parentId] && konvaNodeObjects[nodeData.id]) {
+                    const parentKonvaNode = konvaNodeObjects[nodeData.parentId];
+                    const childKonvaNode = konvaNodeObjects[nodeData.id];
 
-                // Tạo textarea để edit
-                const textPosition = nodeGroup.getAbsolutePosition();
-                const stageBox = stage.container().getBoundingClientRect();
-
-                // Điều chỉnh vị trí textarea dựa trên vị trí của stage và zoom
-                const areaPosition = {
-                    x: stageBox.left + textPosition.x * stage.scaleX() + stage.x(),
-                    y: stageBox.top + textPosition.y * stage.scaleY() + stage.y()
-                };
-
-                const textarea = document.createElement('textarea');
-                document.body.appendChild(textarea);
-
-                textarea.value = textNode.text();
-                textarea.style.position = 'absolute';
-                textarea.style.top = areaPosition.y + 'px';
-                textarea.style.left = areaPosition.x + 'px';
-                textarea.style.width = textNode.width() * stage.scaleX() - 2 * textNode.padding() * stage.scaleX() + 'px';
-                textarea.style.height = textNode.height() * stage.scaleY() - 2 * textNode.padding() * stage.scaleY() + 'px';
-                textarea.style.fontSize = textNode.fontSize() * stage.scaleY() + 'px';
-                textarea.style.border = '1px solid #ccc';
-                textarea.style.padding = '0px';
-                textarea.style.margin = '0px';
-                textarea.style.overflow = 'hidden';
-                textarea.style.background = 'none';
-                textarea.style.outline = 'none';
-                textarea.style.resize = 'none';
-                textarea.style.fontFamily = textNode.fontFamily();
-                textarea.style.transformOrigin = 'left top';
-                textarea.style.lineHeight = textNode.lineHeight();
-                textarea.focus();
-
-                function removeTextarea() {
-                    if (textarea.parentNode) {
-                        textarea.parentNode.removeChild(textarea);
-                    }
-                    window.removeEventListener('click', handleOutsideClick);
-                    textNode.show();
-                    layer.batchDraw();
-                }
-
-                function setTextareaWidth(newWidth) {
-                    if (!newWidth) {
-                        // set width for placeholder
-                        textarea.style.width = textNode.placeholder.length * textNode.fontSize() + 'px';
-                    } else {
-                        textarea.style.width = newWidth + 'px';
-                    }
-                }
-
-                textarea.addEventListener('keydown', function (e) {
-                    // hide on enter
-                    // but don't hide on shift + enter
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        textNode.text(textarea.value);
-                        removeTextarea();
-                    }
-                    // on esc do not set value back to node
-                    if (e.key === 'Escape') {
-                        removeTextarea();
-                    }
-                });
-
-                textarea.addEventListener('blur', function() {
-                    textNode.text(textarea.value);
-                    removeTextarea();
-                });
-
-                function handleOutsideClick(e) {
-                    if (e.target !== textarea) {
-                        textNode.text(textarea.value);
-                        removeTextarea();
-                    }
-                }
-                // Đợi một chút để textarea focus rồi mới add event listener
-                setTimeout(() => {
-                    window.addEventListener('click', handleOutsideClick);
-                });
-            }
+                    const parentStyle = { width: 150, height: 50, ...(nodesData.find(n=>n.id === nodeData.parentId)?.style || {}) };
+                    const childStyle = { width: 150, height: 50, ...(nodeData.style || {}) };
 
 
-            // --- LINE DRAWING FUNCTIONALITY ---
-            document.getElementById('add-line-btn').addEventListener('click', function() {
-                this.classList.toggle('active');
-                if (this.classList.contains('active')) {
-                    this.textContent = 'ĐANG CHỌN NÚT... (Click nút này để hủy)';
-                    selectedNodesForLine = []; // Reset khi bắt đầu chế độ vẽ đường
-                } else {
-                    this.textContent = 'Vẽ Đường Nối (Chọn 2 nút)';
-                    selectedNodesForLine.forEach(n => { // Bỏ highlight nếu hủy giữa chừng
-                         const nodeRect = n.findOne('.nodeRect');
-                         if (nodeRect) {
-                            nodeRect.strokeWidth(1);
-                            nodeRect.stroke('black');
-                         }
+                    const line = new Konva.Line({
+                        points: [
+                            parentKonvaNode.x() + parentStyle.width / 2, parentKonvaNode.y() + parentStyle.height / 2,
+                            childKonvaNode.x() + childStyle.width / 2, childKonvaNode.y() + childStyle.height / 2
+                        ],
+                        stroke: '#888',
+                        strokeWidth: 2,
+                        lineCap: 'round',
+                        lineJoin: 'round'
                     });
-                    selectedNodesForLine = [];
-                    layer.batchDraw();
+                    currentKonvaLayer.add(line);
+                    line.moveToBottom(); // Đưa đường line xuống dưới các node
                 }
             });
+            currentKonvaLayer.batchDraw();
+        }
 
-            function drawLineBetweenNodes(node1, node2) {
-                const line = new Konva.Line({
-                    points: [
-                        node1.x() + node1.findOne('.nodeRect').width() / 2,
-                        node1.y() + node1.findOne('.nodeRect').height() / 2,
-                        node2.x() + node2.findOne('.nodeRect').width() / 2,
-                        node2.y() + node2.findOne('.nodeRect').height() / 2
-                    ],
-                    stroke: 'grey',
-                    strokeWidth: 2,
-                    name: 'connectionLine',
-                    // Lưu trữ ID của các node mà nó kết nối (nếu cần sau này)
-                    // connectedNodes: [node1.id(), node2.id()]
-                });
-                layer.add(line);
-                line.moveToBottom(); // Đưa đường line xuống dưới các node
-                layer.batchDraw();
+        // Chỉnh sửa text trên Konva Node
+        function editTextOnKonvaNode(konvaGroup, konvaTextNode) {
+            konvaTextNode.hide();
+            currentKonvaLayer.draw();
+
+            const textPosition = konvaGroup.getAbsolutePosition();
+            const stageBox = currentKonvaStage.container().getBoundingClientRect();
+
+            const areaPosition = {
+                x: stageBox.left + textPosition.x * currentKonvaStage.scaleX() + currentKonvaStage.x(),
+                y: stageBox.top + textPosition.y * currentKonvaStage.scaleY() + currentKonvaStage.y()
+            };
+
+            const textarea = document.createElement('textarea');
+            document.body.appendChild(textarea);
+
+            textarea.value = konvaTextNode.text();
+            textarea.style.position = 'absolute';
+            textarea.style.top = areaPosition.y + 'px';
+            textarea.style.left = areaPosition.x + 'px';
+            textarea.style.width = konvaTextNode.width() * currentKonvaStage.scaleX() - (konvaTextNode.padding() || 0) * 2 * currentKonvaStage.scaleX() + 'px';
+            textarea.style.height = konvaTextNode.height() * currentKonvaStage.scaleY() - (konvaTextNode.padding() || 0) * 2 * currentKonvaStage.scaleY() + 'px';
+            textarea.style.fontSize = konvaTextNode.fontSize() * currentKonvaStage.scaleY() + 'px';
+            textarea.style.border = '1px solid #999';
+            textarea.style.padding = '0px';
+            textarea.style.margin = '0px';
+            textarea.style.overflow = 'hidden';
+            textarea.style.background = 'white';
+            textarea.style.outline = 'none';
+            textarea.style.resize = 'none';
+            textarea.style.textAlign = 'center'; // Giống Konva.Text
+            textarea.style.fontFamily = konvaTextNode.fontFamily();
+            textarea.style.lineHeight = konvaTextNode.lineHeight(); // Cần thiết cho vertical align
+            textarea.focus();
+
+            async function saveAndRemoveTextarea() {
+                const newText = textarea.value;
+                if (textarea.parentNode) {
+                    textarea.parentNode.removeChild(textarea);
+                }
+                konvaTextNode.text(newText);
+                konvaTextNode.show();
+                currentKonvaLayer.batchDraw();
+                window.removeEventListener('click', handleOutsideClick);
+
+                // Cập nhật Firestore
+                try {
+                    await updateDoc(doc(db, "nodes", konvaGroup.id()), { text: newText });
+                } catch (e) { console.error("Error updating node text in Firestore:", e); }
             }
 
-            // Tự động điều chỉnh kích thước Stage khi cửa sổ thay đổi
-            window.addEventListener('resize', () => {
-                const newWidth = container.clientWidth;
-                const newHeight = container.clientHeight;
-                stage.width(newWidth);
-                stage.height(newHeight);
-                stage.batchDraw();
+            textarea.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault(); // Ngăn tạo dòng mới
+                    saveAndRemoveTextarea();
+                }
+                if (e.key === 'Escape') {
+                    if (textarea.parentNode) textarea.parentNode.removeChild(textarea); // Chỉ xóa textarea, không lưu
+                    konvaTextNode.show();
+                    currentKonvaLayer.batchDraw();
+                    window.removeEventListener('click', handleOutsideClick);
+                }
             });
+            textarea.addEventListener('blur', saveAndRemoveTextarea); // Lưu khi mất focus
 
-            // Tạo một vài nút ban đầu để thử nghiệm
-            createNode(100, 100, "Nút 1");
-            createNode(300, 150, "Nút 2");
+            function handleOutsideClick(e) {
+                if (e.target !== textarea) {
+                    saveAndRemoveTextarea();
+                }
+            }
+            setTimeout(() => { // Đợi textarea focus rồi mới gắn listener
+                window.addEventListener('click', handleOutsideClick);
+            }, 0);
+        }
 
-            stage.draw(); // Hoặc layer.draw() / layer.batchDraw()
+
+        // --- KONVA TOOLBAR ACTIONS ---
+        addChildNodeButton.addEventListener('click', async () => {
+            if (!selectedKonvaNode) {
+                alert("Vui lòng chọn một nút cha để thêm nút con.");
+                return;
+            }
+            if (!currentMindMapId) return;
+
+            const parentKonvaNode = selectedKonvaNode;
+            const parentNodeData = { // Lấy kích thước và vị trí của node cha
+                x: parentKonvaNode.x(),
+                y: parentKonvaNode.y(),
+                // Giả sử style mặc định nếu không lấy được từ DB (cần cải thiện)
+                width: parentKonvaNode.findOne('Rect')?.width() || parentKonvaNode.findOne('Ellipse')?.radiusX()*2 || 150,
+                height: parentKonvaNode.findOne('Rect')?.height() || parentKonvaNode.findOne('Ellipse')?.radiusY()*2 || 50,
+            };
+
+            const newNodeData = {
+                mapId: currentMindMapId,
+                parentId: parentKonvaNode.id(),
+                text: "Nút con mới",
+                position: { // Vị trí tương đối so với cha
+                    x: parentNodeData.x + parentNodeData.width / 4,
+                    y: parentNodeData.y + parentNodeData.height + 30
+                },
+                style: { backgroundColor: "#f0f0f0", textColor: "#333333", width: 120, height: 40 },
+                createdAt: serverTimestamp()
+            };
+            try {
+                await addDoc(collection(db, "nodes"), newNodeData);
+                // onSnapshot sẽ tự động vẽ lại
+            } catch (e) {
+                console.error("Error adding child node:", e);
+                alert("Lỗi khi thêm nút con: " + e.message);
+            }
         });
+
+        deleteNodeButton.addEventListener('click', async () => {
+            if (!selectedKonvaNode) {
+                alert("Vui lòng chọn một nút để xóa.");
+                return;
+            }
+            if (!currentMindMapId) return;
+
+            const nodeIdToDelete = selectedKonvaNode.id();
+            if (confirm("Bạn có chắc muốn xóa nút này và TẤT CẢ các nút con của nó không? Hành động này không thể hoàn tác.")) {
+                try {
+                    await deleteNodeAndItsChildrenRecursive(nodeIdToDelete, currentMindMapId);
+                    selectedKonvaNode = null; // Bỏ chọn
+                    // onSnapshot sẽ tự động cập nhật canvas
+                    alert("Nút và các nút con (nếu có) đã được xóa.");
+                } catch (e) {
+                    console.error("Error deleting node:", e);
+                    alert("Lỗi khi xóa nút: " + e.message);
+                }
+            }
+        });
+
+        async function deleteNodeAndItsChildrenRecursive(nodeId, mapId) {
+            const childrenQuery = query(collection(db, "nodes"), where("mapId", "==", mapId), where("parentId", "==", nodeId));
+            const childrenSnapshot = await getDocs(childrenQuery);
+
+            const batch = writeBatch(db);
+
+            for (const childDoc of childrenSnapshot.docs) {
+                // Đệ quy xóa các nút con của nút con này trước
+                await deleteNodeAndItsChildrenRecursive(childDoc.id, mapId);
+            }
+            // Sau khi tất cả các nút con (và cháu, chắt...) đã được thêm vào batch để xóa (hoặc đã được xóa trong các lần gọi đệ quy trước)
+            // Giờ thêm nút hiện tại vào batch để xóa
+            batch.delete(doc(db, "nodes", nodeId));
+            
+            // Chỉ commit batch ở lần gọi đầu tiên (không đệ quy) để tránh nhiều lần commit không cần thiết.
+            // Cách tốt hơn là truyền batch vào hàm đệ quy.
+            // Để đơn giản ở đây, ta sẽ commit ở mỗi bước, nhưng không tối ưu.
+            // CẢI TIẾN: Truyền batch vào hàm và chỉ commit ở hàm gọi gốc.
+            // Tuy nhiên, với cấu trúc hiện tại, mỗi lần gọi đệ quy sâu hơn sẽ xử lý nhánh con của nó.
+            // Ta sẽ xóa nút hiện tại sau khi các con của nó đã được xử lý.
+
+            // Xóa nút hiện tại
+            await deleteDoc(doc(db, "nodes", nodeId));
+            console.log(`Node ${nodeId} deleted.`);
+        }
+        // LƯU Ý: Hàm deleteNodeAndItsChildrenRecursive ở trên cần được kiểm tra kỹ lưỡng hơn
+        // về logic batch write để đảm bảo hiệu quả và tính đúng đắn.
+        // Một cách tiếp cận đơn giản hơn cho MVP có thể là chỉ xóa nút được chọn và
+        // để các nút con của nó trở thành "mồ côi" (parentId không còn tồn tại),
+        // hoặc cập nhật parentId của chúng thành null (nếu logic ứng dụng cho phép).
+        // Để xóa đệ quy an toàn và hiệu quả, thường cần Cloud Function nếu số lượng lớn.
+        // Trong client-side, nó có thể chậm và gặp giới hạn ghi của batch.
+        // Phiên bản đơn giản hơn cho deleteNodeButton:
+        /*
+        deleteNodeButton.addEventListener('click', async () => {
+            if (!selectedKonvaNode || !currentMindMapId) return;
+            const nodeIdToDelete = selectedKonvaNode.id();
+            if (confirm("Bạn có chắc muốn xóa nút này? (Các nút con sẽ không bị xóa theo trong phiên bản này)")) {
+                try {
+                    await deleteDoc(doc(db, "nodes", nodeIdToDelete));
+                    selectedKonvaNode = null;
+                    alert("Nút đã được xóa.");
+                } catch (e) { console.error("Error deleting node:", e); }
+            }
+        });
+        */
+
+
+        // Konva Zoom & Pan
+        const scaleBy = 1.1;
+        zoomInButton.addEventListener('click', () => {
+            if (!currentKonvaStage) return;
+            const oldScale = currentKonvaStage.scaleX();
+            currentKonvaStage.scale({ x: oldScale * scaleBy, y: oldScale * scaleBy });
+            currentKonvaStage.batchDraw();
+        });
+        zoomOutButton.addEventListener('click', () => {
+            if (!currentKonvaStage) return;
+            const oldScale = currentKonvaStage.scaleX();
+            currentKonvaStage.scale({ x: oldScale / scaleBy, y: oldScale / scaleBy });
+            currentKonvaStage.batchDraw();
+        });
+        resetZoomButton.addEventListener('click', () => {
+            if (!currentKonvaStage) return;
+            currentKonvaStage.scale({ x: 1, y: 1 });
+            currentKonvaStage.position({ x: 0, y: 0 });
+            currentKonvaStage.batchDraw();
+        });
+
+        // Tự động điều chỉnh kích thước Stage khi cửa sổ thay đổi
+        window.addEventListener('resize', () => {
+            if (currentKonvaStage && konvaContainer.offsetParent !== null) { // Chỉ resize nếu canvas đang hiển thị
+                const newWidth = konvaContainer.clientWidth;
+                const newHeight = konvaContainer.clientHeight;
+                currentKonvaStage.width(newWidth);
+                currentKonvaStage.height(newHeight);
+                currentKonvaStage.batchDraw();
+            }
+        });
+
+        // --- INITIAL APP LOAD ---
+        // onAuthStateChanged sẽ tự động xử lý việc hiển thị UI ban đầu.
+
     </script>
 </body>
 </html>
