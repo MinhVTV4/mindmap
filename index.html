@@ -137,7 +137,7 @@
         #canvas-toolbar {
             padding: 10px 0;
             margin-bottom: 10px;
-            border-bottom: 1px solid #dddfe2;
+            border-bottom: 1px solid #ccd0d5; /* Sửa màu border */
         }
         #canvas-toolbar h2 {
             margin: 0 0 10px 0;
@@ -145,13 +145,13 @@
         }
         #konva-container {
             width: 100%;
-            height: 60vh; /* Điều chỉnh kích thước theo ý muốn */
+            height: 60vh; 
             min-height: 400px;
-            background-color: #f7f7f7; /* Màu nền canvas nhẹ nhàng hơn */
-            border: 1px solid #ccd0d5;
+            background-color: #f7f7f7; 
+            border: 1px solid #ccd0d5; /* Sửa màu border */
             border-radius: 6px;
-            position: relative; /* Cần cho Konva */
-            overflow: hidden; /* Tránh scrollbar không mong muốn từ Konva */
+            position: relative; 
+            overflow: hidden; 
         }
         .hidden {
             display: none !important;
@@ -160,6 +160,27 @@
             text-align: center;
             padding: 20px;
             font-style: italic;
+        }
+        /* Node Style Panel */
+        #node-style-panel {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        #node-style-panel label {
+            margin-right: 5px;
+            font-size: 0.9em;
+        }
+        #node-style-panel input[type="color"] {
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            vertical-align: middle;
+            margin-right: 15px;
         }
     </style>
 </head>
@@ -213,11 +234,21 @@
                     <h2 id="current-mindmap-title-display" style="display: inline-block; margin-left: 15px;"></h2>
                     <hr style="margin: 10px 0;">
                     <button id="add-child-node-button">Thêm Nút Con</button>
-                    <button id="delete-node-button" class="danger">Xóa Nút (và con)</button>
+                    <button id="delete-node-button" class="danger">Xóa Nút</button>
                     <span style="margin-left: 20px;">Zoom:</span>
                     <button id="zoom-in-button" class="secondary">+</button>
                     <button id="zoom-out-button" class="secondary">-</button>
                     <button id="reset-zoom-button" class="secondary">Reset</button>
+                    
+                    <div id="node-style-panel" class="hidden">
+                        <h4>Tùy chỉnh Nút:</h4>
+                        <label for="node-bg-color">Màu nền:</label>
+                        <input type="color" id="node-bg-color" title="Màu nền nút">
+                        <label for="node-text-color">Màu chữ:</label>
+                        <input type="color" id="node-text-color" title="Màu chữ nút">
+                        <label for="node-border-color">Màu viền:</label>
+                        <input type="color" id="node-border-color" title="Màu viền nút">
+                    </div>
                 </div>
                 <div id="konva-container-loading" class="loading-indicator hidden">Đang tải sơ đồ...</div>
                 <div id="konva-container"></div>
@@ -240,8 +271,8 @@
             collection,
             addDoc,
             doc,
-            setDoc,
-            getDoc,
+            // setDoc, // Không dùng setDoc nếu muốn Firestore tự tạo ID
+            getDoc, // Sẽ dùng để lấy data node khi chọn
             getDocs,
             updateDoc,
             deleteDoc,
@@ -253,12 +284,11 @@
         } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
 
         // --- FIREBASE CONFIGURATION ---
-        // SDK Firebase của bạn đã được cập nhật vào đây:
         const firebaseConfig = {
             apiKey: "AIzaSyDLVuv2RGAJWUjhan-5oNCkGBwQZAN60aY",
             authDomain: "vocab-91599.firebaseapp.com",
             projectId: "vocab-91599",
-            storageBucket: "vocab-91599.appspot.com", // Sửa lại từ firebasestorage.app thành appspot.com
+            storageBucket: "vocab-91599.appspot.com",
             messagingSenderId: "918212044361",
             appId: "1:918212044361:web:50b7a065fe0b22b1924198"
         };
@@ -275,10 +305,6 @@
             console.log("Firebase initialized successfully!");
         } catch (error) {
             console.error("Firebase initialization error:", error);
-            // Hiển thị lỗi cho người dùng nếu cần, ví dụ:
-            // document.body.innerHTML = "<h1>Lỗi khởi tạo Firebase. Vui lòng kiểm tra console.</h1><p>" + error.message + "</p>";
-            // Hoặc bạn có thể hiển thị lỗi này trong một phần tử cụ thể trên trang.
-            // Quan trọng là phải thông báo cho người dùng biết có vấn đề.
             alert("Lỗi nghiêm trọng: Không thể khởi tạo Firebase. Ứng dụng có thể không hoạt động. Chi tiết: " + error.message);
         }
 
@@ -288,10 +314,18 @@
         let currentMindMapId = null;
         let currentKonvaStage = null;
         let currentKonvaLayer = null;
-        let selectedKonvaNode = null; // Konva group object
-        let mindmapNodesUnsubscribe = null; // Để hủy lắng nghe onSnapshot
+        let selectedKonvaNode = null; 
+        let mindmapNodesUnsubscribe = null; 
+        let allNodesDataForCurrentMap = []; // Lưu trữ dữ liệu các nút của map hiện tại
 
         // --- DOM ELEMENTS ---
+        // ... (Giữ nguyên các DOM elements đã có) ...
+        const nodeStylePanel = document.getElementById('node-style-panel');
+        const nodeBgColorInput = document.getElementById('node-bg-color');
+        const nodeTextColorInput = document.getElementById('node-text-color');
+        const nodeBorderColorInput = document.getElementById('node-border-color');
+
+
         // Auth
         const authSection = document.getElementById('auth-section');
         const loginForm = document.getElementById('login-form');
@@ -350,6 +384,7 @@
         }
 
         // --- AUTHENTICATION LOGIC ---
+        // ... (Giữ nguyên Authentication Logic) ...
         if (showRegisterLink) {
             showRegisterLink.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -377,8 +412,7 @@
                 const email = registerEmailInput.value;
                 const password = registerPasswordInput.value;
                 clearAuthError(registerErrorMsg);
-                // Kiểm tra API key đã được thay thế chưa (một cách đơn giản)
-                if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY_HERE") { // Giữ nguyên kiểm tra này
+                if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY_HERE") { 
                     displayAuthError(registerErrorMsg, "Lỗi cấu hình Firebase: API Key không hợp lệ. Vui lòng kiểm tra lại firebaseConfig.");
                     return;
                 }
@@ -400,13 +434,13 @@
                 const email = loginEmailInput.value;
                 const password = loginPasswordInput.value;
                 clearAuthError(loginErrorMsg);
-                if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY_HERE") { // Giữ nguyên kiểm tra này
+                if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY_HERE") { 
                     displayAuthError(loginErrorMsg, "Lỗi cấu hình Firebase: API Key không hợp lệ. Vui lòng kiểm tra lại firebaseConfig.");
                     return;
                 }
                 try {
                     await signInWithEmailAndPassword(auth, email, password);
-                } catch (error) {
+                } catch (error) { // Đã xóa _CONFIG_ ở đây
                     console.error("Login error:", error);
                     displayAuthError(loginErrorMsg, "Lỗi đăng nhập: " + error.code + " - " + error.message);
                 }
@@ -426,7 +460,7 @@
             });
         }
 
-        if (auth) { // Chỉ chạy onAuthStateChanged nếu auth đã được khởi tạo thành công
+        if (auth) { 
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     currentUser = user;
@@ -441,6 +475,7 @@
                     showElement(authSection);
                     hideElement(mainAppSection);
                     hideElement(canvasView);
+                    if(nodeStylePanel) hideElement(nodeStylePanel); // Ẩn panel style khi logout
                     if(mindmapListUl) mindmapListUl.innerHTML = '';
                 }
             });
@@ -452,6 +487,7 @@
             if(mainAppTitle) mainAppTitle.textContent = "Bảng điều khiển";
             showElement(mindmapManagementView);
             hideElement(canvasView);
+            if(nodeStylePanel) hideElement(nodeStylePanel); // Ẩn panel style
             currentMindMapId = null; 
             selectedKonvaNode = null;
             if (mindmapNodesUnsubscribe) {
@@ -461,7 +497,6 @@
             if (currentKonvaStage) {
                 currentKonvaStage.destroyChildren(); 
                 currentKonvaLayer = null;
-                // Không destroy stage ở đây, chỉ destroy children để có thể dùng lại
             }
         }
 
@@ -471,13 +506,49 @@
             showElement(canvasView);
             if(currentMindmapTitleDisplay) currentMindmapTitleDisplay.textContent = mapTitle;
             currentMindMapId = mapId;
-            initKonvaStage(); // Sẽ tạo stage mới nếu chưa có, hoặc dùng lại nếu có (cần xem lại logic initKonvaStage)
+            initKonvaStage(); 
             loadAndListenNodesForCurrentMap();
+            hideElement(nodeStylePanel); // Ban đầu ẩn panel style
         }
 
         if (backToMapsListButton) {
             backToMapsListButton.addEventListener('click', showMindmapManagementView);
         }
+
+        // --- NODE STYLE PANEL LOGIC ---
+        function updateNodeStylePanel(nodeData) {
+            if (!nodeData || !nodeData.style) {
+                if(nodeStylePanel) hideElement(nodeStylePanel);
+                return;
+            }
+            const style = nodeData.style;
+            if(nodeBgColorInput) nodeBgColorInput.value = style.backgroundColor || '#e0e0e0';
+            if(nodeTextColorInput) nodeTextColorInput.value = style.textColor || '#000000';
+            if(nodeBorderColorInput) nodeBorderColorInput.value = style.borderColor || '#555555'; 
+            if(nodeStylePanel) showElement(nodeStylePanel);
+        }
+
+        async function handleNodeStyleChange(property, value) {
+            if (!selectedKonvaNode || !db) return;
+            const nodeId = selectedKonvaNode.id();
+            try {
+                const nodeRef = doc(db, "nodes", nodeId);
+                const nodeSnap = await getDoc(nodeRef);
+                if (nodeSnap.exists()) {
+                    const existingStyle = nodeSnap.data().style || {};
+                    const updatedStyle = { ...existingStyle, [property]: value };
+                    await updateDoc(nodeRef, { style: updatedStyle });
+                } else {
+                    console.warn("Node not found for style update:", nodeId);
+                }
+            } catch (e) {
+                console.error(`Error updating node style (${property}):`, e);
+            }
+        }
+
+        if (nodeBgColorInput) nodeBgColorInput.addEventListener('input', (e) => handleNodeStyleChange('backgroundColor', e.target.value));
+        if (nodeTextColorInput) nodeTextColorInput.addEventListener('input', (e) => handleNodeStyleChange('textColor', e.target.value));
+        if (nodeBorderColorInput) nodeBorderColorInput.addEventListener('input', (e) => handleNodeStyleChange('borderColor', e.target.value));
 
 
         // --- FIRESTORE SERVICE LOGIC (Mind Maps) ---
@@ -509,7 +580,13 @@
                         parentId: null,
                         text: "Ý tưởng trung tâm",
                         position: { x: (konvaContainer?.clientWidth || 800) / 2 - 75, y: 50 },
-                        style: { backgroundColor: "#1877f2", textColor: "#ffffff", shape: "ellipse", width: 150, height: 60 },
+                        style: { 
+                            backgroundColor: "#1877f2", 
+                            textColor: "#ffffff", 
+                            borderColor: "#0e5aab", 
+                            shape: "ellipse", 
+                            width: 150, height: 60 
+                        },
                         createdAt: serverTimestamp()
                     };
                     await addDoc(collection(db, "nodes"), rootNodeData);
@@ -531,7 +608,6 @@
 
             try {
                 const q = query(collection(db, "mindmaps"), where("userId", "==", currentUser.uid));
-                // Hủy listener cũ nếu có trước khi tạo listener mới
                 if (typeof window.mindmapsListenerUnsubscribe === 'function') {
                     window.mindmapsListenerUnsubscribe();
                 }
@@ -540,7 +616,7 @@
                     if (querySnapshot.empty) {
                         if(mindmapListUl) mindmapListUl.innerHTML = '<li>Bạn chưa có sơ đồ nào. Hãy tạo một cái mới!</li>';
                     }
-                    querySnapshot.forEach((docSnap) => { // Đổi tên biến để tránh nhầm lẫn với `doc` của Firestore
+                    querySnapshot.forEach((docSnap) => { 
                         const map = { id: docSnap.id, ...docSnap.data() };
                         const li = document.createElement('li');
                         li.textContent = map.title;
@@ -600,19 +676,16 @@
             }
         }
 
-
         // --- FIRESTORE SERVICE LOGIC (Nodes) & KONVA INTEGRATION ---
         function initKonvaStage() {
-            // Hủy stage cũ và layer cũ nếu chúng tồn tại
             if (currentKonvaStage) {
-                currentKonvaStage.destroy(); // Hủy bỏ hoàn toàn stage cũ
+                currentKonvaStage.destroy(); 
                 currentKonvaStage = null;
             }
              if (currentKonvaLayer) {
                 currentKonvaLayer.destroy();
                 currentKonvaLayer = null;
             }
-
 
             const container = document.getElementById('konva-container');
             if (!container) {
@@ -627,8 +700,19 @@
             });
             currentKonvaLayer = new Konva.Layer();
             currentKonvaStage.add(currentKonvaLayer);
-            selectedKonvaNode = null;
+            selectedKonvaNode = null; 
+            currentKonvaStage.on('click tap', function(e) {
+                if (e.target === currentKonvaStage) {
+                    if (selectedKonvaNode) {
+                        selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1);
+                        selectedKonvaNode = null;
+                        if(nodeStylePanel) hideElement(nodeStylePanel); 
+                        currentKonvaLayer.batchDraw();
+                    }
+                }
+            });
         }
+
 
         function loadAndListenNodesForCurrentMap() {
             if (!currentMindMapId || !currentKonvaLayer || !db) {
@@ -639,6 +723,7 @@
             showElement(konvaContainerLoading);
             currentKonvaLayer.destroyChildren();
             currentKonvaLayer.draw();
+            allNodesDataForCurrentMap = []; 
 
             const q = query(collection(db, "nodes"), where("mapId", "==", currentMindMapId));
 
@@ -646,10 +731,11 @@
 
             mindmapNodesUnsubscribe = onSnapshot(q, (querySnapshot) => {
                 const nodesFromDb = [];
-                querySnapshot.forEach((docSnap) => {  // Đổi tên biến
+                querySnapshot.forEach((docSnap) => {  
                     nodesFromDb.push({ id: docSnap.id, ...docSnap.data() });
                 });
-                renderNodesAndLines(nodesFromDb);
+                allNodesDataForCurrentMap = nodesFromDb; 
+                renderNodesAndLines(allNodesDataForCurrentMap);
                 hideElement(konvaContainerLoading);
             }, (error) => {
                 console.error(`Error listening to nodes for map ${currentMindMapId}:`, error);
@@ -666,11 +752,12 @@
             nodesData.forEach(nodeData => {
                 if (!nodeData.position || typeof nodeData.position.x !== 'number' || typeof nodeData.position.y !== 'number') {
                     console.warn("Node data missing valid position, skipping:", nodeData);
-                    return; // Bỏ qua node này nếu không có vị trí hợp lệ
+                    return; 
                 }
 
                 const defaultStyle = {
-                    backgroundColor: "#e0e0e0", textColor: "#000000", shape: "rectangle",
+                    backgroundColor: "#e0e0e0", textColor: "#000000", borderColor: "#555555", 
+                    shape: "rectangle",
                     width: 150, height: 50, cornerRadius: 5, fontSize: 14, fontFamily: 'Arial'
                 };
                 const style = { ...defaultStyle, ...(nodeData.style || {}) };
@@ -688,19 +775,19 @@
                         radiusX: style.width / 2,
                         radiusY: style.height / 2,
                         fill: style.backgroundColor,
-                        stroke: '#555',
-                        strokeWidth: 1,
-                        name: 'nodeShape' // Thêm name để dễ query
+                        stroke: style.borderColor, 
+                        strokeWidth: (selectedKonvaNode && selectedKonvaNode.id() === nodeData.id) ? 3 : 1, 
+                        name: 'nodeShape' 
                     });
                 } else {
                     shape = new Konva.Rect({
                         width: style.width,
                         height: style.height,
                         fill: style.backgroundColor,
-                        stroke: '#555',
-                        strokeWidth: 1,
+                        stroke: style.borderColor, 
+                        strokeWidth: (selectedKonvaNode && selectedKonvaNode.id() === nodeData.id) ? 3 : 1,
                         cornerRadius: style.cornerRadius,
-                        name: 'nodeShape' // Thêm name để dễ query
+                        name: 'nodeShape' 
                     });
                 }
                 group.add(shape);
@@ -709,7 +796,7 @@
                     text: nodeData.text,
                     fontSize: style.fontSize,
                     fontFamily: style.fontFamily,
-                    fill: style.textColor,
+                    fill: style.textColor, 
                     width: style.width,
                     height: style.height,
                     padding: 10,
@@ -727,12 +814,17 @@
                     } catch (e) { console.error("Error updating node position:", e); }
                 });
 
-                group.on('click tap', function() {
+                group.on('click tap', function(e) {
+                    e.evt.cancelBubble = true; 
                     if (selectedKonvaNode && selectedKonvaNode !== this) {
-                        selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1); // Dùng name để query
+                        selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1);
                     }
                     selectedKonvaNode = this;
                     this.findOne('.nodeShape')?.strokeWidth(3);
+                    
+                    const clickedNodeData = allNodesDataForCurrentMap.find(n => n.id === this.id());
+                    if(clickedNodeData) updateNodeStylePanel(clickedNodeData);
+
                     currentKonvaLayer.batchDraw();
                 });
 
@@ -750,7 +842,7 @@
                     const childKonvaNode = konvaNodeObjects[nodeData.id];
 
                     const parentNodeFromData = nodesData.find(n=>n.id === nodeData.parentId);
-                    const childNodeFromData = nodeData; // Chính là nodeData hiện tại
+                    const childNodeFromData = nodeData; 
 
                     const parentStyle = { width: 150, height: 50, ...(parentNodeFromData?.style || {}) };
                     const childStyle = { width: 150, height: 50, ...(childNodeFromData.style || {}) };
@@ -776,12 +868,11 @@
         function editTextOnKonvaNode(konvaGroup, konvaTextNode) {
             if (!currentKonvaStage || !currentKonvaLayer) return;
             konvaTextNode.hide();
-            currentKonvaLayer.draw(); // Nên dùng batchDraw nếu có nhiều thay đổi
+            currentKonvaLayer.draw(); 
 
-            const textPosition = konvaGroup.getAbsolutePosition(); // Lấy vị trí tuyệt đối trên stage
-            const stageBox = currentKonvaStage.container().getBoundingClientRect(); // Vị trí của container trên trang
+            const textPosition = konvaGroup.getAbsolutePosition(); 
+            const stageBox = currentKonvaStage.container().getBoundingClientRect(); 
 
-            // Tính toán vị trí textarea trên trang
             const areaPosition = {
                 x: stageBox.left + textPosition.x,
                 y: stageBox.top + textPosition.y
@@ -794,12 +885,11 @@
             textarea.style.position = 'absolute';
             textarea.style.top = areaPosition.y + 'px';
             textarea.style.left = areaPosition.x + 'px';
-            // Kích thước textarea nên khớp với kích thước của text node trên canvas (đã tính scale)
             textarea.style.width = konvaTextNode.width() * currentKonvaStage.scaleX() - (konvaTextNode.padding() || 0) * 2 * currentKonvaStage.scaleX() + 'px';
             textarea.style.height = konvaTextNode.height() * currentKonvaStage.scaleY() - (konvaTextNode.padding() || 0) * 2 * currentKonvaStage.scaleY() + 'px';
-            textarea.style.fontSize = konvaTextNode.fontSize() * currentKonvaStage.scaleY() + 'px'; // Scale font size
+            textarea.style.fontSize = konvaTextNode.fontSize() * currentKonvaStage.scaleY() + 'px'; 
             textarea.style.border = '1px solid #999';
-            textarea.style.padding = '0px'; // Padding đã được tính trong Konva.Text
+            textarea.style.padding = '0px'; 
             textarea.style.margin = '0px';
             textarea.style.overflow = 'hidden';
             textarea.style.background = 'white';
@@ -807,11 +897,9 @@
             textarea.style.resize = 'none';
             textarea.style.textAlign = konvaTextNode.align();
             textarea.style.fontFamily = konvaTextNode.fontFamily();
-            // Cần tính toán line-height và vertical-align cẩn thận hơn nếu muốn khớp hoàn toàn
-            // textarea.style.lineHeight = konvaTextNode.lineHeight(); // Konva tính line-height tự động
-            textarea.style.display = 'flex'; // Để thử vertical align
-            textarea.style.alignItems = 'center'; // Thử vertical align
-            textarea.style.justifyContent = 'center'; // Thử horizontal align (nếu text align center)
+            textarea.style.display = 'flex'; 
+            textarea.style.alignItems = 'center'; 
+            textarea.style.justifyContent = 'center'; 
 
 
             textarea.focus();
@@ -826,7 +914,7 @@
                 konvaTextNode.text(newText);
                 konvaTextNode.show();
                 currentKonvaLayer.batchDraw();
-                window.removeEventListener('click', handleOutsideClick); // Gỡ listener
+                window.removeEventListener('click', handleOutsideClick); 
 
                 if(!db) return;
                 try {
@@ -843,7 +931,7 @@
                     if (textarea.parentNode) textarea.parentNode.removeChild(textarea);
                     konvaTextNode.show();
                     currentKonvaLayer.batchDraw();
-                    window.removeEventListener('click', handleOutsideClick); // Gỡ listener
+                    window.removeEventListener('click', handleOutsideClick); 
                 }
             });
             textarea.addEventListener('blur', saveAndRemoveTextarea);
@@ -858,8 +946,6 @@
             }, 0);
         }
 
-
-        // --- KONVA TOOLBAR ACTIONS ---
         if (addChildNodeButton) {
             addChildNodeButton.addEventListener('click', async () => {
                 if (!selectedKonvaNode) {
@@ -879,10 +965,17 @@
                     parentId: parentKonvaNode.id(),
                     text: "Nút con mới",
                     position: {
-                        x: parentKonvaNode.x() + parentWidth / 4, // Điều chỉnh vị trí tương đối
-                        y: parentKonvaNode.y() + parentHeight + 30 // Cách nút cha 1 khoảng
+                        x: parentKonvaNode.x() + parentWidth / 4, 
+                        y: parentKonvaNode.y() + parentHeight + 30 
                     },
-                    style: { backgroundColor: "#f9f9f9", textColor: "#333333", width: 120, height: 40, cornerRadius: 3 },
+                    style: { 
+                        backgroundColor: "#f9f9f9", 
+                        textColor: "#333333", 
+                        borderColor: "#cccccc", 
+                        width: 120, 
+                        height: 40, 
+                        cornerRadius: 3 
+                    },
                     createdAt: serverTimestamp()
                 };
                 try {
@@ -903,13 +996,16 @@
                 if (!currentMindMapId || !db) return;
 
                 const nodeIdToDelete = selectedKonvaNode.id();
-                const nodeTextToDelete = selectedKonvaNode.findOne('Text').text();
+                const konvaTextNode = selectedKonvaNode.findOne('Text'); // Lấy đối tượng Konva.Text
+                const nodeTextToDelete = konvaTextNode ? konvaTextNode.text() : "Không có tiêu đề"; // Lấy text an toàn
+
 
                 if (confirm(`Bạn có chắc muốn xóa nút "${nodeTextToDelete}"? (Lưu ý: Phiên bản này chỉ xóa nút được chọn, không xóa các nút con của nó một cách đệ quy).`)) {
                     try {
                          await deleteDoc(doc(db, "nodes", nodeIdToDelete));
                          console.log(`Node ${nodeIdToDelete} deleted.`);
                         selectedKonvaNode = null;
+                        if(nodeStylePanel) hideElement(nodeStylePanel); 
                         alert("Nút đã được xóa.");
                     } catch (e) {
                         console.error("Error deleting node:", e);
@@ -919,7 +1015,7 @@
             });
         }
 
-        // Konva Zoom & Pan
+        const scaleBy = 1.1;
         if(zoomInButton) {
             zoomInButton.addEventListener('click', () => {
                 if (!currentKonvaStage) return;
@@ -951,11 +1047,9 @@
                 const newHeight = konvaContainer.clientHeight;
                 currentKonvaStage.width(newWidth);
                 currentKonvaStage.height(newHeight);
-                // Không cần batchDraw ở đây nếu không có thay đổi nội dung,
-                // nhưng nếu layout thay đổi thì có thể cần.
-                // currentKonvaStage.batchDraw();
             }
         });
+
     </script>
 </body>
 </html>
