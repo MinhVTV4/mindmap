@@ -307,6 +307,7 @@
                 <li id="ctx-generate-examples">💡 AI Tạo Ví Dụ</li>
                 <li id="ctx-ask-ai-node">💬 Hỏi AI về nút này...</li>
                 <li id="ctx-summarize-branch">📄 AI Tóm tắt nhánh này</li>
+                <li id="ctx-generate-action-plan">🚀 AI Tạo Kế hoạch Hành động</li>
                 <li id="ctx-delete-node">Xóa nút & con (Delete)</li>
             </ul>
         </div>
@@ -363,43 +364,23 @@
         import { getAI, getGenerativeModel, GoogleAIBackend } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-ai.js";
 
 
-        // --- FIREBASE CONFIGURATION ---
+        // --- FIREBASE CONFIGURATION (Sử dụng giá trị từ file gốc của bạn) ---
         const firebaseConfig = {
-            apiKey: "AIzaSyDLVuv2RGAJWUjhan-5oNCkGBwQZAN60aY", // Thay bằng API Key của bạn
-            authDomain: "vocab-91599.firebaseapp.com", // Thay bằng Auth Domain của bạn
-            projectId: "vocab-91599", // Thay bằng Project ID của bạn
-            storageBucket: "vocab-91599.appspot.com", // Thay bằng Storage Bucket của bạn
-            messagingSenderId: "918212044361", // Thay bằng Messaging Sender ID của bạn
-            appId: "1:918212044361:web:50b7a065fe0b22b1924198" // Thay bằng App ID của bạn
+            apiKey: "AIzaSyDLVuv2RGAJWUjhan-5oNCkGBwQZAN60aY",
+            authDomain: "vocab-91599.firebaseapp.com",
+            projectId: "vocab-91599",
+            storageBucket: "vocab-91599.appspot.com",
+            messagingSenderId: "918212044361",
+            appId: "1:918212044361:web:50b7a065fe0b22b1924198"
         };
 
-        // --- INITIALIZE FIREBASE ---
+        // --- MODULE-SCOPED VARIABLES (Firebase, State, etc.) ---
         let app;
         let auth;
         let db;
         let ai;
         let generativeModel;
 
-        try {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-            // Kiểm tra xem Firebase AI SDK có được tải đúng cách không trước khi sử dụng
-            if (typeof getAI === 'function' && typeof GoogleAIBackend === 'function' && typeof getGenerativeModel === 'function') {
-                ai = getAI(app, { backend: new GoogleAIBackend() });
-                generativeModel = getGenerativeModel(ai, { model: "gemini-1.5-flash-latest" });
-                console.log("Firebase initialized successfully with AI Logic SDK!");
-            } else {
-                console.error("Firebase AI SDK components not found. AI features will be disabled.");
-                alert("Lỗi: Không thể tải các thành phần AI của Firebase. Các tính năng AI sẽ bị vô hiệu hóa.");
-            }
-        } catch (error) {
-            console.error("Firebase initialization error:", error);
-            alert("Lỗi nghiêm trọng: Không thể khởi tạo Firebase hoặc AI SDK. Chi tiết: " + error.message);
-        }
-
-
-        // --- GLOBAL APP STATE ---
         let currentUser = null;
         let currentMindMapId = null;
         let currentKonvaStage = null;
@@ -425,12 +406,10 @@
         const MAX_DISPLAY_LINES_IN_NODE = 4;
         let contextMenuJustOpened = false;
 
-        // Biến trạng thái cho việc kéo thả nút
         let potentiallyDraggedNode = null;
         let dragStartPointerPosition = null;
         const DRAG_THRESHOLD = 10;
 
-        // Biến trạng thái cho long-press context menu
         let longPressTimeoutId = null;
         let touchStartTargetNodeForContextMenu = null;
         let touchStartPointerPositionForContextMenu = null;
@@ -438,77 +417,22 @@
         const LONG_PRESS_MOVE_THRESHOLD = 10;
         let touchStartCoordsForLongPress = { x: 0, y: 0 };
 
+        // START: Moved Handle Constants to Global Scope
+        const HANDLE_RADIUS = 8;
+        const HANDLE_FILL = 'rgba(0,180,0,0.7)';
+        const HANDLE_STROKE = 'rgba(0,100,0,0.9)';
+        // END: Moved Handle Constants to Global Scope
 
-        // --- DOM ELEMENTS ---
-        const nodeStylePanel = document.getElementById('node-style-panel');
-        const nodeShapeSelect = document.getElementById('node-shape-select');
-        const nodeFontFamilySelect = document.getElementById('node-font-family-select');
-        const nodeFontSizeInput = document.getElementById('node-font-size-input');
-        const nodeIconSelect = document.getElementById('node-icon-select');
-        const nodeBgColorInput = document.getElementById('node-bg-color');
-        const nodeTextColorInput = document.getElementById('node-text-color');
-        const nodeBorderColorInput = document.getElementById('node-border-color');
-        const nodeLineColorInput = document.getElementById('node-line-color');
-        const nodeLineDashSelect = document.getElementById('node-line-dash-select');
-        const nodeLineWidthInput = document.getElementById('node-line-width');
 
-        const contextMenu = document.getElementById('context-menu');
-        const ctxAddChildButton = document.getElementById('ctx-add-child');
-        const ctxEditTextButton = document.getElementById('ctx-edit-text');
-        const ctxViewFullContentButton = document.getElementById('ctx-view-full-content');
-        const ctxSuggestChildrenButton = document.getElementById('ctx-suggest-children');
-        const ctxExpandNodeButton = document.getElementById('ctx-expand-node');
-        const ctxGenerateExamplesButton = document.getElementById('ctx-generate-examples');
-        const ctxAskAiNodeButton = document.getElementById('ctx-ask-ai-node');
-        const ctxSummarizeBranchButton = document.getElementById('ctx-summarize-branch'); // Lấy DOM element cho nút mới
-        const ctxDeleteNodeButton = document.getElementById('ctx-delete-node');
-        const aiLoadingIndicator = document.getElementById('ai-loading-indicator');
-
-        const aiResponseModalOverlay = document.getElementById('ai-response-modal-overlay');
-        const aiResponseModalTitle = document.getElementById('ai-response-modal-title');
-        const aiResponseModalBody = document.getElementById('ai-response-modal-body');
-        const aiResponseModalCloseButton = document.getElementById('ai-response-modal-close-button');
-
-        const nodeContentModalOverlay = document.getElementById('node-content-modal-overlay');
-        const nodeContentModalTitle = document.getElementById('node-content-modal-title');
-        const nodeContentModalBody = document.getElementById('node-content-modal-body');
-        const nodeContentModalCloseButton = document.getElementById('node-content-modal-close-button');
-
-        const authSection = document.getElementById('auth-section');
-        const loginForm = document.getElementById('login-form');
-        const registerForm = document.getElementById('register-form');
-        const loginEmailInput = document.getElementById('login-email');
-        const loginPasswordInput = document.getElementById('login-password');
-        const loginButton = document.getElementById('login-button');
-        const showRegisterLink = document.getElementById('show-register-link');
-        const registerEmailInput = document.getElementById('register-email');
-        const registerPasswordInput = document.getElementById('register-password');
-        const registerButton = document.getElementById('register-button');
-        const showLoginLink = document.getElementById('show-login-link');
-        const loginErrorMsg = document.getElementById('login-error');
-        const registerErrorMsg = document.getElementById('register-error');
-
-        const mainAppSection = document.getElementById('main-app-section');
-        const mainAppTitle = document.getElementById('main-app-title');
-        const userEmailDisplay = document.getElementById('user-email-display');
-        const logoutButton = document.getElementById('logout-button');
-
-        const mindmapManagementView = document.getElementById('mindmap-management-view');
-        const newMindmapTitleInput = document.getElementById('new-mindmap-title-input');
-        const createMindmapButton = document.getElementById('create-mindmap-button');
-        const mindmapListUl = document.getElementById('mindmap-list');
-        const mindmapListLoading = document.getElementById('mindmap-list-loading');
-
-        const canvasView = document.getElementById('canvas-view');
-        const backToMapsListButton = document.getElementById('back-to-maps-list-button');
-        const currentMindmapTitleDisplay = document.getElementById('current-mindmap-title-display');
-        const addChildNodeButton = document.getElementById('add-child-node-button');
-        const deleteNodeButton = document.getElementById('delete-node-button');
-        const zoomInButton = document.getElementById('zoom-in-button');
-        const zoomOutButton = document.getElementById('zoom-out-button');
-        const resetZoomButton = document.getElementById('reset-zoom-button');
-        const konvaContainer = document.getElementById('konva-container');
-        const konvaContainerLoading = document.getElementById('konva-container-loading');
+        // --- DOM ELEMENT VARIABLES (will be assigned in DOMContentLoaded) ---
+        let nodeStylePanel, nodeShapeSelect, nodeFontFamilySelect, nodeFontSizeInput, nodeIconSelect, nodeBgColorInput, nodeTextColorInput, nodeBorderColorInput, nodeLineColorInput, nodeLineDashSelect, nodeLineWidthInput;
+        let contextMenu, ctxAddChildButton, ctxEditTextButton, ctxViewFullContentButton, ctxSuggestChildrenButton, ctxExpandNodeButton, ctxGenerateExamplesButton, ctxAskAiNodeButton, ctxSummarizeBranchButton, ctxGenerateActionPlanButton, ctxDeleteNodeButton;
+        let aiLoadingIndicator, aiResponseModalOverlay, aiResponseModalTitle, aiResponseModalBody, aiResponseModalCloseButton;
+        let nodeContentModalOverlay, nodeContentModalTitle, nodeContentModalBody, nodeContentModalCloseButton;
+        let authSection, loginForm, registerForm, loginEmailInput, loginPasswordInput, loginButton, showRegisterLink, registerEmailInput, registerPasswordInput, registerButton, showLoginLink, loginErrorMsg, registerErrorMsg;
+        let mainAppSection, mainAppTitle, userEmailDisplay, logoutButton;
+        let mindmapManagementView, newMindmapTitleInput, createMindmapButton, mindmapListUl, mindmapListLoading;
+        let canvasView, backToMapsListButton, currentMindmapTitleDisplay, addChildNodeButton, deleteNodeButton, zoomInButton, zoomOutButton, resetZoomButton, konvaContainer, konvaContainerLoading;
 
 
         // --- UTILITY FUNCTIONS ---
@@ -537,18 +461,17 @@
                 hideElement(aiLoadingIndicator);
             }
         }
-
         function hideContextMenu() {
             if(contextMenu) hideElement(contextMenu);
             contextMenuJustOpened = false;
         }
-
         function openAiResponseModal(title, userQuestion, aiAnswer) {
             if (aiResponseModalOverlay && aiResponseModalTitle && aiResponseModalBody) {
                 aiResponseModalTitle.textContent = title || "Phản hồi từ AI";
                 let contentHTML = '';
                 if (userQuestion) {
-                    contentHTML += `<p><strong>Đầu vào cho AI (có thể đã được rút gọn):</strong></p><pre style="max-height: 150px; overflow-y: auto; background-color: #efefef; padding: 5px; border-radius: 3px;">${userQuestion}</pre>`;
+                    const sanitizedUserQuestion = userQuestion.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    contentHTML += `<p><strong>Đầu vào cho AI (có thể đã được rút gọn):</strong></p><pre style="max-height: 150px; overflow-y: auto; background-color: #efefef; padding: 5px; border-radius: 3px; white-space: pre-wrap; word-wrap: break-word;">${sanitizedUserQuestion}</pre>`;
                 }
                 const formattedAiAnswer = aiAnswer.replace(/\n/g, '<br>');
                 contentHTML += `<p><strong>AI trả lời:</strong></p><div style="background-color: #f9f9f9; padding: 10px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; font-size: 0.9em;">${formattedAiAnswer}</div>`;
@@ -567,17 +490,6 @@
                 }
             }
         }
-        if (aiResponseModalCloseButton) {
-            aiResponseModalCloseButton.addEventListener('click', closeAiResponseModal);
-        }
-        if (aiResponseModalOverlay) {
-            aiResponseModalOverlay.addEventListener('click', function(event) {
-                if (event.target === aiResponseModalOverlay) {
-                    closeAiResponseModal();
-                }
-            });
-        }
-
         function openNodeContentModal(nodeTitle, fullContent) {
             if (nodeContentModalOverlay && nodeContentModalTitle && nodeContentModalBody) {
                 nodeContentModalTitle.textContent = `Nội dung: ${nodeTitle.substring(0, 30)}${nodeTitle.length > 30 ? '...' : ''}`;
@@ -597,120 +509,76 @@
                 }
             }
         }
-        if (nodeContentModalCloseButton) {
-            nodeContentModalCloseButton.addEventListener('click', closeNodeContentModal);
+
+        // --- AUTHENTICATION LOGIC (Function definitions) ---
+        async function handleRegister() {
+            if (!auth) {
+                 displayAuthError(registerErrorMsg, "Lỗi: Dịch vụ xác thực chưa sẵn sàng.");
+                 return;
+            }
+            const email = registerEmailInput.value;
+            const password = registerPasswordInput.value;
+            clearAuthError(registerErrorMsg);
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                console.error("Register error:", error);
+                displayAuthError(registerErrorMsg, "Lỗi đăng ký: " + error.code + " - " + error.message);
+            }
         }
-        if (nodeContentModalOverlay) {
-            nodeContentModalOverlay.addEventListener('click', function(event) {
-                if (event.target === nodeContentModalOverlay) {
-                    closeNodeContentModal();
-                }
-            });
+        async function handleLogin() {
+            if (!auth) {
+                 displayAuthError(loginErrorMsg, "Lỗi: Dịch vụ xác thực chưa sẵn sàng.");
+                 return;
+            }
+            const email = loginEmailInput.value;
+            const password = loginPasswordInput.value;
+            clearAuthError(loginErrorMsg);
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                console.error("Login error:", error);
+                displayAuthError(loginErrorMsg, "Lỗi đăng nhập: " + error.code + " - " + error.message);
+            }
+        }
+        async function handleLogout() {
+            if (!auth) return;
+            try {
+                await signOut(auth);
+                currentMindMapId = null;
+                if (mindmapNodesUnsubscribe) mindmapNodesUnsubscribe();
+                if (mindmapDataUnsubscribe) mindmapDataUnsubscribe();
+                window.removeEventListener('keydown', handleGlobalKeyDown);
+            } catch (error) {
+                console.error("Logout error:", error);
+            }
+        }
+        function authStateChangedHandler(user) {
+            if (user) {
+                currentUser = user;
+                if(userEmailDisplay) userEmailDisplay.textContent = `Chào, ${user.email}`;
+                hideElement(authSection);
+                showElement(mainAppSection);
+                showMindmapManagementView();
+                loadUserMindMaps();
+            } else {
+                currentUser = null;
+                if(userEmailDisplay) userEmailDisplay.textContent = '';
+                showElement(authSection);
+                hideElement(mainAppSection);
+                hideElement(canvasView);
+                if(nodeStylePanel) hideElement(nodeStylePanel);
+                hideContextMenu();
+                if(mindmapListUl) mindmapListUl.innerHTML = '';
+                window.removeEventListener('keydown', handleGlobalKeyDown);
+            }
         }
 
-
-        // --- AUTHENTICATION LOGIC ---
-        if (showRegisterLink) {
-            showRegisterLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                hideElement(loginForm);
-                showElement(registerForm);
-                clearAuthError(loginErrorMsg);
-            });
-        }
-        if (showLoginLink) {
-            showLoginLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                hideElement(registerForm);
-                showElement(loginForm);
-                clearAuthError(registerErrorMsg);
-            });
-        }
-        if (registerButton) {
-            registerButton.addEventListener('click', async () => {
-                if (!auth) {
-                     displayAuthError(registerErrorMsg, "Lỗi: Dịch vụ xác thực chưa sẵn sàng.");
-                     return;
-                }
-                const email = registerEmailInput.value;
-                const password = registerPasswordInput.value;
-                clearAuthError(registerErrorMsg);
-                if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY") {
-                    displayAuthError(registerErrorMsg, "Lỗi cấu hình Firebase: API Key không hợp lệ. Vui lòng kiểm tra lại firebaseConfig.");
-                    return;
-                }
-                try {
-                    await createUserWithEmailAndPassword(auth, email, password);
-                } catch (error) {
-                    console.error("Register error:", error);
-                    displayAuthError(registerErrorMsg, "Lỗi đăng ký: " + error.code + " - " + error.message);
-                }
-            });
-        }
-        if (loginButton) {
-            loginButton.addEventListener('click', async () => {
-                if (!auth) {
-                     displayAuthError(loginErrorMsg, "Lỗi: Dịch vụ xác thực chưa sẵn sàng.");
-                     return;
-                }
-                const email = loginEmailInput.value;
-                const password = loginPasswordInput.value;
-                clearAuthError(loginErrorMsg);
-                 if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY") {
-                    displayAuthError(loginErrorMsg, "Lỗi cấu hình Firebase: API Key không hợp lệ. Vui lòng kiểm tra lại firebaseConfig.");
-                    return;
-                }
-                try {
-                    await signInWithEmailAndPassword(auth, email, password);
-                } catch (error) {
-                    console.error("Login error:", error);
-                    displayAuthError(loginErrorMsg, "Lỗi đăng nhập: " + error.code + " - " + error.message);
-                }
-            });
-        }
-        if (logoutButton) {
-            logoutButton.addEventListener('click', async () => {
-                if (!auth) return;
-                try {
-                    await signOut(auth);
-                    currentMindMapId = null;
-                    if (mindmapNodesUnsubscribe) mindmapNodesUnsubscribe();
-                    if (mindmapDataUnsubscribe) mindmapDataUnsubscribe();
-                    window.removeEventListener('keydown', handleGlobalKeyDown);
-                } catch (error) {
-                    console.error("Logout error:", error);
-                }
-            });
-        }
-        if (auth) {
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    currentUser = user;
-                    if(userEmailDisplay) userEmailDisplay.textContent = `Chào, ${user.email}`;
-                    hideElement(authSection);
-                    showElement(mainAppSection);
-                    showMindmapManagementView();
-                    loadUserMindMaps();
-                } else {
-                    currentUser = null;
-                    if(userEmailDisplay) userEmailDisplay.textContent = '';
-                    showElement(authSection);
-                    hideElement(mainAppSection);
-                    hideElement(canvasView);
-                    if(nodeStylePanel) hideElement(nodeStylePanel);
-                    hideContextMenu();
-                    if(mindmapListUl) mindmapListUl.innerHTML = '';
-                    window.removeEventListener('keydown', handleGlobalKeyDown);
-                }
-            });
-        }
-
-
-        // --- UI VIEW MANAGEMENT ---
+        // --- UI VIEW MANAGEMENT (Function definitions) ---
         function showMindmapManagementView() {
             if(mainAppTitle) mainAppTitle.textContent = "Bảng điều khiển";
-            showElement(mindmapManagementView);
-            hideElement(canvasView);
+            if(mindmapManagementView) showElement(mindmapManagementView);
+            if(canvasView) hideElement(canvasView);
             if(nodeStylePanel) hideElement(nodeStylePanel);
             hideContextMenu();
             currentMindMapId = null;
@@ -732,8 +600,8 @@
         }
         async function showCanvasView(mapId, mapTitle) {
             if(mainAppTitle) mainAppTitle.textContent = "Sơ đồ tư duy";
-            hideElement(mindmapManagementView);
-            showElement(canvasView);
+            if(mindmapManagementView) hideElement(mindmapManagementView);
+            if(canvasView) showElement(canvasView);
             if(currentMindmapTitleDisplay) currentMindmapTitleDisplay.textContent = mapTitle;
             currentMindMapId = mapId;
             initKonvaStage();
@@ -755,15 +623,12 @@
                     console.error("Error listening to mindmap data:", error);
                 });
             }
-            hideElement(nodeStylePanel);
+            if(nodeStylePanel) hideElement(nodeStylePanel);
             hideContextMenu();
             window.addEventListener('keydown', handleGlobalKeyDown);
         }
-        if (backToMapsListButton) {
-            backToMapsListButton.addEventListener('click', showMindmapManagementView);
-        }
 
-        // --- NODE STYLE PANEL LOGIC ---
+        // --- NODE STYLE PANEL LOGIC (Function definitions) ---
         function lineDashArrayToString(dashArray) {
             if (!dashArray || dashArray.length === 0) return 'solid';
             if (JSON.stringify(dashArray) === JSON.stringify([15, 8])) return 'dashed';
@@ -841,48 +706,34 @@
                 lineHeight: 1.2
             });
             const actualTextContentHeight = tempText.height();
-            const dynamicShapeHeight = Math.max(style.minHeight, actualTextContentHeight + 2 * textPadding, style.icon ? (style.iconSize + 2 * textPadding) : 0);
-            return dynamicShapeHeight;
+            return Math.max(style.minHeight, actualTextContentHeight + 2 * textPadding, style.icon ? (style.iconSize + 2 * textPadding) : 0);
         }
-        if (nodeShapeSelect) nodeShapeSelect.addEventListener('change', (e) => handleNodeStyleChange('shape', e.target.value));
-        if (nodeFontFamilySelect) nodeFontFamilySelect.addEventListener('change', (e) => handleNodeStyleChange('fontFamily', e.target.value));
-        if (nodeFontSizeInput) nodeFontSizeInput.addEventListener('input', (e) => handleNodeStyleChange('fontSize', e.target.value));
-        if (nodeIconSelect) nodeIconSelect.addEventListener('change', (e) => handleNodeStyleChange('icon', e.target.value));
-        if (nodeBgColorInput) nodeBgColorInput.addEventListener('input', (e) => handleNodeStyleChange('backgroundColor', e.target.value));
-        if (nodeTextColorInput) nodeTextColorInput.addEventListener('input', (e) => handleNodeStyleChange('textColor', e.target.value));
-        if (nodeBorderColorInput) nodeBorderColorInput.addEventListener('input', (e) => handleNodeStyleChange('borderColor', e.target.value));
-        if (nodeLineColorInput) nodeLineColorInput.addEventListener('input', (e) => handleNodeStyleChange('lineColor', e.target.value));
-        if (nodeLineDashSelect) nodeLineDashSelect.addEventListener('change', (e) => handleNodeStyleChange('lineDash', e.target.value));
-        if (nodeLineWidthInput) nodeLineWidthInput.addEventListener('input', (e) => handleNodeStyleChange('lineWidth', e.target.value));
 
-
-        // --- FIRESTORE SERVICE LOGIC (Mind Maps) ---
-        if (createMindmapButton) {
-            createMindmapButton.addEventListener('click', async () => {
-                if (!db) { alert("Lỗi: Dịch vụ cơ sở dữ liệu chưa sẵn sàng."); return; }
-                const title = newMindmapTitleInput.value.trim();
-                if (!title) { alert("Vui lòng nhập tiêu đề cho sơ đồ."); return; }
-                if (!currentUser) { alert("Vui lòng đăng nhập để tạo sơ đồ."); return; }
-                try {
-                    const mindMapData = {
-                        userId: currentUser.uid, title: title, createdAt: serverTimestamp(),
-                        lastModified: serverTimestamp(), canvasState: { scaleX: 1, scaleY: 1, x: 0, y: 0 }
-                    };
-                    const mindMapDocRef = await addDoc(collection(db, "mindmaps"), mindMapData);
-                    const rootNodeData = {
-                        mapId: mindMapDocRef.id, parentId: null, text: "Ý tưởng trung tâm",
-                        position: { x: (konvaContainer?.clientWidth || 800) / 2 - 75, y: 50 },
-                        style: { ...DEFAULT_NODE_STYLE, backgroundColor: "#1877f2", textColor: "#ffffff", borderColor: "#0e5aab", shape: "ellipse", minHeight: 60 },
-                        createdAt: serverTimestamp()
-                    };
-                    await addDoc(collection(db, "nodes"), rootNodeData);
-                    newMindmapTitleInput.value = '';
-                } catch (e) { console.error("Error creating new mind map: ", e); alert("Lỗi khi tạo sơ đồ: " + e.message); }
-            });
+        // --- FIRESTORE SERVICE LOGIC (Mind Maps - Function definitions) ---
+        async function handleCreateMindmap() {
+            if (!db) { alert("Lỗi: Dịch vụ cơ sở dữ liệu chưa sẵn sàng."); return; }
+            const title = newMindmapTitleInput.value.trim();
+            if (!title) { alert("Vui lòng nhập tiêu đề cho sơ đồ."); return; }
+            if (!currentUser) { alert("Vui lòng đăng nhập để tạo sơ đồ."); return; }
+            try {
+                const mindMapData = {
+                    userId: currentUser.uid, title: title, createdAt: serverTimestamp(),
+                    lastModified: serverTimestamp(), canvasState: { scaleX: 1, scaleY: 1, x: 0, y: 0 }
+                };
+                const mindMapDocRef = await addDoc(collection(db, "mindmaps"), mindMapData);
+                const rootNodeData = {
+                    mapId: mindMapDocRef.id, parentId: null, text: "Ý tưởng trung tâm",
+                    position: { x: (konvaContainer?.clientWidth || 800) / 2 - 75, y: 50 },
+                    style: { ...DEFAULT_NODE_STYLE, backgroundColor: "#1877f2", textColor: "#ffffff", borderColor: "#0e5aab", shape: "ellipse", minHeight: 60 },
+                    createdAt: serverTimestamp()
+                };
+                await addDoc(collection(db, "nodes"), rootNodeData);
+                newMindmapTitleInput.value = '';
+            } catch (e) { console.error("Error creating new mind map: ", e); alert("Lỗi khi tạo sơ đồ: " + e.message); }
         }
         async function loadUserMindMaps() {
             if (!currentUser || !db) return;
-            showElement(mindmapListLoading);
+            if(mindmapListLoading) showElement(mindmapListLoading);
             if(mindmapListUl) mindmapListUl.innerHTML = '';
             try {
                 const q = query(collection(db, "mindmaps"), where("userId", "==", currentUser.uid));
@@ -906,16 +757,16 @@
                         li.addEventListener('click', () => { showCanvasView(map.id, map.title); });
                         if(mindmapListUl) mindmapListUl.appendChild(li);
                     });
-                    hideElement(mindmapListLoading);
+                    if(mindmapListLoading) hideElement(mindmapListLoading);
                 }, (error) => {
                     console.error("Error fetching user mind maps: ", error);
                     if(mindmapListUl) mindmapListUl.innerHTML = '<li>Lỗi khi tải danh sách sơ đồ.</li>';
-                    hideElement(mindmapListLoading);
+                    if(mindmapListLoading) hideElement(mindmapListLoading);
                 });
             } catch (e) {
                 console.error("Error setting up mind map listener: ", e);
                 if(mindmapListUl) mindmapListUl.innerHTML = '<li>Lỗi khi tải danh sách sơ đồ.</li>';
-                hideElement(mindmapListLoading);
+                if(mindmapListLoading) hideElement(mindmapListLoading);
             }
         }
         async function deleteMindMap(mapId) {
@@ -930,7 +781,7 @@
             } catch (error) { console.error("Error deleting mind map: ", error); alert("Lỗi khi xóa sơ đồ: " + error.message); }
         }
 
-        // --- FIRESTORE SERVICE LOGIC (Nodes) & KONVA INTEGRATION ---
+        // --- FIRESTORE SERVICE LOGIC (Nodes) & KONVA INTEGRATION (Function definitions) ---
         function initKonvaStage() {
             if (currentKonvaStage) { currentKonvaStage.off('dragstart dragmove dragend click tap wheel contextmenu touchstart touchend touchmove mousedown mousemove mouseup'); currentKonvaStage.destroy(); currentKonvaStage = null; }
             if (currentKonvaLayer) { currentKonvaLayer.destroy(); currentKonvaLayer = null; }
@@ -1049,9 +900,9 @@
                 if (Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) {
                     if (potentiallyDraggedNode.draggable() === false) {
                         potentiallyDraggedNode.draggable(true);
-                        potentiallyDraggedNode.startDrag(e_stage.evt); // Pass original event for touch
+                        potentiallyDraggedNode.startDrag(e_stage.evt);
                     }
-                    clearTimeout(longPressTimeoutId); // Cancel long press if drag starts
+                    clearTimeout(longPressTimeoutId);
                     touchStartTargetNodeForContextMenu = null;
                 }
             });
@@ -1134,7 +985,6 @@
             });
             loadAndListenNodesForCurrentMap();
         }
-
         async function saveCanvasState() {
             if (!currentKonvaStage || !currentMindMapId || !db || !currentUser) return;
             try {
@@ -1150,18 +1000,20 @@
                 console.error("Error saving canvas state:", error);
             }
         }
-
         function loadAndListenNodesForCurrentMap() {
             if (!currentMindMapId || !currentKonvaLayer || !db) { console.warn("Cannot load nodes..."); return; }
-            showElement(konvaContainerLoading); currentKonvaLayer.destroyChildren(); currentKonvaLayer.draw(); allNodesDataForCurrentMap = [];
+            if(konvaContainerLoading) showElement(konvaContainerLoading);
+            if(currentKonvaLayer) currentKonvaLayer.destroyChildren();
+            if(currentKonvaLayer) currentKonvaLayer.draw();
+             allNodesDataForCurrentMap = [];
             const q = query(collection(db, "nodes"), where("mapId", "==", currentMindMapId));
             if (mindmapNodesUnsubscribe) mindmapNodesUnsubscribe();
             mindmapNodesUnsubscribe = onSnapshot(q, (querySnapshot) => {
                 const nodesFromDb = []; querySnapshot.forEach((docSnap) => { nodesFromDb.push({ id: docSnap.id, ...docSnap.data() }); });
-                allNodesDataForCurrentMap = nodesFromDb; renderNodesAndLines(allNodesDataForCurrentMap); hideElement(konvaContainerLoading);
-            }, (error) => { console.error(`Error listening to nodes for map ${currentMindMapId}:`, error); alert("Lỗi khi tải các nút của sơ đồ: " + error.message); hideElement(konvaContainerLoading); });
+                allNodesDataForCurrentMap = nodesFromDb; renderNodesAndLines(allNodesDataForCurrentMap);
+                if(konvaContainerLoading) hideElement(konvaContainerLoading);
+            }, (error) => { console.error(`Error listening to nodes for map ${currentMindMapId}:`, error); alert("Lỗi khi tải các nút của sơ đồ: " + error.message); if(konvaContainerLoading) hideElement(konvaContainerLoading); });
         }
-
         function renderNodesAndLines(nodesData) {
             if (!currentKonvaLayer) return;
             currentKonvaLayer.destroyChildren();
@@ -1386,8 +1238,6 @@
             });
             currentKonvaLayer.batchDraw();
         }
-
-        const HANDLE_RADIUS = 8; const HANDLE_FILL = 'rgba(0,180,0,0.7)'; const HANDLE_STROKE = 'rgba(0,100,0,0.9)';
         function addCreationHandle(parentNodeGroup, parentCurrentShapeHeight) {
             if (!parentNodeGroup || parentNodeGroup.findOne('.creationHandle')) return;
             const parentShapeInitial = parentNodeGroup.findOne('.nodeShape');
@@ -1491,7 +1341,6 @@
             currentKonvaLayer.batchDraw();
         }
         function removeCreationHandle(parentNodeGroup) { if (parentNodeGroup && parentNodeGroup.creationHandle) { parentNodeGroup.creationHandle.destroy(); parentNodeGroup.creationHandle = null; currentKonvaLayer.batchDraw(); } }
-
         function editTextOnKonvaNode(konvaGroup, konvaTextNode, currentShapeHeight) {
             if (!currentKonvaStage || !currentKonvaLayer || isEditingText) return;
             isEditingText = true;
@@ -1519,7 +1368,9 @@
             textarea.style.fontSize = konvaTextNode.fontSize() * currentKonvaStage.scaleY() + 'px';
             textarea.style.border = '1px solid #999'; textarea.style.padding = '0px'; textarea.style.margin = '0px';
             textarea.style.overflow = 'auto'; textarea.style.background = 'white'; textarea.style.outline = 'none';
-            textarea.style.resize = 'none'; textarea.style.textAlign = konvaTextNode.align(); textarea.style.fontFamily = konvaTextNode.fontFamily();
+            textarea.style.resize = 'none';
+            textarea.style.textAlign = konvaTextNode.align();
+            textarea.style.fontFamily = konvaTextNode.fontFamily();
             textarea.style.lineHeight = (konvaTextNode.lineHeight() || 1.2) * currentKonvaStage.scaleY() + 'px';
             textarea.focus(); textarea.select();
 
@@ -1546,31 +1397,21 @@
             setTimeout(() => { window.addEventListener('click', handleOutsideClick); }, 0);
         }
 
-
-        // --- START: HÀM THU THẬP DỮ LIỆU NHÁNH ---
-        /**
-         * Thu thập dữ liệu văn bản và cấu trúc của một nhánh một cách đệ quy.
-         * @param {string} nodeId ID của nút hiện tại trong nhánh.
-         * @param {Array} allNodes Danh sách tất cả các nút trong sơ đồ hiện tại.
-         * @param {number} level Cấp độ hiện tại của nút (0 cho nút gốc của nhánh).
-         * @param {Array} collectedTexts Mảng để lưu trữ các chuỗi văn bản đã được định dạng.
-         */
+        // --- HÀM THU THẬP DỮ LIỆU NHÁNH ---
         function collectBranchDataRecursive(nodeId, allNodes, level, collectedTexts) {
             const node = allNodes.find(n => n.id === nodeId);
             if (!node) {
                 return;
             }
-            const indent = '    '.repeat(level); // 4 dấu cách cho mỗi cấp độ
+            const indent = '    '.repeat(level);
             collectedTexts.push(indent + (node.text || "").trim());
             const children = allNodes.filter(n => n.parentId === nodeId);
             for (const child of children) {
                 collectBranchDataRecursive(child.id, allNodes, level + 1, collectedTexts);
             }
         }
-        // --- END: HÀM THU THẬP DỮ LIỆU NHÁNH ---
 
-
-        // --- AI LOGIC FUNCTIONS ---
+        // --- AI LOGIC FUNCTIONS (Function definitions) ---
         async function suggestChildNodesWithAI(parentNodeKonva) {
             if (!generativeModel || !parentNodeKonva || !currentMindMapId || !currentUser || !db) { alert("Chức năng AI chưa sẵn sàng."); hideContextMenu(); return; }
             const parentNodeId = parentNodeKonva.id();
@@ -1610,6 +1451,7 @@
                 else if (error.message?.includes("429") || error.message?.toLowerCase().includes("quota")) { userMessage = "Bạn đã gửi quá nhiều yêu cầu tới AI hoặc đã hết hạn ngạch. Vui lòng thử lại sau ít phút."; }
                 else if (error.message?.toLowerCase().includes("billing")){ userMessage = "Có vấn đề với cài đặt thanh toán cho dự án Firebase của bạn. Vui lòng kiểm tra trong Google Cloud Console."; }
                 else if (error.message?.toLowerCase().includes("model not found")){ userMessage = "Model AI không được tìm thấy. Vui lòng kiểm tra lại tên model đã cấu hình.";}
+                else if (error.message?.toLowerCase().includes("candidate.safetyRatings")){ userMessage = "Phản hồi từ AI bị chặn do vấn đề an toàn nội dung.";}
                 alert(userMessage);
             } finally { hideLoadingIndicator(); }
         }
@@ -1636,6 +1478,7 @@
                 else if (error.message?.includes("429") || error.message?.toLowerCase().includes("quota")) { userMessage = "Bạn đã gửi quá nhiều yêu cầu tới AI hoặc đã hết hạn ngạch. Vui lòng thử lại sau ít phút."; }
                 else if (error.message?.toLowerCase().includes("billing")){ userMessage = "Có vấn đề với cài đặt thanh toán cho dự án Firebase của bạn. Vui lòng kiểm tra trong Google Cloud Console."; }
                 else if (error.message?.toLowerCase().includes("model not found")){ userMessage = "Model AI không được tìm thấy. Vui lòng kiểm tra lại tên model đã cấu hình.";}
+                else if (error.message?.toLowerCase().includes("candidate.safetyRatings")){ userMessage = "Phản hồi từ AI bị chặn do vấn đề an toàn nội dung.";}
                 alert(userMessage);
             } finally { hideLoadingIndicator(); }
         }
@@ -1678,6 +1521,7 @@
                 else if (error.message?.includes("429") || error.message?.toLowerCase().includes("quota")) { userMessage = "Bạn đã gửi quá nhiều yêu cầu tới AI hoặc đã hết hạn ngạch. Vui lòng thử lại sau ít phút."; }
                 else if (error.message?.toLowerCase().includes("billing")){ userMessage = "Có vấn đề với cài đặt thanh toán cho dự án Firebase của bạn. Vui lòng kiểm tra trong Google Cloud Console."; }
                 else if (error.message?.toLowerCase().includes("model not found")){ userMessage = "Model AI không được tìm thấy. Vui lòng kiểm tra lại tên model đã cấu hình.";}
+                else if (error.message?.toLowerCase().includes("candidate.safetyRatings")){ userMessage = "Phản hồi từ AI bị chặn do vấn đề an toàn nội dung.";}
                 alert(userMessage);
             } finally { hideLoadingIndicator(); }
         }
@@ -1694,8 +1538,8 @@
             try {
                 const result = await generativeModel.generateContent(prompt);
                 const response = result.response; const aiAnswer = response.text().trim();
-                if (aiAnswer) { openAiResponseModal(`Hỏi AI về: "${nodeTextContext}"`, userQuestion.trim(), aiAnswer); }
-                else { openAiResponseModal(`Hỏi AI về: "${nodeTextContext}"`, userQuestion.trim(), "AI không thể đưa ra câu trả lời vào lúc này."); }
+                if (aiAnswer) { openAiResponseModal(`Hỏi AI về: "${nodeTextContext.substring(0,30)}..."`, userQuestion.trim(), aiAnswer); }
+                else { openAiResponseModal(`Hỏi AI về: "${nodeTextContext.substring(0,30)}..."`, userQuestion.trim(), "AI không thể đưa ra câu trả lời vào lúc này."); }
             } catch (error) {
                 console.error("Error calling Gemini API (askAIAboutNode):", error);
                 let userMessage = "Lỗi khi AI trả lời câu hỏi: " + error.message;
@@ -1703,18 +1547,16 @@
                 else if (error.message?.includes("429") || error.message?.toLowerCase().includes("quota")) { userMessage = "Bạn đã gửi quá nhiều yêu cầu tới AI hoặc đã hết hạn ngạch. Vui lòng thử lại sau ít phút."; }
                 else if (error.message?.toLowerCase().includes("billing")){ userMessage = "Có vấn đề với cài đặt thanh toán cho dự án Firebase của bạn. Vui lòng kiểm tra trong Google Cloud Console."; }
                 else if (error.message?.toLowerCase().includes("model not found")){ userMessage = "Model AI không được tìm thấy. Vui lòng kiểm tra lại tên model đã cấu hình.";}
+                else if (error.message?.toLowerCase().includes("candidate.safetyRatings")){ userMessage = "Phản hồi từ AI bị chặn do vấn đề an toàn nội dung.";}
                 openAiResponseModal("Lỗi AI", userQuestion.trim(), userMessage);
             } finally { hideLoadingIndicator(); }
         }
-
-        // --- START: HÀM XỬ LÝ TÓM TẮT NHÁNH BẰNG AI ---
         async function summarizeBranchWithAI(targetNodeKonva) {
             if (!generativeModel || !targetNodeKonva || !currentMindMapId || !currentUser || !db) {
                 alert("Chức năng AI chưa sẵn sàng hoặc không có nút nào được chọn.");
                 hideContextMenu();
                 return;
             }
-
             const rootNodeId = targetNodeKonva.id();
             const rootNodeData = allNodesDataForCurrentMap.find(n => n.id === rootNodeId);
             if (!rootNodeData) {
@@ -1722,22 +1564,16 @@
                 hideContextMenu();
                 return;
             }
-
             showLoadingIndicator("AI đang chuẩn bị dữ liệu để tóm tắt...");
-            hideContextMenu(); // Ẩn context menu sau khi chọn
-
+            hideContextMenu();
             const branchTextsArray = [];
             collectBranchDataRecursive(rootNodeId, allNodesDataForCurrentMap, 0, branchTextsArray);
-
             if (branchTextsArray.length === 0) {
                 alert("Không có dữ liệu văn bản trong nhánh này để tóm tắt.");
                 hideLoadingIndicator();
                 return;
             }
-
             const branchContentForPrompt = branchTextsArray.join('\n');
-            // Giới hạn độ dài nội dung gửi cho AI để tránh lỗi prompt quá dài (Gemini có giới hạn)
-            // Giới hạn này có thể cần điều chỉnh tùy theo model và thực tế
             const maxContentLength = 15000;
             let truncatedContent = branchContentForPrompt;
             let isTruncated = false;
@@ -1746,10 +1582,8 @@
                 truncatedContent = branchContentForPrompt.substring(0, maxContentLength) + "\n... (nội dung đã được cắt bớt do quá dài)";
                 isTruncated = true;
             }
-
             const prompt = `Bạn là một trợ lý AI xuất sắc, chuyên về phân tích và tóm tắt thông tin từ sơ đồ tư duy.
 Dưới đây là nội dung của một nhánh trong sơ đồ tư duy, được trình bày theo cấu trúc phân cấp (các mục con được thụt đầu dòng tương ứng với cấp độ của chúng trong sơ đồ):
-
 ---
 ${truncatedContent}
 ---
@@ -1759,7 +1593,6 @@ Nhiệm vụ của bạn là tạo một bản tóm tắt mạch lạc, súc tí
 2. Đề cập đến các chủ đề con hoặc các khía cạnh quan trọng nhất được phát triển trong nhánh.
 3. Chỉ ra được mối quan hệ logic chính yếu hoặc dòng chảy ý tưởng trong nhánh (nếu có).
 4. Sử dụng ngôn ngữ rõ ràng, dễ hiểu.
-
 Hãy cung cấp bản tóm tắt của bạn.`;
 
             showLoadingIndicator("AI đang tóm tắt nhánh...");
@@ -1768,11 +1601,10 @@ Hãy cung cấp bản tóm tắt của bạn.`;
                 const response = result.response;
                 const summaryText = response.text().trim();
                 const rootNodeTextPreview = (rootNodeData.text || "Không có tiêu đề").substring(0, 30) + ((rootNodeData.text || "").length > 30 ? "..." : "");
-
                 if (summaryText) {
                     openAiResponseModal(
                         `AI Tóm tắt nhánh: "${rootNodeTextPreview}"`,
-                        truncatedContent, // Hiển thị nội dung đã gửi cho AI (có thể đã cắt)
+                        truncatedContent,
                         summaryText
                     );
                 } else {
@@ -1790,122 +1622,74 @@ Hãy cung cấp bản tóm tắt của bạn.`;
                 else if (error.message?.toLowerCase().includes("billing")){ userMessage = "Có vấn đề với cài đặt thanh toán cho dự án Firebase của bạn. Vui lòng kiểm tra trong Google Cloud Console."; }
                 else if (error.message?.toLowerCase().includes("model not found")){ userMessage = "Model AI không được tìm thấy. Vui lòng kiểm tra lại tên model đã cấu hình.";}
                 else if (error.message?.toLowerCase().includes("candidate.safetyRatings")){ userMessage = "Phản hồi từ AI bị chặn do vấn đề an toàn nội dung. Nội dung nhánh có thể chứa từ khóa nhạy cảm.";}
+                openAiResponseModal( `Lỗi AI khi tóm tắt nhánh`, truncatedContent, userMessage );
+            } finally {
+                hideLoadingIndicator();
+            }
+        }
+        async function generateActionPlanWithAI(targetNodeKonva) {
+            if (!generativeModel || !targetNodeKonva || !currentMindMapId || !currentUser || !db) {
+                alert("Chức năng AI chưa sẵn sàng hoặc không có nút nào được chọn.");
+                hideContextMenu();
+                return;
+            }
+            const targetNodeId = targetNodeKonva.id();
+            const targetNodeData = allNodesDataForCurrentMap.find(n => n.id === targetNodeId);
+            if (!targetNodeData || !targetNodeData.text || targetNodeData.text.trim() === "") {
+                alert("Nút được chọn không có nội dung hoặc nội dung không hợp lệ để tạo kế hoạch hành động.");
+                hideContextMenu();
+                return;
+            }
+            const nodeContent = targetNodeData.text.trim();
+            const nodeContentPreview = nodeContent.substring(0, 30) + (nodeContent.length > 30 ? "..." : "");
+            showLoadingIndicator("AI đang tạo kế hoạch hành động...");
+            hideContextMenu();
+            const prompt = `Bạn là một trợ lý AI chuyên nghiệp trong việc lập kế hoạch và đề xuất chiến lược hành động.
+Dựa trên mục tiêu hoặc vấn đề được mô tả dưới đây:
+"${nodeContent}"
 
+Hãy đề xuất một kế hoạch hành động sơ bộ, bao gồm từ 3 đến 5 bước cụ thể, rõ ràng và có tính khả thi cao để đạt được mục tiêu hoặc giải quyết vấn đề đã nêu. Mỗi bước nên:
+1. Bắt đầu bằng một động từ hành động mạnh mẽ (ví dụ: Phân tích, Xác định, Thiết kế, Xây dựng, Triển khai, Kiểm tra, Đánh giá, Tối ưu hóa).
+2. Mô tả ngắn gọn nhưng đầy đủ về hành động cần thực hiện.
+3. Có thể được thực hiện một cách độc lập hoặc theo trình tự logic.
+Vui lòng trình bày kế hoạch dưới dạng danh sách các bước.`;
+
+            try {
+                const result = await generativeModel.generateContent(prompt);
+                const response = result.response;
+                const actionPlanText = response.text().trim();
+                if (actionPlanText) {
+                    openAiResponseModal(
+                        `Kế hoạch hành động cho: "${nodeContentPreview}"`,
+                        `Mục tiêu/Vấn đề: ${nodeContent}`,
+                        actionPlanText
+                    );
+                } else {
+                    openAiResponseModal(
+                        `Kế hoạch hành động cho: "${nodeContentPreview}"`,
+                        `Mục tiêu/Vấn đề: ${nodeContent}`,
+                        "AI không thể tạo kế hoạch hành động cho mục tiêu này vào lúc này. Vui lòng thử lại."
+                    );
+                }
+            } catch (error) {
+                console.error("Error calling Gemini API (generateActionPlanWithAI):", error);
+                let userMessage = "Lỗi khi AI tạo kế hoạch hành động: " + error.message;
+                if (error.message?.includes("API key not valid")) { userMessage += "\nVui lòng kiểm tra lại thiết lập API Key trong Firebase Console cho Gemini API."; }
+                else if (error.message?.includes("429") || error.message?.toLowerCase().includes("quota")) { userMessage = "Bạn đã gửi quá nhiều yêu cầu tới AI hoặc đã hết hạn ngạch. Vui lòng thử lại sau ít phút."; }
+                else if (error.message?.toLowerCase().includes("billing")){ userMessage = "Có vấn đề với cài đặt thanh toán cho dự án Firebase của bạn. Vui lòng kiểm tra trong Google Cloud Console."; }
+                else if (error.message?.toLowerCase().includes("model not found")){ userMessage = "Model AI không được tìm thấy. Vui lòng kiểm tra lại tên model đã cấu hình.";}
+                else if (error.message?.toLowerCase().includes("candidate.safetyRatings")){ userMessage = "Phản hồi từ AI bị chặn do vấn đề an toàn nội dung. Nội dung của nút có thể chứa từ khóa nhạy cảm.";}
                 openAiResponseModal(
-                    `Lỗi AI khi tóm tắt nhánh`,
-                    truncatedContent,
+                    `Lỗi AI khi tạo kế hoạch hành động`,
+                    `Mục tiêu/Vấn đề: ${nodeContent}`,
                     userMessage
                 );
             } finally {
                 hideLoadingIndicator();
             }
         }
-        // --- END: HÀM XỬ LÝ TÓM TẮT NHÁNH BẰNG AI ---
 
-
-        // --- CONTEXT MENU ACTIONS ---
-        if (ctxAddChildButton) {
-             ctxAddChildButton.addEventListener('click', async () => {
-                let targetNode = rightClickedKonvaNode || selectedKonvaNode;
-                if (!targetNode || !currentMindMapId || !db) {
-                    alert("Không thể thêm nút con. Vui lòng thử lại.");
-                    hideContextMenu(); return;
-                }
-                await addChildNodeLogic(targetNode);
-                hideContextMenu();
-            });
-        }
-        if (ctxEditTextButton) {
-            ctxEditTextButton.addEventListener('click', () => {
-                let targetNode = rightClickedKonvaNode || selectedKonvaNode;
-                if (targetNode) {
-                    const textNode = targetNode.findOne('.nodeTextContent');
-                    const shapeNode = targetNode.findOne('.nodeShape');
-                    if (textNode && shapeNode) {
-                        editTextOnKonvaNode(targetNode, textNode, shapeNode.height());
-                    }
-                }
-                hideContextMenu();
-            });
-        }
-        if (ctxViewFullContentButton) {
-            ctxViewFullContentButton.addEventListener('click', () => {
-                const targetNode = rightClickedKonvaNode || selectedKonvaNode;
-                if (targetNode) {
-                    const fullText = targetNode.getAttr('fullTextData');
-                    if (fullText) {
-                        openNodeContentModal(fullText.substring(0,30)+"...", fullText);
-                    } else {
-                        alert("Không có nội dung đầy đủ để hiển thị.");
-                    }
-                } else {
-                    alert("Vui lòng chọn một nút để xem nội dung.");
-                }
-                hideContextMenu();
-            });
-        }
-        if (ctxSuggestChildrenButton) {
-            ctxSuggestChildrenButton.addEventListener('click', async () => {
-                let targetNodeForAI = rightClickedKonvaNode || selectedKonvaNode;
-                if (targetNodeForAI) { await suggestChildNodesWithAI(targetNodeForAI); }
-                else { alert("Vui lòng chọn một nút cha để AI gợi ý nút con."); hideContextMenu(); }
-            });
-        }
-        if (ctxExpandNodeButton) {
-            ctxExpandNodeButton.addEventListener('click', async () => {
-                let targetNodeForAI = rightClickedKonvaNode || selectedKonvaNode;
-                if (targetNodeForAI) { await expandNodeWithAI(targetNodeForAI); }
-                else { alert("Vui lòng chọn một nút để AI mở rộng ý tưởng."); hideContextMenu(); }
-            });
-        }
-        if (ctxGenerateExamplesButton) {
-            ctxGenerateExamplesButton.addEventListener('click', async () => {
-                let targetNodeForAI = rightClickedKonvaNode || selectedKonvaNode;
-                if (targetNodeForAI) { await generateExamplesWithAI(targetNodeForAI); }
-                else { alert("Vui lòng chọn một nút để AI tạo ví dụ."); hideContextMenu(); }
-            });
-        }
-        if (ctxAskAiNodeButton) {
-            ctxAskAiNodeButton.addEventListener('click', async () => {
-                let targetNodeForAI = rightClickedKonvaNode || selectedKonvaNode;
-                if (targetNodeForAI) { await askAIAboutNode(targetNodeForAI); }
-                else { alert("Vui lòng chọn một nút để đặt câu hỏi cho AI."); hideContextMenu(); }
-            });
-        }
-        // --- START: GẮN SỰ KIỆN CHO NÚT TÓM TẮT NHÁNH ---
-        if (ctxSummarizeBranchButton) {
-            ctxSummarizeBranchButton.addEventListener('click', async () => {
-                let targetNodeForSummarize = rightClickedKonvaNode || selectedKonvaNode;
-                if (targetNodeForSummarize) {
-                    await summarizeBranchWithAI(targetNodeForSummarize);
-                } else {
-                    alert("Vui lòng chọn một nút gốc của nhánh để AI tóm tắt.");
-                    hideContextMenu();
-                }
-            });
-        }
-        // --- END: GẮN SỰ KIỆN CHO NÚT TÓM TẮT NHÁNH ---
-        if (ctxDeleteNodeButton) {
-            ctxDeleteNodeButton.addEventListener('click', async () => {
-                let targetNode = rightClickedKonvaNode || selectedKonvaNode;
-                if (!targetNode || !currentMindMapId || !db) {
-                     alert("Không thể xóa nút. Vui lòng thử lại.");
-                     hideContextMenu(); return;
-                }
-                await deleteNodeLogic(targetNode);
-                hideContextMenu();
-            });
-        }
-        document.addEventListener('click', function (e) {
-            if (contextMenu && !contextMenu.classList.contains('hidden')) {
-                if (!contextMenu.contains(e.target) && e.target !== currentKonvaStage && !e.target.hasName?.('mindmapNodeGroup') && !e.target.getParent?.()?.hasName?.('mindmapNodeGroup')) {
-                     hideContextMenu();
-                }
-            }
-        });
-
-
-        // --- TOOLBAR BUTTON ACTIONS ---
+        // --- TOOLBAR BUTTON ACTIONS & KEYBOARD SHORTCUTS & ZOOM (Function definitions) ---
         async function addChildNodeLogic(parentNode) {
             if (!parentNode || !currentMindMapId || !db) return;
             const parentShape = parentNode.findOne('.nodeShape');
@@ -1951,21 +1735,6 @@ Hãy cung cấp bản tóm tắt của bạn.`;
                 } catch (e) { console.error("Error deleting node and descendants:", e); alert("Lỗi khi xóa nút: " + e.message); }
             }
         }
-        if (addChildNodeButton) {
-            addChildNodeButton.addEventListener('click', async () => {
-                if (!selectedKonvaNode) { alert("Vui lòng chọn một nút cha để thêm nút con."); return; }
-                await addChildNodeLogic(selectedKonvaNode);
-            });
-        }
-        if (deleteNodeButton) {
-            deleteNodeButton.addEventListener('click', async () => {
-                if (!selectedKonvaNode) { alert("Vui lòng chọn một nút để xóa."); return; }
-                await deleteNodeLogic(selectedKonvaNode);
-            });
-        }
-
-        // --- KEYBOARD SHORTCUTS ---
-        const KEYBOARD_MOVE_STEP = 10;
         function handleGlobalKeyDown(e) {
             if (isEditingText) return;
             if (contextMenu && !contextMenu.classList.contains('hidden')) { if (e.key === 'Escape') { hideContextMenu(); } return; }
@@ -1994,25 +1763,263 @@ Hãy cung cấp bản tóm tắt của bạn.`;
                     } break;
             }
         }
-
-        // --- ZOOM CONTROLS ---
         const scaleBy = 1.1;
-        if(zoomInButton) {
-            zoomInButton.addEventListener('click', () => { if (!currentKonvaStage) return; const oldScale = currentKonvaStage.scaleX(); currentKonvaStage.scale({ x: oldScale * scaleBy, y: oldScale * scaleBy }); currentKonvaStage.batchDraw(); saveCanvasState(); });
-        }
-        if(zoomOutButton) {
-            zoomOutButton.addEventListener('click', () => { if (!currentKonvaStage) return; const oldScale = currentKonvaStage.scaleX(); currentKonvaStage.scale({ x: oldScale / scaleBy, y: oldScale / scaleBy }); currentKonvaStage.batchDraw(); saveCanvasState(); });
-        }
-        if(resetZoomButton) {
-            resetZoomButton.addEventListener('click', () => { if (!currentKonvaStage) return; currentKonvaStage.scale({ x: 1, y: 1 }); currentKonvaStage.position({ x: 0, y: 0 }); currentKonvaStage.batchDraw(); saveCanvasState(); });
-        }
 
-        window.addEventListener('resize', () => {
-            if (currentKonvaStage && konvaContainer && konvaContainer.offsetParent !== null) {
-                const newWidth = konvaContainer.clientWidth; const newHeight = konvaContainer.clientHeight;
-                currentKonvaStage.width(newWidth); currentKonvaStage.height(newHeight);
+        // --- MAIN SCRIPT EXECUTION AFTER DOM IS LOADED ---
+        window.addEventListener('DOMContentLoaded', () => {
+            // Initialize Firebase services
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                if (typeof getAI === 'function' && typeof GoogleAIBackend === 'function' && typeof getGenerativeModel === 'function') {
+                    ai = getAI(app, { backend: new GoogleAIBackend() });
+                    generativeModel = getGenerativeModel(ai, { model: "gemini-1.5-flash-latest" });
+                    console.log("Firebase initialized successfully with AI Logic SDK!");
+                } else {
+                    console.error("Firebase AI SDK components not found. AI features will be disabled.");
+                    alert("Lỗi: Không thể tải các thành phần AI của Firebase. Các tính năng AI sẽ bị vô hiệu hóa.");
+                }
+            } catch (error) {
+                console.error("Firebase initialization error:", error);
+                alert("Lỗi nghiêm trọng: Không thể khởi tạo Firebase hoặc AI SDK. Chi tiết: " + error.message);
             }
-        });
+
+            // Assign DOM elements
+            nodeStylePanel = document.getElementById('node-style-panel');
+            nodeShapeSelect = document.getElementById('node-shape-select');
+            nodeFontFamilySelect = document.getElementById('node-font-family-select');
+            nodeFontSizeInput = document.getElementById('node-font-size-input');
+            nodeIconSelect = document.getElementById('node-icon-select');
+            nodeBgColorInput = document.getElementById('node-bg-color');
+            nodeTextColorInput = document.getElementById('node-text-color');
+            nodeBorderColorInput = document.getElementById('node-border-color');
+            nodeLineColorInput = document.getElementById('node-line-color');
+            nodeLineDashSelect = document.getElementById('node-line-dash-select');
+            nodeLineWidthInput = document.getElementById('node-line-width');
+
+            contextMenu = document.getElementById('context-menu');
+            ctxAddChildButton = document.getElementById('ctx-add-child');
+            ctxEditTextButton = document.getElementById('ctx-edit-text');
+            ctxViewFullContentButton = document.getElementById('ctx-view-full-content');
+            ctxSuggestChildrenButton = document.getElementById('ctx-suggest-children');
+            ctxExpandNodeButton = document.getElementById('ctx-expand-node');
+            ctxGenerateExamplesButton = document.getElementById('ctx-generate-examples');
+            ctxAskAiNodeButton = document.getElementById('ctx-ask-ai-node');
+            ctxSummarizeBranchButton = document.getElementById('ctx-summarize-branch');
+            ctxGenerateActionPlanButton = document.getElementById('ctx-generate-action-plan');
+            ctxDeleteNodeButton = document.getElementById('ctx-delete-node');
+
+            aiLoadingIndicator = document.getElementById('ai-loading-indicator');
+            aiResponseModalOverlay = document.getElementById('ai-response-modal-overlay');
+            aiResponseModalTitle = document.getElementById('ai-response-modal-title');
+            aiResponseModalBody = document.getElementById('ai-response-modal-body');
+            aiResponseModalCloseButton = document.getElementById('ai-response-modal-close-button');
+
+            nodeContentModalOverlay = document.getElementById('node-content-modal-overlay');
+            nodeContentModalTitle = document.getElementById('node-content-modal-title');
+            nodeContentModalBody = document.getElementById('node-content-modal-body');
+            nodeContentModalCloseButton = document.getElementById('node-content-modal-close-button');
+
+            authSection = document.getElementById('auth-section');
+            loginForm = document.getElementById('login-form');
+            registerForm = document.getElementById('register-form');
+            loginEmailInput = document.getElementById('login-email');
+            loginPasswordInput = document.getElementById('login-password');
+            loginButton = document.getElementById('login-button');
+            showRegisterLink = document.getElementById('show-register-link');
+            registerEmailInput = document.getElementById('register-email');
+            registerPasswordInput = document.getElementById('register-password');
+            registerButton = document.getElementById('register-button');
+            showLoginLink = document.getElementById('show-login-link');
+            loginErrorMsg = document.getElementById('login-error');
+            registerErrorMsg = document.getElementById('register-error');
+
+            mainAppSection = document.getElementById('main-app-section');
+            mainAppTitle = document.getElementById('main-app-title');
+            userEmailDisplay = document.getElementById('user-email-display');
+            logoutButton = document.getElementById('logout-button');
+
+            mindmapManagementView = document.getElementById('mindmap-management-view');
+            newMindmapTitleInput = document.getElementById('new-mindmap-title-input');
+            createMindmapButton = document.getElementById('create-mindmap-button');
+            mindmapListUl = document.getElementById('mindmap-list');
+            mindmapListLoading = document.getElementById('mindmap-list-loading');
+
+            canvasView = document.getElementById('canvas-view');
+            backToMapsListButton = document.getElementById('back-to-maps-list-button');
+            currentMindmapTitleDisplay = document.getElementById('current-mindmap-title-display');
+            addChildNodeButton = document.getElementById('add-child-node-button');
+            deleteNodeButton = document.getElementById('delete-node-button');
+            zoomInButton = document.getElementById('zoom-in-button');
+            zoomOutButton = document.getElementById('zoom-out-button');
+            resetZoomButton = document.getElementById('reset-zoom-button');
+            konvaContainer = document.getElementById('konva-container');
+            konvaContainerLoading = document.getElementById('konva-container-loading');
+
+            // Setup event listeners
+            if (aiResponseModalCloseButton) { aiResponseModalCloseButton.addEventListener('click', closeAiResponseModal); }
+            if (aiResponseModalOverlay) { aiResponseModalOverlay.addEventListener('click', function(event) { if (event.target === aiResponseModalOverlay) closeAiResponseModal(); }); }
+            if (nodeContentModalCloseButton) { nodeContentModalCloseButton.addEventListener('click', closeNodeContentModal); }
+            if (nodeContentModalOverlay) { nodeContentModalOverlay.addEventListener('click', function(event) { if (event.target === nodeContentModalOverlay) closeNodeContentModal(); });}
+
+            if (showRegisterLink) { showRegisterLink.addEventListener('click', (e) => { e.preventDefault(); hideElement(loginForm); showElement(registerForm); clearAuthError(loginErrorMsg); }); }
+            if (showLoginLink) { showLoginLink.addEventListener('click', (e) => { e.preventDefault(); hideElement(registerForm); showElement(loginForm); clearAuthError(registerErrorMsg); }); }
+            if (registerButton) { registerButton.addEventListener('click', handleRegister); }
+            if (loginButton) { loginButton.addEventListener('click', handleLogin); }
+            if (logoutButton) { logoutButton.addEventListener('click', handleLogout); }
+
+            if (auth) { onAuthStateChanged(auth, authStateChangedHandler); }
+
+            if (backToMapsListButton) { backToMapsListButton.addEventListener('click', showMindmapManagementView); }
+
+            if (nodeShapeSelect) nodeShapeSelect.addEventListener('change', (e) => handleNodeStyleChange('shape', e.target.value));
+            if (nodeFontFamilySelect) nodeFontFamilySelect.addEventListener('change', (e) => handleNodeStyleChange('fontFamily', e.target.value));
+            if (nodeFontSizeInput) nodeFontSizeInput.addEventListener('input', (e) => handleNodeStyleChange('fontSize', e.target.value));
+            if (nodeIconSelect) nodeIconSelect.addEventListener('change', (e) => handleNodeStyleChange('icon', e.target.value));
+            if (nodeBgColorInput) nodeBgColorInput.addEventListener('input', (e) => handleNodeStyleChange('backgroundColor', e.target.value));
+            if (nodeTextColorInput) nodeTextColorInput.addEventListener('input', (e) => handleNodeStyleChange('textColor', e.target.value));
+            if (nodeBorderColorInput) nodeBorderColorInput.addEventListener('input', (e) => handleNodeStyleChange('borderColor', e.target.value));
+            if (nodeLineColorInput) nodeLineColorInput.addEventListener('input', (e) => handleNodeStyleChange('lineColor', e.target.value));
+            if (nodeLineDashSelect) nodeLineDashSelect.addEventListener('change', (e) => handleNodeStyleChange('lineDash', e.target.value));
+            if (nodeLineWidthInput) nodeLineWidthInput.addEventListener('input', (e) => handleNodeStyleChange('lineWidth', e.target.value));
+
+            if (createMindmapButton) { createMindmapButton.addEventListener('click', handleCreateMindmap); }
+
+            if (ctxAddChildButton) {
+                ctxAddChildButton.addEventListener('click', async () => {
+                    let targetNode = rightClickedKonvaNode || selectedKonvaNode;
+                    if (!targetNode || !currentMindMapId || !db) {
+                        alert("Không thể thêm nút con. Vui lòng thử lại.");
+                        hideContextMenu(); return;
+                    }
+                    await addChildNodeLogic(targetNode);
+                    hideContextMenu();
+                });
+            }
+             if (ctxEditTextButton) {
+                ctxEditTextButton.addEventListener('click', () => {
+                    let targetNode = rightClickedKonvaNode || selectedKonvaNode;
+                    if (targetNode) {
+                        const textNode = targetNode.findOne('.nodeTextContent');
+                        const shapeNode = targetNode.findOne('.nodeShape');
+                        if (textNode && shapeNode) {
+                            editTextOnKonvaNode(targetNode, textNode, shapeNode.height());
+                        }
+                    }
+                    hideContextMenu();
+                });
+            }
+            if (ctxViewFullContentButton) {
+                ctxViewFullContentButton.addEventListener('click', () => {
+                    const targetNode = rightClickedKonvaNode || selectedKonvaNode;
+                    if (targetNode) {
+                        const fullText = targetNode.getAttr('fullTextData');
+                        if (fullText) {
+                            openNodeContentModal(fullText.substring(0,30)+"...", fullText);
+                        } else {
+                            alert("Không có nội dung đầy đủ để hiển thị.");
+                        }
+                    } else {
+                        alert("Vui lòng chọn một nút để xem nội dung.");
+                    }
+                    hideContextMenu();
+                });
+            }
+            if (ctxSuggestChildrenButton) {
+                ctxSuggestChildrenButton.addEventListener('click', async () => {
+                    let targetNodeForAI = rightClickedKonvaNode || selectedKonvaNode;
+                    if (targetNodeForAI) { await suggestChildNodesWithAI(targetNodeForAI); }
+                    else { alert("Vui lòng chọn một nút cha để AI gợi ý nút con."); hideContextMenu(); }
+                });
+            }
+            if (ctxExpandNodeButton) {
+                ctxExpandNodeButton.addEventListener('click', async () => {
+                    let targetNodeForAI = rightClickedKonvaNode || selectedKonvaNode;
+                    if (targetNodeForAI) { await expandNodeWithAI(targetNodeForAI); }
+                    else { alert("Vui lòng chọn một nút để AI mở rộng ý tưởng."); hideContextMenu(); }
+                });
+            }
+            if (ctxGenerateExamplesButton) {
+                ctxGenerateExamplesButton.addEventListener('click', async () => {
+                    let targetNodeForAI = rightClickedKonvaNode || selectedKonvaNode;
+                    if (targetNodeForAI) { await generateExamplesWithAI(targetNodeForAI); }
+                    else { alert("Vui lòng chọn một nút để AI tạo ví dụ."); hideContextMenu(); }
+                });
+            }
+            if (ctxAskAiNodeButton) {
+                ctxAskAiNodeButton.addEventListener('click', async () => {
+                    let targetNodeForAI = rightClickedKonvaNode || selectedKonvaNode;
+                    if (targetNodeForAI) { await askAIAboutNode(targetNodeForAI); }
+                    else { alert("Vui lòng chọn một nút để đặt câu hỏi cho AI."); hideContextMenu(); }
+                });
+            }
+            if (ctxSummarizeBranchButton) {
+                ctxSummarizeBranchButton.addEventListener('click', async () => {
+                    let targetNodeForSummarize = rightClickedKonvaNode || selectedKonvaNode;
+                    if (targetNodeForSummarize) {
+                        await summarizeBranchWithAI(targetNodeForSummarize);
+                    } else {
+                        alert("Vui lòng chọn một nút gốc của nhánh để AI tóm tắt.");
+                        hideContextMenu();
+                    }
+                });
+            }
+            if (ctxGenerateActionPlanButton) {
+                ctxGenerateActionPlanButton.addEventListener('click', async () => {
+                    let targetNodeForPlan = rightClickedKonvaNode || selectedKonvaNode;
+                    if (targetNodeForPlan) {
+                        await generateActionPlanWithAI(targetNodeForPlan);
+                    } else {
+                        alert("Vui lòng chọn một nút để AI tạo kế hoạch hành động.");
+                        hideContextMenu();
+                    }
+                });
+            }
+            if (ctxDeleteNodeButton) {
+                ctxDeleteNodeButton.addEventListener('click', async () => {
+                    let targetNode = rightClickedKonvaNode || selectedKonvaNode;
+                    if (!targetNode || !currentMindMapId || !db) {
+                         alert("Không thể xóa nút. Vui lòng thử lại.");
+                         hideContextMenu(); return;
+                    }
+                    await deleteNodeLogic(targetNode);
+                    hideContextMenu();
+                });
+            }
+            document.addEventListener('click', function (e) {
+                if (contextMenu && !contextMenu.classList.contains('hidden')) {
+                    if (!contextMenu.contains(e.target) && e.target !== currentKonvaStage && !e.target.hasName?.('mindmapNodeGroup') && !e.target.getParent?.()?.hasName?.('mindmapNodeGroup')) {
+                         hideContextMenu();
+                    }
+                }
+            });
+
+            if (addChildNodeButton) {
+                addChildNodeButton.addEventListener('click', async () => {
+                    if (!selectedKonvaNode) { alert("Vui lòng chọn một nút cha để thêm nút con."); return; }
+                    await addChildNodeLogic(selectedKonvaNode);
+                });
+            }
+            if (deleteNodeButton) {
+                deleteNodeButton.addEventListener('click', async () => {
+                    if (!selectedKonvaNode) { alert("Vui lòng chọn một nút để xóa."); return; }
+                    await deleteNodeLogic(selectedKonvaNode);
+                });
+            }
+            if(zoomInButton) { zoomInButton.addEventListener('click', () => { if (!currentKonvaStage) return; const oldScale = currentKonvaStage.scaleX(); currentKonvaStage.scale({ x: oldScale * scaleBy, y: oldScale * scaleBy }); currentKonvaStage.batchDraw(); saveCanvasState(); }); }
+            if(zoomOutButton) { zoomOutButton.addEventListener('click', () => { if (!currentKonvaStage) return; const oldScale = currentKonvaStage.scaleX(); currentKonvaStage.scale({ x: oldScale / scaleBy, y: oldScale / scaleBy }); currentKonvaStage.batchDraw(); saveCanvasState(); }); }
+            if(resetZoomButton) { resetZoomButton.addEventListener('click', () => { if (!currentKonvaStage) return; currentKonvaStage.scale({ x: 1, y: 1 }); currentKonvaStage.position({ x: 0, y: 0 }); currentKonvaStage.batchDraw(); saveCanvasState(); }); }
+
+            window.addEventListener('resize', () => {
+                if (currentKonvaStage && konvaContainer && konvaContainer.offsetParent !== null) {
+                    const newWidth = konvaContainer.clientWidth; const newHeight = konvaContainer.clientHeight;
+                    currentKonvaStage.width(newWidth); currentKonvaStage.height(newHeight);
+                }
+            });
+
+        }); // End of DOMContentLoaded
 
     </script>
 </body>
