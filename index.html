@@ -420,6 +420,7 @@
         const HANDLE_RADIUS = 8;
         const HANDLE_FILL = 'rgba(0,180,0,0.7)';
         const HANDLE_STROKE = 'rgba(0,100,0,0.9)';
+        const scaleBy = 1.1; // Cho zoom bằng nút bấm và mouse wheel
 
 
         // --- DOM ELEMENT VARIABLES (will be assigned in DOMContentLoaded) ---
@@ -780,6 +781,20 @@
         }
 
         // --- FIRESTORE SERVICE LOGIC (Nodes) & KONVA INTEGRATION (Function definitions) ---
+        // START: Pinch to Zoom Helper functions
+        function getDistance(p1, p2) {
+            return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+        }
+        function getCenter(p1, p2) {
+            return {
+                x: (p1.x + p2.x) / 2,
+                y: (p1.y + p2.y) / 2,
+            };
+        }
+        let lastCenter = null;
+        let lastDist = 0;
+        // END: Pinch to Zoom Helper functions
+
         function initKonvaStage() {
             if (currentKonvaStage) { currentKonvaStage.off('dragstart dragmove dragend click tap wheel contextmenu touchstart touchend touchmove mousedown mousemove mouseup'); currentKonvaStage.destroy(); currentKonvaStage = null; }
             if (currentKonvaLayer) { currentKonvaLayer.destroy(); currentKonvaLayer = null; }
@@ -800,6 +815,20 @@
             currentKonvaStage.on('mousedown touchstart', function(e_stage) {
                 let hitShape = e_stage.target;
                 let determinedTargetNodeGroup = null;
+
+                // Pinch-to-zoom: Check for two touches
+                const touches = e_stage.evt.touches;
+                if (touches && touches.length === 2) {
+                    e_stage.evt.preventDefault(); // Prevent default browser zoom/scroll
+                    currentKonvaStage.draggable(false); // Disable stage dragging during pinch
+                    const touch1 = touches[0];
+                    const touch2 = touches[1];
+                    lastCenter = getCenter({ x: touch1.clientX, y: touch1.clientY }, { x: touch2.clientX, y: touch2.clientY });
+                    lastDist = getDistance({ x: touch1.clientX, y: touch1.clientY }, { x: touch2.clientX, y: touch2.clientY });
+                    potentiallyDraggedNode = null; // Ensure no node dragging during pinch
+                    return; // Stop further processing for mousedown/touchstart if it's a pinch start
+                }
+
 
                 if (hitShape === currentKonvaStage) {
                     potentiallyDraggedNode = null;
@@ -872,6 +901,41 @@
             });
 
             currentKonvaStage.on('mousemove touchmove', function(e_stage) {
+                const touches = e_stage.evt.touches;
+
+                // Pinch-to-zoom logic
+                if (touches && touches.length === 2 && lastDist > 0) {
+                    e_stage.evt.preventDefault();
+                    const touch1 = touches[0];
+                    const touch2 = touches[1];
+                    const newCenter = getCenter({ x: touch1.clientX, y: touch1.clientY }, { x: touch2.clientX, y: touch2.clientY });
+                    const newDist = getDistance({ x: touch1.clientX, y: touch1.clientY }, { x: touch2.clientX, y: touch2.clientY });
+
+                    const pointTo = {
+                        x: (newCenter.x - currentKonvaStage.x()) / currentKonvaStage.scaleX(),
+                        y: (newCenter.y - currentKonvaStage.y()) / currentKonvaStage.scaleX(),
+                    };
+
+                    const newScale = currentKonvaStage.scaleX() * (newDist / lastDist);
+
+                    currentKonvaStage.scale({ x: newScale, y: newScale });
+
+                    const dx = newCenter.x - lastCenter.x;
+                    const dy = newCenter.y - lastCenter.y;
+
+                    const newPos = {
+                        x: newCenter.x - pointTo.x * newScale + dx,
+                        y: newCenter.y - pointTo.y * newScale + dy,
+                    };
+                    currentKonvaStage.position(newPos);
+                    currentKonvaStage.batchDraw();
+
+                    lastDist = newDist;
+                    lastCenter = newCenter;
+                    return; // Stop further processing for mousemove/touchmove if it's a pinch
+                }
+
+
                 if (touchStartTargetNodeForContextMenu && e_stage.type === 'touchmove') {
                     const touch = e_stage.evt.touches && e_stage.evt.touches[0];
                     if (touch) {
@@ -910,16 +974,31 @@
                 touchStartTargetNodeForContextMenu = null;
                 potentiallyDraggedNode = null;
                 dragStartPointerPosition = null;
-                currentKonvaStage.draggable(true);
+
+                // Reset pinch zoom state
+                if (lastDist > 0) { // Was pinching
+                    saveCanvasState(); // Save state after pinch zoom ends
+                }
+                lastDist = 0;
+                lastCenter = null;
+
+                currentKonvaStage.draggable(true); // Re-enable stage dragging
             });
 
 
-            currentKonvaStage.on('dragend', saveCanvasState);
-            currentKonvaStage.on('wheel', (e) => {
+            currentKonvaStage.on('dragend', saveCanvasState); // For stage drag
+            currentKonvaStage.on('wheel', (e) => { // For mouse wheel zoom
                 e.evt.preventDefault(); const oldScale = currentKonvaStage.scaleX();
                 const pointer = currentKonvaStage.getPointerPosition(); if (!pointer) return;
                 const mousePointTo = { x: (pointer.x - currentKonvaStage.x()) / oldScale, y: (pointer.y - currentKonvaStage.y()) / oldScale, };
-                const direction = e.evt.deltaY > 0 ? -1 : 1; const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
+                const direction = e.evt.deltaY > 0 ? -1 : 1; // Corrected direction for standard wheel behavior (up = zoom in, down = zoom out)
+                let newScale;
+                if (direction > 0) { // Zoom in
+                     newScale = oldScale * scaleBy;
+                } else { // Zoom out
+                     newScale = oldScale / scaleBy;
+                }
+
                 currentKonvaStage.scale({ x: newScale, y: newScale });
                 const newPos = { x: pointer.x - mousePointTo.x * newScale, y: pointer.y - mousePointTo.y * newScale, };
                 currentKonvaStage.position(newPos); currentKonvaStage.batchDraw(); saveCanvasState();
@@ -1553,7 +1632,6 @@
             } finally { hideLoadingIndicator(); }
         }
 
-        // --- START: HÀM XỬ LÝ TÓM TẮT NHÁNH BẰNG AI (Tạo 1 nút con) ---
         async function summarizeBranchWithAI(targetNodeKonva) {
             if (!generativeModel || !targetNodeKonva || !currentMindMapId || !currentUser || !db) {
                 alert("Chức năng AI chưa sẵn sàng hoặc không có nút nào được chọn.");
@@ -1585,7 +1663,6 @@
                 truncatedContent = branchContentForPrompt.substring(0, maxContentLength) + "\n... (nội dung đã được cắt bớt do quá dài)";
                 isTruncated = true;
             }
-            // Điều chỉnh prompt để yêu cầu một đoạn văn bản tóm tắt duy nhất
             const prompt = `Bạn là một trợ lý AI xuất sắc, chuyên về phân tích và tóm tắt thông tin từ sơ đồ tư duy.
 Dưới đây là nội dung của một nhánh trong sơ đồ tư duy, được trình bày theo cấu trúc phân cấp (các mục con được thụt đầu dòng tương ứng với cấp độ của chúng trong sơ đồ):
 ---
@@ -1609,24 +1686,26 @@ Hãy cung cấp bản tóm tắt dưới dạng một đoạn văn bản duy nh�
                 if (summaryText) {
                     const parentShape = targetNodeKonva.findOne('.nodeShape');
                     const parentHeight = parentShape ? parentShape.height() : DEFAULT_NODE_STYLE.minHeight;
+                    const parentWidth = parentShape ? parentShape.width() : DEFAULT_NODE_STYLE.width;
+
 
                     const newNodeData = {
                         mapId: currentMindMapId,
                         parentId: rootNodeId,
-                        text: `📄 Tóm tắt nhánh:\n${summaryText}`, // Toàn bộ tóm tắt vào một nút
+                        text: `📄 Tóm tắt nhánh:\n${summaryText}`,
                         position: {
-                            x: targetNodeKonva.x() + 20,
-                            y: targetNodeKonva.y() + parentHeight + 40
+                            x: targetNodeKonva.x() + parentWidth / 4 + 10, // Hơi lệch sang phải và xuống dưới so với logic thêm nút con
+                            y: targetNodeKonva.y() + parentHeight + 35
                         },
                         style: {
                             ...DEFAULT_NODE_STYLE,
-                            backgroundColor: "#FFF9C4", // Light yellow
-                            textColor: "#5D4037",
-                            borderColor: "#FBC02D",
+                            backgroundColor: "#FFFDE7", // Màu vàng nhạt hơn
+                            textColor: "#4E342E",
+                            borderColor: "#FFD54F",
                             shape: "roundedRectangle",
-                            cornerRadius: 4,
-                            width: 250, // Có thể cần rộng hơn để chứa nhiều text
-                            minHeight: 70, // Có thể cần cao hơn
+                            cornerRadius: 6,
+                            width: 250,
+                            minHeight: 70,
                             fontSize: 13,
                             icon: '📄'
                         },
@@ -1655,9 +1734,6 @@ Hãy cung cấp bản tóm tắt dưới dạng một đoạn văn bản duy nh�
                 hideLoadingIndicator();
             }
         }
-        // --- END: HÀM XỬ LÝ TÓM TẮT NHÁNH BẰNG AI ---
-
-        // --- START: HÀM TẠO KẾ HOẠCH HÀNH ĐỘNG BẰNG AI (Tạo 1 nút con) ---
         async function generateActionPlanWithAI(targetNodeKonva) {
             if (!generativeModel || !targetNodeKonva || !currentMindMapId || !currentUser || !db) {
                 alert("Chức năng AI chưa sẵn sàng hoặc không có nút nào được chọn.");
@@ -1675,7 +1751,6 @@ Hãy cung cấp bản tóm tắt dưới dạng một đoạn văn bản duy nh�
             const nodeContentPreview = nodeContent.substring(0, 30) + (nodeContent.length > 30 ? "..." : "");
             showLoadingIndicator("AI đang tạo kế hoạch hành động...");
             hideContextMenu();
-            // Điều chỉnh prompt để yêu cầu một khối văn bản duy nhất, mỗi bước trên một dòng mới
             const prompt = `Bạn là một trợ lý AI chuyên nghiệp trong việc lập kế hoạch và đề xuất chiến lược hành động.
 Dựa trên mục tiêu hoặc vấn đề được mô tả dưới đây:
 "${nodeContent}"
@@ -1684,7 +1759,7 @@ Hãy đề xuất một kế hoạch hành động sơ bộ, bao gồm từ 3 đ
 1. Bắt đầu bằng một động từ hành động mạnh mẽ (ví dụ: Phân tích, Xác định, Thiết kế, Xây dựng, Triển khai, Kiểm tra, Đánh giá, Tối ưu hóa).
 2. Mô tả ngắn gọn nhưng đầy đủ về hành động cần thực hiện.
 3. Có thể được thực hiện một cách độc lập hoặc theo trình tự logic.
-Vui lòng trình bày toàn bộ kế hoạch dưới dạng một khối văn bản, với mỗi bước hành động trên một dòng riêng biệt. Bạn có thể sử dụng gạch đầu dòng (-) hoặc số thứ tự (1., 2.) cho mỗi bước.`;
+Vui lòng trình bày toàn bộ kế hoạch dưới dạng một khối văn bản, với mỗi bước hành động trên một dòng riêng biệt, bắt đầu bằng số thứ tự (ví dụ: 1. ..., 2. ...).`;
 
             try {
                 const result = await generativeModel.generateContent(prompt);
@@ -1694,14 +1769,15 @@ Vui lòng trình bày toàn bộ kế hoạch dưới dạng một khối văn b
                 if (actionPlanText) {
                     const parentShape = targetNodeKonva.findOne('.nodeShape');
                     const parentHeight = parentShape ? parentShape.height() : DEFAULT_NODE_STYLE.minHeight;
+                    const parentWidth = parentShape ? parentShape.width() : DEFAULT_NODE_STYLE.width;
 
                     const newNodeData = {
                         mapId: currentMindMapId,
                         parentId: targetNodeId,
-                        text: `🚀 Kế hoạch hành động:\n${actionPlanText}`, // Toàn bộ kế hoạch vào một nút
+                        text: `🚀 Kế hoạch hành động:\n${actionPlanText}`,
                         position: {
-                            x: targetNodeKonva.x() + 20,
-                            y: targetNodeKonva.y() + parentHeight + 40
+                            x: targetNodeKonva.x() + parentWidth / 4 + 10,
+                            y: targetNodeKonva.y() + parentHeight + 35 // Giữ vị trí tương tự như nút tóm tắt
                         },
                         style: {
                             ...DEFAULT_NODE_STYLE,
@@ -1710,8 +1786,8 @@ Vui lòng trình bày toàn bộ kế hoạch dưới dạng một khối văn b
                             borderColor: "#90CAF9",
                             shape: "roundedRectangle",
                             cornerRadius: 4,
-                            width: 280, // Có thể cần rộng hơn
-                            minHeight: 80, // Có thể cần cao hơn
+                            width: 280,
+                            minHeight: 80,
                             fontSize: 13,
                             icon: '🚀'
                         },
@@ -1744,7 +1820,6 @@ Vui lòng trình bày toàn bộ kế hoạch dưới dạng một khối văn b
                 hideLoadingIndicator();
             }
         }
-        // --- END: HÀM TẠO KẾ HOẠCH HÀNH ĐỘNG BẰNG AI ---
 
         // --- TOOLBAR BUTTON ACTIONS & KEYBOARD SHORTCUTS & ZOOM (Function definitions) ---
         async function addChildNodeLogic(parentNode) {
@@ -1796,6 +1871,7 @@ Vui lòng trình bày toàn bộ kế hoạch dưới dạng một khối văn b
             if (isEditingText) return;
             if (contextMenu && !contextMenu.classList.contains('hidden')) { if (e.key === 'Escape') { hideContextMenu(); } return; }
             if (!selectedKonvaNode && !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) { if (e.key === 'Tab' || e.key === 'Enter' || e.key === 'Delete' || e.key === 'Backspace') return; }
+            const KEYBOARD_MOVE_STEP = 10; // Defined KEYBOARD_MOVE_STEP here or globally
             switch (e.key) {
                 case 'Tab': if (selectedKonvaNode) { e.preventDefault(); addChildNodeLogic(selectedKonvaNode); } break;
                 case 'Enter':
@@ -1820,7 +1896,6 @@ Vui lòng trình bày toàn bộ kế hoạch dưới dạng một khối văn b
                     } break;
             }
         }
-        const scaleBy = 1.1;
 
         // --- MAIN SCRIPT EXECUTION AFTER DOM IS LOADED ---
         window.addEventListener('DOMContentLoaded', () => {
@@ -2081,3 +2156,4 @@ Vui lòng trình bày toàn bộ kế hoạch dưới dạng một khối văn b
     </script>
 </body>
 </html>
+
