@@ -417,11 +417,9 @@
         const LONG_PRESS_MOVE_THRESHOLD = 10;
         let touchStartCoordsForLongPress = { x: 0, y: 0 };
 
-        // START: Moved Handle Constants to Global Scope
         const HANDLE_RADIUS = 8;
         const HANDLE_FILL = 'rgba(0,180,0,0.7)';
         const HANDLE_STROKE = 'rgba(0,100,0,0.9)';
-        // END: Moved Handle Constants to Global Scope
 
 
         // --- DOM ELEMENT VARIABLES (will be assigned in DOMContentLoaded) ---
@@ -1341,6 +1339,7 @@
             currentKonvaLayer.batchDraw();
         }
         function removeCreationHandle(parentNodeGroup) { if (parentNodeGroup && parentNodeGroup.creationHandle) { parentNodeGroup.creationHandle.destroy(); parentNodeGroup.creationHandle = null; currentKonvaLayer.batchDraw(); } }
+
         function editTextOnKonvaNode(konvaGroup, konvaTextNode, currentShapeHeight) {
             if (!currentKonvaStage || !currentKonvaLayer || isEditingText) return;
             isEditingText = true;
@@ -1397,6 +1396,7 @@
             setTimeout(() => { window.addEventListener('click', handleOutsideClick); }, 0);
         }
 
+
         // --- HÀM THU THẬP DỮ LIỆU NHÁNH ---
         function collectBranchDataRecursive(nodeId, allNodes, level, collectedTexts) {
             const node = allNodes.find(n => n.id === nodeId);
@@ -1410,6 +1410,7 @@
                 collectBranchDataRecursive(child.id, allNodes, level + 1, collectedTexts);
             }
         }
+
 
         // --- AI LOGIC FUNCTIONS (Function definitions) ---
         async function suggestChildNodesWithAI(parentNodeKonva) {
@@ -1551,6 +1552,8 @@
                 openAiResponseModal("Lỗi AI", userQuestion.trim(), userMessage);
             } finally { hideLoadingIndicator(); }
         }
+
+        // --- START: HÀM XỬ LÝ TÓM TẮT NHÁNH BẰNG AI (Tạo 1 nút con) ---
         async function summarizeBranchWithAI(targetNodeKonva) {
             if (!generativeModel || !targetNodeKonva || !currentMindMapId || !currentUser || !db) {
                 alert("Chức năng AI chưa sẵn sàng hoặc không có nút nào được chọn.");
@@ -1582,6 +1585,7 @@
                 truncatedContent = branchContentForPrompt.substring(0, maxContentLength) + "\n... (nội dung đã được cắt bớt do quá dài)";
                 isTruncated = true;
             }
+            // Điều chỉnh prompt để yêu cầu một đoạn văn bản tóm tắt duy nhất
             const prompt = `Bạn là một trợ lý AI xuất sắc, chuyên về phân tích và tóm tắt thông tin từ sơ đồ tư duy.
 Dưới đây là nội dung của một nhánh trong sơ đồ tư duy, được trình bày theo cấu trúc phân cấp (các mục con được thụt đầu dòng tương ứng với cấp độ của chúng trong sơ đồ):
 ---
@@ -1593,7 +1597,7 @@ Nhiệm vụ của bạn là tạo một bản tóm tắt mạch lạc, súc tí
 2. Đề cập đến các chủ đề con hoặc các khía cạnh quan trọng nhất được phát triển trong nhánh.
 3. Chỉ ra được mối quan hệ logic chính yếu hoặc dòng chảy ý tưởng trong nhánh (nếu có).
 4. Sử dụng ngôn ngữ rõ ràng, dễ hiểu.
-Hãy cung cấp bản tóm tắt của bạn.`;
+Hãy cung cấp bản tóm tắt dưới dạng một đoạn văn bản duy nhất.`;
 
             showLoadingIndicator("AI đang tóm tắt nhánh...");
             try {
@@ -1601,16 +1605,40 @@ Hãy cung cấp bản tóm tắt của bạn.`;
                 const response = result.response;
                 const summaryText = response.text().trim();
                 const rootNodeTextPreview = (rootNodeData.text || "Không có tiêu đề").substring(0, 30) + ((rootNodeData.text || "").length > 30 ? "..." : "");
+
                 if (summaryText) {
-                    openAiResponseModal(
+                    const parentShape = targetNodeKonva.findOne('.nodeShape');
+                    const parentHeight = parentShape ? parentShape.height() : DEFAULT_NODE_STYLE.minHeight;
+
+                    const newNodeData = {
+                        mapId: currentMindMapId,
+                        parentId: rootNodeId,
+                        text: `📄 Tóm tắt nhánh:\n${summaryText}`, // Toàn bộ tóm tắt vào một nút
+                        position: {
+                            x: targetNodeKonva.x() + 20,
+                            y: targetNodeKonva.y() + parentHeight + 40
+                        },
+                        style: {
+                            ...DEFAULT_NODE_STYLE,
+                            backgroundColor: "#FFF9C4", // Light yellow
+                            textColor: "#5D4037",
+                            borderColor: "#FBC02D",
+                            shape: "roundedRectangle",
+                            cornerRadius: 4,
+                            width: 250, // Có thể cần rộng hơn để chứa nhiều text
+                            minHeight: 70, // Có thể cần cao hơn
+                            fontSize: 13,
+                            icon: '📄'
+                        },
+                        createdAt: serverTimestamp()
+                    };
+                    await addDoc(collection(db, "nodes"), newNodeData);
+                    alert(`AI đã tạo một nút tóm tắt con cho nhánh "${rootNodeTextPreview}".`);
+
+                } else {
+                     openAiResponseModal(
                         `AI Tóm tắt nhánh: "${rootNodeTextPreview}"`,
                         truncatedContent,
-                        summaryText
-                    );
-                } else {
-                    openAiResponseModal(
-                        `AI Tóm tắt nhánh: "${rootNodeTextPreview}"`,
-                        null,
                         "AI không thể tạo tóm tắt cho nhánh này vào lúc này. Vui lòng thử lại hoặc kiểm tra nội dung nhánh."
                     );
                 }
@@ -1627,6 +1655,9 @@ Hãy cung cấp bản tóm tắt của bạn.`;
                 hideLoadingIndicator();
             }
         }
+        // --- END: HÀM XỬ LÝ TÓM TẮT NHÁNH BẰNG AI ---
+
+        // --- START: HÀM TẠO KẾ HOẠCH HÀNH ĐỘNG BẰNG AI (Tạo 1 nút con) ---
         async function generateActionPlanWithAI(targetNodeKonva) {
             if (!generativeModel || !targetNodeKonva || !currentMindMapId || !currentUser || !db) {
                 alert("Chức năng AI chưa sẵn sàng hoặc không có nút nào được chọn.");
@@ -1644,6 +1675,7 @@ Hãy cung cấp bản tóm tắt của bạn.`;
             const nodeContentPreview = nodeContent.substring(0, 30) + (nodeContent.length > 30 ? "..." : "");
             showLoadingIndicator("AI đang tạo kế hoạch hành động...");
             hideContextMenu();
+            // Điều chỉnh prompt để yêu cầu một khối văn bản duy nhất, mỗi bước trên một dòng mới
             const prompt = `Bạn là một trợ lý AI chuyên nghiệp trong việc lập kế hoạch và đề xuất chiến lược hành động.
 Dựa trên mục tiêu hoặc vấn đề được mô tả dưới đây:
 "${nodeContent}"
@@ -1652,18 +1684,42 @@ Hãy đề xuất một kế hoạch hành động sơ bộ, bao gồm từ 3 đ
 1. Bắt đầu bằng một động từ hành động mạnh mẽ (ví dụ: Phân tích, Xác định, Thiết kế, Xây dựng, Triển khai, Kiểm tra, Đánh giá, Tối ưu hóa).
 2. Mô tả ngắn gọn nhưng đầy đủ về hành động cần thực hiện.
 3. Có thể được thực hiện một cách độc lập hoặc theo trình tự logic.
-Vui lòng trình bày kế hoạch dưới dạng danh sách các bước.`;
+Vui lòng trình bày toàn bộ kế hoạch dưới dạng một khối văn bản, với mỗi bước hành động trên một dòng riêng biệt. Bạn có thể sử dụng gạch đầu dòng (-) hoặc số thứ tự (1., 2.) cho mỗi bước.`;
 
             try {
                 const result = await generativeModel.generateContent(prompt);
                 const response = result.response;
                 const actionPlanText = response.text().trim();
+
                 if (actionPlanText) {
-                    openAiResponseModal(
-                        `Kế hoạch hành động cho: "${nodeContentPreview}"`,
-                        `Mục tiêu/Vấn đề: ${nodeContent}`,
-                        actionPlanText
-                    );
+                    const parentShape = targetNodeKonva.findOne('.nodeShape');
+                    const parentHeight = parentShape ? parentShape.height() : DEFAULT_NODE_STYLE.minHeight;
+
+                    const newNodeData = {
+                        mapId: currentMindMapId,
+                        parentId: targetNodeId,
+                        text: `🚀 Kế hoạch hành động:\n${actionPlanText}`, // Toàn bộ kế hoạch vào một nút
+                        position: {
+                            x: targetNodeKonva.x() + 20,
+                            y: targetNodeKonva.y() + parentHeight + 40
+                        },
+                        style: {
+                            ...DEFAULT_NODE_STYLE,
+                            backgroundColor: "#E3F2FD", // Light blue
+                            textColor: "#0D47A1",
+                            borderColor: "#90CAF9",
+                            shape: "roundedRectangle",
+                            cornerRadius: 4,
+                            width: 280, // Có thể cần rộng hơn
+                            minHeight: 80, // Có thể cần cao hơn
+                            fontSize: 13,
+                            icon: '🚀'
+                        },
+                        createdAt: serverTimestamp()
+                    };
+                    await addDoc(collection(db, "nodes"), newNodeData);
+                    alert(`AI đã tạo một nút kế hoạch hành động cho "${nodeContentPreview}".`);
+
                 } else {
                     openAiResponseModal(
                         `Kế hoạch hành động cho: "${nodeContentPreview}"`,
@@ -1688,6 +1744,7 @@ Vui lòng trình bày kế hoạch dưới dạng danh sách các bước.`;
                 hideLoadingIndicator();
             }
         }
+        // --- END: HÀM TẠO KẾ HOẠCH HÀNH ĐỘNG BẰNG AI ---
 
         // --- TOOLBAR BUTTON ACTIONS & KEYBOARD SHORTCUTS & ZOOM (Function definitions) ---
         async function addChildNodeLogic(parentNode) {
