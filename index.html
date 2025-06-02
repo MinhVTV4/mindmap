@@ -246,7 +246,19 @@
                         <button id="zoom-out-button" class="secondary" title="Thu nhỏ">-</button>
                         <button id="reset-zoom-button" class="secondary" title="Reset zoom">Reset</button>
                     </div>
-                     <div id="node-style-panel" class="toolbar-section hidden">
+                    <div class="toolbar-section">
+                        <label for="toggle-grid" style="font-size:0.9em; margin-right: 5px;">Lưới:</label>
+                        <input type="checkbox" id="toggle-grid" title="Hiển thị/Ẩn lưới">
+                    </div>
+                    <div class="toolbar-section">
+                        <label for="toggle-snap-to-grid" style="font-size:0.9em; margin-right: 5px;">Hút lưới:</label>
+                        <input type="checkbox" id="toggle-snap-to-grid" title="Bật/Tắt hút vào lưới">
+                    </div>
+                    <div class="toolbar-section">
+                        <label for="grid-size-input" style="font-size:0.9em; margin-right: 3px;">Kích thước lưới:</label>
+                        <input type="number" id="grid-size-input" value="50" min="10" max="200" step="10" title="Kích thước ô lưới">
+                    </div>
+                    <div id="node-style-panel" class="toolbar-section hidden">
                         <div class="style-group">
                             <label for="node-shape-select">Hình dạng:</label>
                             <select id="node-shape-select" title="Hình dạng nút">
@@ -460,6 +472,12 @@
         const HANDLE_STROKE = 'rgba(0,100,0,0.9)';
         const scaleBy = 1.1;
 
+        // NEW: Grid and Snap-to-Grid Variables
+        let isGridVisible = false;
+        let isSnapToGridEnabled = false;
+        let gridSize = 50; // Default grid size
+        let gridLines = []; // To store Konva Line objects for the grid
+
 
         // --- DOM ELEMENT VARIABLES ---
         let nodeStylePanel, nodeShapeSelect, nodeFontFamilySelect, nodeFontSizeInput, nodeIconSelect, nodeBgColorInput, nodeTextColorInput, nodeBorderColorInput, nodeLineColorInput, nodeLineDashSelect, nodeLineWidthInput;
@@ -472,6 +490,7 @@
         let mindmapManagementView, newMindmapTitleInput, createMindmapButton, mindmapListUl, mindmapListLoading;
         let canvasView, backToMapsListButton, currentMindmapTitleDisplay, addChildNodeButton, deleteNodeButton, zoomInButton, zoomOutButton, resetZoomButton, konvaContainer, konvaContainerLoading;
         let aiTextInput, generateMindmapFromTextButton, aiMindmapTitleInput; // NEW variables for AI from text
+        let toggleGridCheckbox, toggleSnapToGridCheckbox, gridSizeInput; // NEW variables for grid controls
 
 
         // --- UTILITY FUNCTIONS ---
@@ -527,7 +546,7 @@
         function parseMindmapStructure(text, mapId) {
             const lines = text.split('\n').filter(line => line.trim() !== '');
             const nodes = [];
-            const stack = []; // To keep track of parent nodes at each level
+            const stack = []; // To keep track of parent nodes at each level: [{tempId, level}]
 
             console.log("Starting parseMindmapStructure with text:", text); // DEBUG: Raw text input
 
@@ -535,26 +554,31 @@
                 const line = lines[i];
                 console.log(`Processing line ${i}: "${line}"`); // DEBUG: Current line
 
-                // Determine level based on leading spaces (assuming 2 spaces per level for indentation)
-                // And then check for the presence of '- '
-                let level = 0;
-                let content = line; // Start with the full line
+                let currentLevel = 0;
+                let content = line;
 
-                const leadingSpacesMatch = line.match(/^(\s*)/);
-                if (leadingSpacesMatch && leadingSpacesMatch[1]) {
-                    level = Math.floor(leadingSpacesMatch[1].length / 2); // 2 spaces = 1 level
+                // Determine level by counting leading spaces and then checking for '- '
+                // This regex captures leading spaces (group 1) and then the rest of the line (group 2)
+                const match = line.match(/^(\s*)(.*)/);
+                if (!match) {
+                    console.warn(`Skipping line due to parse error (no match): "${line}"`);
+                    continue;
                 }
 
-                // Strip leading spaces from the content
-                content = content.trimStart();
+                const leadingSpaces = match[1]; // e.g., "  ", "    "
+                content = match[2]; // Content after leading spaces, before stripping bullet
 
-                // Now, strip the leading '- ' if present
+                // Calculate level based on leading spaces. Assume 2 spaces per level.
+                currentLevel = Math.floor(leadingSpaces.length / 2);
+
+                // Now, strip the leading '- ' if present in the content part
                 if (content.startsWith('- ')) {
                     content = content.substring(2).trim(); // Remove '- ' and then trim
-                } else if (content.startsWith('-')) { // Case for level 0 or single hyphen without space (e.g., "- Root")
+                } else if (content.startsWith('-')) { // Handle single hyphen without space (e.g., "- Root")
                     content = content.substring(1).trim(); // Remove '-' and then trim
+                } else {
+                    content = content.trim(); // Just trim if no bullet
                 }
-                // If it doesn't start with '-' or '- ', just trim it
 
                 if (!content) { // Skip empty content lines after stripping markers
                     console.log(`Skipping empty content line after stripping: "${line}"`);
@@ -565,26 +589,22 @@
 
                 let parentTempId = null;
                 // Adjust stack based on current level
-                while (stack.length > level) {
-                    stack.pop(); // Pop off nodes that are no longer parents for the current level
+                // Pop elements from stack if their level is >= current node's level
+                while (stack.length > 0 && stack[stack.length - 1].level >= currentLevel) {
+                    stack.pop();
                 }
+                // The new parent is the last element on the stack (if any)
                 if (stack.length > 0) {
-                    parentTempId = stack[stack.length - 1].tempId; // The last node in stack is the parent
+                    parentTempId = stack[stack.length - 1].tempId;
                 }
 
                 const newNode = {
                     mapId: mapId,
                     text: content, // Use the stripped content
-                    level: level,
+                    level: currentLevel,
                     tempId: tempId,
                     parentId: parentTempId,
-                    // indexInLevel is not strictly needed for the current layout, but good to keep for future
-                    indexInLevel: (stack[level-1] && stack[level-1].childrenCount !== undefined) ? stack[level-1].childrenCount : 0
                 };
-                if (stack[level-1]) {
-                    stack[level-1].childrenCount = (stack[level-1].childrenCount || 0) + 1;
-                }
-
 
                 nodes.push(newNode);
                 stack.push(newNode); // Add current node to stack as a potential parent for its children
@@ -706,6 +726,19 @@
                             currentKonvaStage.scaleY(mapData.canvasState.scaleY || 1);
                             currentKonvaStage.x(mapData.canvasState.x || 0);
                             currentKonvaStage.y(mapData.canvasState.y || 0);
+
+                            // NEW: Load grid and snap states
+                            isGridVisible = mapData.canvasState.isGridVisible || false;
+                            isSnapToGridEnabled = mapData.canvasState.isSnapToGridEnabled || false;
+                            gridSize = mapData.canvasState.gridSize || 50;
+
+                            // Update UI elements
+                            if (toggleGridCheckbox) toggleGridCheckbox.checked = isGridVisible;
+                            if (toggleSnapToGridCheckbox) toggleSnapToGridCheckbox.checked = isSnapToGridEnabled;
+                            if (gridSizeInput) gridSizeInput.value = gridSize;
+
+                            updateGrid(); // Redraw grid based on loaded state
+
                             currentKonvaStage.batchDraw();
                         }
                     }
@@ -821,7 +854,12 @@
                     title: title,
                     createdAt: serverTimestamp(),
                     lastModified: serverTimestamp(),
-                    canvasState: { scaleX: 1, scaleY: 1, x: 0, y: 0 } // Initial canvas state
+                    canvasState: {
+                        scaleX: 1, scaleY: 1, x: 0, y: 0,
+                        isGridVisible: false, // NEW: Default grid off
+                        isSnapToGridEnabled: false, // NEW: Default snap off
+                        gridSize: 50 // NEW: Default grid size
+                    }
                 };
                 const mindMapDocRef = await addDoc(collection(db, "mindmaps"), mindMapData);
 
@@ -1071,7 +1109,7 @@
                     const newScale = currentKonvaStage.scaleX() * (newDist / lastDist); // Calculate new scale
 
                     currentKonvaStage.scale({ x: newScale, y: newScale });
-
+                    
                     // Calculate new position of the stage
                     const dx = newCenter.x - lastCenter.x;
                     const dy = newCenter.y - lastCenter.y;
@@ -1214,7 +1252,7 @@
                     if (!selectedKonvaNode || selectedKonvaNode.id() !== rightClickedKonvaNode.id()) {
                         if (selectedKonvaNode) { selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(1); removeCreationHandle(selectedKonvaNode); }
                         selectedKonvaNode = rightClickedKonvaNode;
-                        selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(3); // Highlight
+                        selectedKonvaNode.findOne('.nodeShape')?.strokeWidth(3);
                         const shape = selectedKonvaNode.findOne('.nodeShape');
                          if (shape) addCreationHandle(selectedKonvaNode, shape.height()); // Add creation handle
                         const nodeData = allNodesDataForCurrentMap.find(n => n.id === selectedKonvaNode.id());
@@ -1226,7 +1264,7 @@
                         contextMenu.style.top = e_context.evt.pageY + 'px';
                         contextMenu.style.left = e_context.evt.pageX + 'px';
                         showElement(contextMenu);
-                        contextMenuJustOpened = true; // Flag to prevent immediate deselection on click
+                        contextMenuJustOpened = true;
                     }
                 } else { // Right-clicked on empty area or non-node element
                     rightClickedKonvaNode = null;
@@ -1244,6 +1282,9 @@
                     "canvasState.scaleY": currentKonvaStage.scaleY(),
                     "canvasState.x": currentKonvaStage.x(),
                     "canvasState.y": currentKonvaStage.y(),
+                    "canvasState.isGridVisible": isGridVisible, // NEW
+                    "canvasState.isSnapToGridEnabled": isSnapToGridEnabled, // NEW
+                    "canvasState.gridSize": gridSize, // NEW
                     lastModified: serverTimestamp() // Update last modified timestamp
                 });
             } catch (error) {
@@ -1279,10 +1320,66 @@
             });
         }
 
+        // NEW: Function to draw grid
+        function updateGrid() {
+            if (!currentKonvaLayer || !currentKonvaStage) return;
+
+            // Remove existing grid lines by name
+            currentKonvaLayer.find('.gridLine').forEach(line => line.destroy());
+            gridLines = []; // Clear the array
+
+            if (isGridVisible) {
+                const stageWidth = currentKonvaStage.width();
+                const stageHeight = currentKonvaStage.height();
+
+                // Draw vertical lines
+                for (let i = 0; i * gridSize < stageWidth; i++) {
+                    const x = i * gridSize;
+                    const line = new Konva.Line({
+                        points: [x, 0, x, stageHeight],
+                        stroke: '#e0e0e0', // Light grey
+                        strokeWidth: 0.5,
+                        listening: false, // Don't capture events
+                        name: 'gridLine' // Name for easy removal
+                    });
+                    currentKonvaLayer.add(line);
+                    gridLines.push(line);
+                }
+
+                // Draw horizontal lines
+                for (let i = 0; i * gridSize < stageHeight; i++) {
+                    const y = i * gridSize;
+                    const line = new Konva.Line({
+                        points: [0, y, stageWidth, y],
+                        stroke: '#e0e0e0', // Light grey
+                        strokeWidth: 0.5,
+                        listening: false, // Don't capture events
+                        name: 'gridLine' // Name for easy removal
+                    });
+                    currentKonvaLayer.add(line);
+                    gridLines.push(line);
+                }
+            }
+            currentKonvaLayer.batchDraw();
+        }
+
+        // NEW: Function to snap position to grid
+        function snapToGrid(pos) {
+            if (!isSnapToGridEnabled || !gridSize) return pos;
+            return {
+                x: Math.round(pos.x / gridSize) * gridSize,
+                y: Math.round(pos.y / gridSize) * gridSize,
+            };
+        }
+
+
         function renderNodesAndLines(nodesData) {
             if (!currentKonvaLayer) return;
             currentKonvaLayer.destroyChildren(); // Clear existing shapes
             const konvaNodeObjects = {}; // To store Konva group objects for linking
+
+            // Re-draw grid first, so it's always at the bottom
+            updateGrid();
 
             nodesData.forEach(nodeData => {
                 // Basic validation for node data
@@ -1446,8 +1543,19 @@
                 // Event listener for node drag end
                 group.on('dragend', async function() {
                     if(!db) return;
+                    let finalX = this.x();
+                    let finalY = this.y();
+
+                    if (isSnapToGridEnabled) {
+                        const snappedPos = snapToGrid({ x: finalX, y: finalY });
+                        finalX = snappedPos.x;
+                        finalY = snappedPos.y;
+                        this.position({ x: finalX, y: finalY }); // Update Konva node position to snapped position
+                        currentKonvaLayer.batchDraw(); // Redraw immediately after snap
+                    }
+
                     try {
-                        await updateDoc(doc(db, "nodes", this.id()), { position: { x: this.x(), y: this.y() } });
+                        await updateDoc(doc(db, "nodes", this.id()), { position: { x: finalX, y: finalY } });
                     } catch (e) {
                         console.error("Error updating node position:", e);
                     }
@@ -1653,11 +1761,18 @@
                 }
 
                 // Calculate new node's absolute position based on handle's final position
-                const handleFinalRelativeX = this.x();
-                const handleFinalRelativeY = this.y();
+                let handleFinalRelativeX = this.x();
+                let handleFinalRelativeY = this.y();
                 const parentAbsPos = parentNodeGroup.getAbsolutePosition();
-                const newNodeAbsX = parentAbsPos.x + handleFinalRelativeX;
-                const newNodeAbsY = parentAbsPos.y + handleFinalRelativeY;
+                let newNodeAbsX = parentAbsPos.x + handleFinalRelativeX;
+                let newNodeAbsY = parentAbsPos.y + handleFinalRelativeY;
+
+                // NEW: Apply snap to grid for new node creation
+                if (isSnapToGridEnabled) {
+                    const snappedPos = snapToGrid({ x: newNodeAbsX, y: newNodeAbsY });
+                    newNodeAbsX = snappedPos.x;
+                    newNodeAbsY = snappedPos.y;
+                }
 
                 // Reset handle to its original position at the bottom of the parent
                 let resetHandleX = currentParentShapeForReset.width() / 2;
@@ -1907,15 +2022,15 @@
                     const batch = writeBatch(db);
                     let startX = targetNodeKonva.x();
                     let startY = targetNodeKonva.y();
-                    const parentShape = targetNodeKonva.findOne('.nodeShape');
+                    const parentShape = parentNodeKonva.findOne('.nodeShape');
                     const parentWidth = parentShape?.width() || DEFAULT_NODE_STYLE.width;
                     const parentHeight = parentShape?.height() || DEFAULT_NODE_STYLE.minHeight;
 
-                    startX += parentWidth / 3; // Offset for new example nodes
-                    startY += parentHeight + 35;
-                    const yOffsetIncrement = (DEFAULT_NODE_STYLE.minHeight || 50) + 20;
+                    startX += parentWidth / 4; // Offset a bit to the right
+                    startY += parentHeight + 30; // Below the parent
+                    const yOffsetIncrement = (DEFAULT_NODE_STYLE.minHeight || 50) + 20; // Spacing between new nodes
 
-                    examples.slice(0, 3).forEach((example, index) => { // Limit to 3 examples
+                    examples.slice(0, 5).forEach((suggestion, index) => { // Limit to 5 suggestions
                         const newNodeId = doc(collection(db, "nodes")).id;
                         const exampleNodeStyle = { ...DEFAULT_NODE_STYLE, backgroundColor: "#E8F5E9", textColor: "#2E7D32", borderColor: "#A5D6A7", shape: "roundedRectangle", cornerRadius: 7, width: 160, minHeight: 40, fontSize: 13, icon: '💡' };
                         const newNodeData = {
@@ -2281,7 +2396,7 @@ Hãy bắt đầu sơ đồ tư duy của bạn:`;
                         actualY = 50; // Start near top
 
                         // If there's a previous root, stack below it
-                        const previousRoot = nodesToCreate.filter(n => n.level === 0 && n.tempId < node.tempId).pop();
+                        const previousRoot = nodesToCreate.filter(n => n.level === 0 && nodesToCreate.indexOf(n) < nodesToCreate.indexOf(node)).pop();
                         if (previousRoot && createdNodeMap.has(previousRoot.tempId)) {
                             const prevRootInfo = createdNodeMap.get(previousRoot.tempId);
                             actualY = prevRootInfo.y + prevRootInfo.style.minHeight + 80; // Stack below previous root
@@ -2377,7 +2492,7 @@ Hãy bắt đầu sơ đồ tư duy của bạn:`;
                 const processNodesRecursively = (parentNodeTempId, parentNodeInfo) => {
                     const children = nodesToCreate.filter(n => n.parentId === parentNodeTempId);
                     // Sort children to ensure consistent layout
-                    children.sort((a, b) => a.level - b.level || a.text.localeCompare(b.text)); // Sort by level then text
+                    children.sort((a, b) => nodesToCreate.indexOf(a) - nodesToCreate.indexOf(b)); // Sort by original order
 
                     for (const child of children) {
                         addNodeToBatch(child, parentNodeInfo);
@@ -2541,6 +2656,14 @@ Hãy bắt đầu sơ đồ tư duy của bạn:`;
                         else if (e.key === 'ArrowDown') newY += KEYBOARD_MOVE_STEP;
                         else if (e.key === 'ArrowLeft') newX -= KEYBOARD_MOVE_STEP;
                         else if (e.key === 'ArrowRight') newX += KEYBOARD_MOVE_STEP;
+
+                        // NEW: Apply snap to grid for keyboard movement
+                        if (isSnapToGridEnabled) {
+                            const snappedPos = snapToGrid({ x: newX, y: newY });
+                            newX = snappedPos.x;
+                            newY = snappedPos.y;
+                        }
+
                         selectedKonvaNode.position({ x: newX, y: newY });
                         currentKonvaLayer.batchDraw();
                         // Debounce Firestore update or update on dragend equivalent for keyboard
@@ -2674,6 +2797,11 @@ Hãy bắt đầu sơ đồ tư duy của bạn:`;
             generateMindmapFromTextButton = document.getElementById('generate-mindmap-from-text-button');
             aiMindmapTitleInput = document.getElementById('ai-mindmap-title-input');
 
+            // NEW: Assign grid control elements
+            toggleGridCheckbox = document.getElementById('toggle-grid');
+            toggleSnapToGridCheckbox = document.getElementById('toggle-snap-to-grid');
+            gridSizeInput = document.getElementById('grid-size-input');
+
 
             // Setup event listeners
             if (aiResponseModalCloseButton) { aiResponseModalCloseButton.addEventListener('click', closeAiResponseModal); }
@@ -2728,6 +2856,30 @@ Hãy bắt đầu sơ đồ tư duy của bạn:`;
             if (generateMindmapFromTextButton) {
                 generateMindmapFromTextButton.addEventListener('click', handleGenerateMindmapFromText);
             }
+
+            // NEW: Grid and Snap-to-Grid Listeners
+            if (toggleGridCheckbox) {
+                toggleGridCheckbox.addEventListener('change', (e) => {
+                    isGridVisible = e.target.checked;
+                    updateGrid();
+                    saveCanvasState(); // Save grid visibility state
+                });
+            }
+            if (toggleSnapToGridCheckbox) {
+                toggleSnapToGridCheckbox.addEventListener('change', (e) => {
+                    isSnapToGridEnabled = e.target.checked;
+                    saveCanvasState(); // Save snap-to-grid state
+                });
+            }
+            if (gridSizeInput) {
+                gridSizeInput.addEventListener('input', (e) => {
+                    gridSize = parseInt(e.target.value, 10);
+                    if (isNaN(gridSize) || gridSize < 10) gridSize = 10; // Minimum grid size
+                    if (isGridVisible) updateGrid(); // Redraw grid if visible
+                    saveCanvasState(); // Save grid size
+                });
+            }
+
 
             // Context Menu item listeners
             if (ctxAddChildButton) {
@@ -2850,7 +3002,7 @@ Hãy bắt đầu sơ đồ tư duy của bạn:`;
                     const newHeight = konvaContainer.clientHeight;
                     currentKonvaStage.width(newWidth);
                     currentKonvaStage.height(newHeight);
-                    // No need to redraw everything, Konva handles it or next batchDraw will.
+                    updateGrid(); // Redraw grid on resize
                 }
             });
 
