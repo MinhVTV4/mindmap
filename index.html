@@ -210,6 +210,15 @@
                     <input type="text" id="new-mindmap-title-input" placeholder="Nhập tiêu đề sơ đồ mới...">
                     <button id="create-mindmap-button">Tạo Sơ đồ mới</button>
                 </div>
+
+                <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fcfcfc;">
+                    <h3>✨ Tạo Sơ đồ tư duy bằng AI từ Văn bản</h3>
+                    <textarea id="ai-text-input" placeholder="Dán văn bản của bạn vào đây (ví dụ: một bài viết, một khái niệm, một danh sách...). AI sẽ giúp bạn biến nó thành sơ đồ tư duy!"
+                              style="width: calc(100% - 22px); min-height: 120px; padding: 10px; margin-bottom: 15px; border: 1px solid #dddfe2; border-radius: 6px; font-size: 14px; box-sizing: border-box;"></textarea>
+                    <button id="generate-mindmap-from-text-button">Tạo Sơ đồ với AI</button>
+                    <input type="text" id="ai-mindmap-title-input" placeholder="Tiêu đề sơ đồ AI (tùy chọn)"
+                           style="width: calc(100% - 22px); padding: 10px; margin-top: 10px; border: 1px solid #dddfe2; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                </div>
                 <div id="mindmap-list-container">
                     <h3>Danh sách sơ đồ của bạn:</h3>
                     <div id="mindmap-list-loading" class="loading-indicator hidden">Đang tải danh sách...</div>
@@ -462,6 +471,7 @@
         let mainAppSection, mainAppTitle, userEmailDisplay, logoutButton;
         let mindmapManagementView, newMindmapTitleInput, createMindmapButton, mindmapListUl, mindmapListLoading;
         let canvasView, backToMapsListButton, currentMindmapTitleDisplay, addChildNodeButton, deleteNodeButton, zoomInButton, zoomOutButton, resetZoomButton, konvaContainer, konvaContainerLoading;
+        let aiTextInput, generateMindmapFromTextButton, aiMindmapTitleInput; // NEW variables for AI from text
 
 
         // --- UTILITY FUNCTIONS ---
@@ -505,6 +515,86 @@
             if (nodeContentModalOverlay) { hideElement(nodeContentModalOverlay); }
             if (currentKonvaStage && !currentKonvaStage.listening()) { currentKonvaStage.listening(true); }
         }
+
+        /**
+         * Parses a markdown-like indented text structure into an array of node objects
+         * suitable for creating a mind map. Assigns temporary IDs and parent IDs.
+         *
+         * @param {string} text The markdown-like text from AI.
+         * @param {string} mapId The Firestore ID of the mind map this structure belongs to.
+         * @returns {Array<Object>} An array of node objects with { text, level, parentId (temp), tempId }.
+         */
+        function parseMindmapStructure(text, mapId) {
+            const lines = text.split('\n').filter(line => line.trim() !== '');
+            const nodes = [];
+            const stack = []; // To keep track of parent nodes at each level
+
+            console.log("Starting parseMindmapStructure with text:", text); // DEBUG: Raw text input
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                console.log(`Processing line ${i}: "${line}"`); // DEBUG: Current line
+
+                // Determine level based on leading spaces (assuming 2 spaces per level for indentation)
+                // And then check for the presence of '- '
+                let level = 0;
+                let content = line; // Start with the full line
+
+                const leadingSpacesMatch = line.match(/^(\s*)/);
+                if (leadingSpacesMatch && leadingSpacesMatch[1]) {
+                    level = Math.floor(leadingSpacesMatch[1].length / 2); // 2 spaces = 1 level
+                }
+
+                // Strip leading spaces from the content
+                content = content.trimStart();
+
+                // Now, strip the leading '- ' if present
+                if (content.startsWith('- ')) {
+                    content = content.substring(2).trim(); // Remove '- ' and then trim
+                } else if (content.startsWith('-')) { // Case for level 0 or single hyphen without space (e.g., "- Root")
+                    content = content.substring(1).trim(); // Remove '-' and then trim
+                }
+                // If it doesn't start with '-' or '- ', just trim it
+
+                if (!content) { // Skip empty content lines after stripping markers
+                    console.log(`Skipping empty content line after stripping: "${line}"`);
+                    continue;
+                }
+
+                const tempId = `node-${Date.now()}-${i}`; // Unique temporary ID for this node
+
+                let parentTempId = null;
+                // Adjust stack based on current level
+                while (stack.length > level) {
+                    stack.pop(); // Pop off nodes that are no longer parents for the current level
+                }
+                if (stack.length > 0) {
+                    parentTempId = stack[stack.length - 1].tempId; // The last node in stack is the parent
+                }
+
+                const newNode = {
+                    mapId: mapId,
+                    text: content, // Use the stripped content
+                    level: level,
+                    tempId: tempId,
+                    parentId: parentTempId,
+                    // indexInLevel is not strictly needed for the current layout, but good to keep for future
+                    indexInLevel: (stack[level-1] && stack[level-1].childrenCount !== undefined) ? stack[level-1].childrenCount : 0
+                };
+                if (stack[level-1]) {
+                    stack[level-1].childrenCount = (stack[level-1].childrenCount || 0) + 1;
+                }
+
+
+                nodes.push(newNode);
+                stack.push(newNode); // Add current node to stack as a potential parent for its children
+
+                console.log(`  Parsed: Level=${newNode.level}, Content="${newNode.text}", ParentId=${newNode.parentId}`); // DEBUG: Parsed node details
+            }
+            console.log("Parsed nodes (Revised):", nodes); // DEBUG: Check final parsed nodes array
+            return nodes;
+        }
+
 
         // --- AUTHENTICATION LOGIC ---
         async function handleRegister() {
@@ -1179,6 +1269,7 @@
                     nodesFromDb.push({ id: docSnap.id, ...docSnap.data() });
                 });
                 allNodesDataForCurrentMap = nodesFromDb; // Update local cache
+                console.log("Nodes from DB (onSnapshot):", allNodesDataForCurrentMap); // DEBUG: Check data from Firestore
                 renderNodesAndLines(allNodesDataForCurrentMap); // Re-render all nodes and lines
                 if(konvaContainerLoading) hideElement(konvaContainerLoading);
             }, (error) => {
@@ -1217,7 +1308,7 @@
                     fontSize: style.fontSize,
                     fontFamily: style.fontFamily,
                     width: textRenderWidth > 0 ? textRenderWidth : 0, // Prevent negative width
-                    lineHeight: 1.2, // Consistent line height for calculation
+                    lineHeight: 1.2, // Consistent line height
                     align: 'center'
                 });
                 const fullTextActualHeight = tempTextObj.height(); // Actual height of the full text
@@ -2092,6 +2183,239 @@ Vui lòng trình bày toàn bộ kế hoạch dưới dạng một khối văn b
             }
         }
 
+        async function handleGenerateMindmapFromText() {
+            if (!generativeModel || !db || !currentUser) {
+                alert("Chức năng AI chưa sẵn sàng hoặc bạn chưa đăng nhập.");
+                return;
+            }
+
+            const textContent = aiTextInput.value.trim();
+            if (!textContent) {
+                alert("Vui lòng dán văn bản vào ô để AI có thể tạo sơ đồ tư duy.");
+                return;
+            }
+
+            const mapTitle = aiMindmapTitleInput.value.trim() || `Sơ đồ AI từ văn bản (${new Date().toLocaleDateString()})`;
+
+            showLoadingIndicator("AI đang đọc văn bản và tạo sơ đồ tư duy...");
+
+            // Cấu trúc prompt để AI trả về dữ liệu có cấu trúc
+            const prompt = `Bạn là một chuyên gia tạo sơ đồ tư duy. Hãy đọc văn bản sau và chuyển đổi nó thành một cấu trúc sơ đồ tư duy.
+Sơ đồ tư duy cần được cấu trúc theo định dạng Markdown được thụt lề, trong đó mỗi dòng là một nút sơ đồ tư duy.
+- Nút gốc (cấp 0) là ý tưởng chính hoặc tiêu đề bao quát của văn bản.
+- Các nút con (cấp 1, 2, v.v.) được thụt lề bằng cách sử dụng dấu gạch ngang và dấu cách ('- ').
+- Giới hạn nội dung mỗi nút khoảng 10-50 từ, cô đọng ý chính.
+- Tránh lặp lại nội dung giống hệt nhau.
+- Tập trung vào việc tạo ra một cấu trúc logic và dễ hiểu.
+- Không bao gồm bất kỳ văn bản giới thiệu hay kết luận nào ngoài cấu trúc sơ đồ tư duy.
+- Không đánh số, chỉ dùng dấu gạch ngang.
+
+Ví dụ định dạng đầu ra mong muốn:
+- Nút gốc của sơ đồ tư duy
+  - Nút con cấp 1 của gốc
+    - Nút con cấp 2 của cấp 1
+    - Nút con cấp 2 khác
+  - Nút con cấp 1 thứ hai
+- Nút gốc thứ hai (nếu có nhiều ý chính độc lập trong văn bản)
+
+Văn bản đầu vào:
+---
+${textContent}
+---
+
+Hãy bắt đầu sơ đồ tư duy của bạn:`;
+
+            try {
+                const result = await generativeModel.generateContent(prompt);
+                const response = result.response;
+                const mindmapStructureText = response.text().trim();
+
+                console.log("AI Raw Response (Mindmap Structure):", mindmapStructureText); // DEBUG: Check AI's raw output
+
+                if (!mindmapStructureText) {
+                    alert("AI không thể tạo cấu trúc sơ đồ tư duy từ văn bản này. Vui lòng thử lại với nội dung khác hoặc định dạng rõ ràng hơn.");
+                    openAiResponseModal("Phản hồi AI trống", textContent, "AI không tạo ra cấu trúc sơ đồ tư duy. Vui lòng thử lại.");
+                    return;
+                }
+
+                // Tạo một sơ đồ tư duy mới trong Firestore
+                const mindMapData = {
+                    userId: currentUser.uid,
+                    title: mapTitle,
+                    createdAt: serverTimestamp(),
+                    lastModified: serverTimestamp(),
+                    canvasState: { scaleX: 1, scaleY: 1, x: 0, y: 0 }
+                };
+                const mindMapDocRef = await addDoc(collection(db, "mindmaps"), mindMapData);
+                const newMindmapId = mindMapDocRef.id;
+
+                const nodesToCreate = parseMindmapStructure(mindmapStructureText, newMindmapId);
+
+                if (nodesToCreate.length === 0) {
+                    alert("AI đã tạo văn bản, nhưng không thể phân tích thành các nút. Vui lòng kiểm tra định dạng phản hồi của AI trong console.");
+                    openAiResponseModal("Lỗi phân tích sơ đồ AI", textContent, mindmapStructureText);
+                    return;
+                }
+
+                const batch = writeBatch(db);
+                const nodeStyleBase = { ...DEFAULT_NODE_STYLE, width: 150, minHeight: 50, padding: 10, cornerRadius: 5 };
+
+                // Map to store information about created nodes for positioning children
+                const createdNodeMap = new Map(); // Map tempId to { actualFirestoreId, x, y, style }
+
+                // Track last position for each level to prevent direct overlaps
+                const lastNodePosPerLevel = {}; // { level: { x, y, width, height } }
+
+                // Function to recursively calculate positions and add to batch
+                const addNodeToBatch = (node, parentNodeInfo = null) => {
+                    const newNodeFirestoreId = doc(collection(db, "nodes")).id;
+
+                    let actualX, actualY;
+                    let nodeCalculatedStyle = { ...nodeStyleBase };
+
+                    const canvasWidth = konvaContainer?.clientWidth || 800;
+                    const canvasHeight = konvaContainer?.clientHeight || 600;
+
+                    if (node.level === 0) { // Root node
+                        actualX = canvasWidth / 2 - (nodeStyleBase.width / 2); // Center horizontally
+                        actualY = 50; // Start near top
+
+                        // If there's a previous root, stack below it
+                        const previousRoot = nodesToCreate.filter(n => n.level === 0 && n.tempId < node.tempId).pop();
+                        if (previousRoot && createdNodeMap.has(previousRoot.tempId)) {
+                            const prevRootInfo = createdNodeMap.get(previousRoot.tempId);
+                            actualY = prevRootInfo.y + prevRootInfo.style.minHeight + 80; // Stack below previous root
+                        }
+
+                        nodeCalculatedStyle = { ...nodeStyleBase, backgroundColor: "#1877f2", textColor: "#ffffff", borderColor: "#0e5aab", shape: "ellipse", minHeight: 60, fontSize: 16 };
+                    } else if (parentNodeInfo) {
+                        const horizontalOffset = 100; // Base horizontal offset from parent
+                        const verticalOffset = 70;   // Base vertical offset from parent
+
+                        // Simple fan-out: alternate left/right for direct children (level 1)
+                        // For deeper levels, just offset from parent.
+                        if (node.level === 1) {
+                             // Position children of level 0 nodes in a fan-out
+                            const siblings = nodesToCreate.filter(n => n.parentId === node.parentId);
+                            const siblingIndex = siblings.findIndex(s => s.tempId === node.tempId);
+
+                            const angleStep = (Math.PI * 0.8) / Math.max(1, siblings.length - 1); // Spread over 180 degrees
+                            const baseAngle = -Math.PI * 0.4; // Start slightly left of vertical
+                            const currentAngle = baseAngle + (siblingIndex * angleStep);
+
+                            const radius = 200; // Distance from parent
+                            actualX = parentNodeInfo.x + parentNodeInfo.style.width / 2 + radius * Math.cos(currentAngle) - nodeStyleBase.width / 2;
+                            actualY = parentNodeInfo.y + parentNodeInfo.style.minHeight / 2 + radius * Math.sin(currentAngle) - nodeStyleBase.minHeight / 2;
+
+                        } else {
+                            // For deeper levels, just place below and slightly right of parent
+                            actualX = parentNodeInfo.x + 50;
+                            actualY = parentNodeInfo.y + parentNodeInfo.style.minHeight + 60;
+
+                            // To avoid direct overlap, check last node at this level
+                            if (lastNodePosPerLevel[node.level]) {
+                                const lastNodeInfo = lastNodePosPerLevel[node.level];
+                                // If new node would overlap horizontally, move it to the right
+                                if (actualX < lastNodeInfo.x + lastNodeInfo.width + 20 && actualY < lastNodeInfo.y + lastNodeInfo.height + 20) {
+                                    actualX = lastNodeInfo.x + lastNodeInfo.width + 50;
+                                }
+                            }
+                        }
+
+                        // Apply style based on level
+                        if (node.level === 1) {
+                            nodeCalculatedStyle = { ...nodeStyleBase, backgroundColor: "#E3F2FD", textColor: "#0D47A1", borderColor: "#90CAF9", shape: "roundedRectangle", cornerRadius: 8, fontSize: 14 };
+                        } else if (node.level === 2) {
+                            nodeCalculatedStyle = { ...nodeStyleBase, backgroundColor: "#F0F4C3", textColor: "#33691E", borderColor: "#C5E1A5", shape: "rectangle", cornerRadius: 5, fontSize: 13 };
+                        } else { // Deeper levels
+                            nodeCalculatedStyle = { ...nodeStyleBase, backgroundColor: "#FBE9E7", textColor: "#BF360C", borderColor: "#FFAB91", shape: "rectangle", cornerRadius: 3, fontSize: 12 };
+                        }
+
+                    } else { // Fallback, should ideally not be hit for non-root nodes
+                        actualX = 100;
+                        actualY = 100;
+                        console.warn("Node without parent or level 0, using fallback position:", node);
+                    }
+
+                    // Ensure positions are not negative
+                    actualX = Math.max(10, actualX);
+                    actualY = Math.max(10, actualY);
+
+                    const nodeDataForFirestore = {
+                        mapId: newMindmapId,
+                        parentId: parentNodeInfo ? parentNodeInfo.actualFirestoreId : null,
+                        text: node.text,
+                        position: { x: actualX, y: actualY },
+                        style: nodeCalculatedStyle,
+                        createdAt: serverTimestamp()
+                    };
+
+                    const nodeRef = doc(db, "nodes", newNodeFirestoreId);
+                    batch.set(nodeRef, nodeDataForFirestore);
+
+                    // Store info for children positioning and collision avoidance
+                    createdNodeMap.set(node.tempId, {
+                        actualFirestoreId: newNodeFirestoreId,
+                        x: actualX,
+                        y: actualY,
+                        style: nodeCalculatedStyle,
+                        level: node.level
+                    });
+
+                    // Update last position for this level
+                    lastNodePosPerLevel[node.level] = {
+                        x: actualX,
+                        y: actualY,
+                        width: nodeCalculatedStyle.width,
+                        height: nodeCalculatedStyle.minHeight // Use minHeight for simple bounding box
+                    };
+
+                    console.log(`Node created: ${node.text} (Level: ${node.level}, Parent: ${node.parentId ? node.parentId.substring(0,5) : 'None'}) at (${actualX}, ${actualY})`); // DEBUG: Node creation info
+                };
+
+                // Recursively add nodes to batch, maintaining parent info
+                const processNodesRecursively = (parentNodeTempId, parentNodeInfo) => {
+                    const children = nodesToCreate.filter(n => n.parentId === parentNodeTempId);
+                    // Sort children to ensure consistent layout
+                    children.sort((a, b) => a.level - b.level || a.text.localeCompare(b.text)); // Sort by level then text
+
+                    for (const child of children) {
+                        addNodeToBatch(child, parentNodeInfo);
+                        processNodesRecursively(child.tempId, createdNodeMap.get(child.tempId));
+                    }
+                };
+
+                // Start processing from root nodes
+                const rootNodes = nodesToCreate.filter(n => n.level === 0);
+                // Sort root nodes by their original order in the parsed text
+                rootNodes.sort((a, b) => nodesToCreate.indexOf(a) - nodesToCreate.indexOf(b));
+
+                for (const root of rootNodes) {
+                    addNodeToBatch(root, null); // Add root node (no parentInfo)
+                    processNodesRecursively(root.tempId, createdNodeMap.get(root.tempId)); // Process its children
+                }
+
+                await batch.commit();
+
+                aiTextInput.value = ''; // Clear input
+                aiMindmapTitleInput.value = ''; // Clear title input
+                alert(`AI đã tạo sơ đồ tư duy "${mapTitle}" thành công!`);
+                showCanvasView(newMindmapId, mapTitle); // Switch to canvas view
+            } catch (error) {
+                console.error("Error generating mind map from text with AI:", error);
+                let userMessage = "Lỗi khi AI tạo sơ đồ từ văn bản: " + error.message;
+                if (error.message?.includes("API key not valid")) { userMessage += "\nVui lòng kiểm tra lại thiết lập API Key trong Firebase Console cho Gemini API."; }
+                else if (error.message?.includes("429") || error.message?.toLowerCase().includes("quota")) { userMessage = "Bạn đã gửi quá nhiều yêu cầu tới AI hoặc đã hết hạn ngạch. Vui lòng thử lại sau ít phút."; }
+                else if (error.message?.toLowerCase().includes("billing")){ userMessage = "Có vấn đề với cài đặt thanh toán cho dự án Firebase của bạn. Vui lòng kiểm tra trong Google Cloud Console."; }
+                else if (error.message?.toLowerCase().includes("model not found")){ userMessage = "Model AI không được tìm thấy. Vui lòng kiểm tra lại tên model đã cấu hình.";}
+                else if (error.message?.toLowerCase().includes("candidate.safetyRatings")){ userMessage = "Phản hồi từ AI bị chặn do vấn đề an toàn nội dung. Văn bản đầu vào có thể chứa từ khóa nhạy cảm.";}
+                openAiResponseModal("Lỗi AI Tạo Sơ đồ", textContent, userMessage);
+            } finally {
+                hideLoadingIndicator();
+            }
+        }
+
+
         // --- TOOLBAR BUTTON ACTIONS & KEYBOARD SHORTCUTS & ZOOM ---
         async function addChildNodeLogic(parentNode) {
             if (!parentNode || !currentMindMapId || !db) return;
@@ -2345,6 +2669,11 @@ Vui lòng trình bày toàn bộ kế hoạch dưới dạng một khối văn b
             konvaContainer = document.getElementById('konva-container');
             konvaContainerLoading = document.getElementById('konva-container-loading');
 
+            // NEW: Assign AI from Text elements
+            aiTextInput = document.getElementById('ai-text-input');
+            generateMindmapFromTextButton = document.getElementById('generate-mindmap-from-text-button');
+            aiMindmapTitleInput = document.getElementById('ai-mindmap-title-input');
+
 
             // Setup event listeners
             if (aiResponseModalCloseButton) { aiResponseModalCloseButton.addEventListener('click', closeAiResponseModal); }
@@ -2394,6 +2723,11 @@ Vui lòng trình bày toàn bộ kế hoạch dưới dạng một khối văn b
 
 
             if (createMindmapButton) { createMindmapButton.addEventListener('click', handleCreateMindmap); }
+
+            // NEW: AI Generate Mindmap from Text Listener
+            if (generateMindmapFromTextButton) {
+                generateMindmapFromTextButton.addEventListener('click', handleGenerateMindmapFromText);
+            }
 
             // Context Menu item listeners
             if (ctxAddChildButton) {
